@@ -1,0 +1,92 @@
+{% extends 'gestion/base.html' %}
+
+{% block content %}
+<div class="header">
+    <div>
+        <h1>Nuevo Pedido</h1>
+        <p style="color: var(--cocoa);">Completa el formulario para crear un pedido</p>
+    </div>
+    <div>
+        <a href="{% url 'lista_pedidos' %}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="table-container" style="max-width: 600px;">
+    
+    <!-- Mensaje de Error (Ítem 7: Manejo de excepciones) -->
+    {% if error %}
+    <div style="background-color: #f8d7da; color: #721c24; padding: 15px; 
+                border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
+        <i class="fas fa-exclamation-triangle"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" style="display: flex; flex-direction: column; gap: 20px;">
+        {% csrf_token %}
+
+        <!-- Cliente (Select) -->
+        <div>
+            <label style="display: block; margin-bottom: 8px; color: var(--espresso); font-weight: 600;">
+                <i class="fas fa-user"></i> Cliente
+            </label>
+            <select name="cliente" required 
+                    style="width: 100%; padding: 12px; border: 1px solid var(--khaki); 
+                           border-radius: 8px; font-size: 1rem; background: var(--white);">
+                <option value="">-- Seleccione un cliente --</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id_cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Total del Pedido -->
+        <div>
+            <label style="display: block; margin-bottom: 8px; color: var(--espresso); font-weight: 600;">
+                <i class="fas fa-dollar-sign"></i> Total del Pedido
+            </label>
+            <input type="number" name="total" step="0.01" min="0" placeholder="0.00" required
+                   style="width: 100%; padding: 12px; border: 1px solid var(--khaki); 
+                          border-radius: 8px; font-size: 1rem;">
+        </div>
+
+        <!-- Estado del Pedido -->
+        <div>
+            <label style="display: block; margin-bottom: 8px; color: var(--espresso); font-weight: 600;">
+                <i class="fas fa-info-circle"></i> Estado
+            </label>
+            <select name="estado" required 
+                    style="width: 100%; padding: 12px; border: 1px solid var(--khaki); 
+                           border-radius: 8px; font-size: 1rem; background: var(--white);">
+                <option value="">-- Seleccione estado --</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="En Proceso">En Proceso</option>
+                <option value="Completado">Completado</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+        </div>
+
+        <!-- Dirección de Entrega (Opcional) -->
+        <div>
+            <label style="display: block; margin-bottom: 8px; color: var(--espresso); font-weight: 600;">
+                <i class="fas fa-map-marker-alt"></i> Dirección de Entrega
+            </label>
+            <input type="text" name="direccion" placeholder="Calle 123 #45-67"
+                   style="width: 100%; padding: 12px; border: 1px solid var(--khaki); 
+                          border-radius: 8px; font-size: 1rem;">
+        </div>
+
+        <!-- Botones de Acción -->
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="submit" class="btn btn-primary" style="flex: 1; padding: 15px;">
+                <i class="fas fa-save"></i> Guardar Pedido
+            </button>
+            <a href="{% url 'lista_pedidos' %}" class="btn" 
+               style="background: var(--khaki); color: var(--espresso); padding: 15px; text-align: center;">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
