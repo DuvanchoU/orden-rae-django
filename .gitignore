@@ -1,4 +1,3 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
 # Python
 *.py[cod]
 *$py.class
@@ -25,9 +24,8 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/media
-/staticfiles
-/static
+/media/
+/staticfiles/
 
 # Virtual Environment (MUY IMPORTANTE)
 venv/
@@ -48,8 +46,8 @@ Thumbs.db
 
 # Cache de Django
 __pycache__/
-*.py[cod]
 
 # Secrets (NUNCA subir esto)
 .env
 secret_key.py
+*.key
