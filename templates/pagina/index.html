@@ -1,0 +1,655 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Django - Orden Rae</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- En el <head> de tu template -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Tu CSS con Django static -->
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+</head>
+<body class="antialiased">
+    <!-- Encabezado -->
+    <header id="barra_superior" class="bg-white border-bottom">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <a href="{% url 'pagina:home' %}">
+                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+            </a>
+
+            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
+                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
+                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
+            </div>
+
+            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+                <!-- NOTIFICACIONES -->
+                <div class="notifications-bell position-relative" id="notifications-bell">
+                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
+                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                    <div class="notifications-dropdown" id="notifications-dropdown">
+                        <div class="notifications-header">
+                            Notificaciones
+                            <a href="#" id="clear-notifications">Marcar como leídas</a>
+                        </div>
+                        <div id="notifications-list">
+                            {% if notificaciones %}
+                                {% for notif in notificaciones %}
+                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
+                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
+                                    <div class="notification-content">
+                                        <strong>{{ notif.mensaje }}</strong>
+                                        <span class="notification-time">{{ notif.fecha }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO DE COMPRA -->
+                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                        {{ carrito_cantidad|default:0 }}
+                    </span>
+                </a>
+                
+                <!-- Usuario autenticado -->
+                {% if user.is_authenticated %}
+                <div class="menu-usuario position-relative">
+                    <a href="#" class="d-flex align-items-center text-decoration-none position-relative">
+                        <!-- Imagen de usuario dinámica -->
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                            alt="Usuario" class="icono-img" id="user-avatar">
+                        <!-- Tooltip con nombre completo -->
+                        <span class="user-tooltip ms-2 text-dark">{{ user.get_full_name|default:user.username }}</span>
+                    </a>
+                    <div class="submenu mt-1">
+                        <a href="#">Mi cuenta</a> 
+                        <a href="<a href="{% url 'pagina:logout' %}?next={% url 'pagina:home' %}">Cerrar sesión</a>
+                        
+                        <!-- Enlace al Dashboard (solo para roles autorizados) -->
+                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <!-- Usuario NO autenticado -->
+                <div class="menu-usuario position-relative">
+                    <a href="#"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-2 bg-light">
+            <div class="container">
+                <nav class="navegacion d-flex flex-wrap justify-content-center">
+                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
+                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
+                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="py-5">
+        <div class="py-5">
+            <div class="py-3"></div>
+        </div>
+        <!-- Slideshow -->
+        <section class="container my-5">
+            <h2 class="text-center mb-4 titulo-seccion">PRODUCTOS DESTACADOS</h2>
+            <div class="contenedor-diapositivas mx-auto">
+                {% for producto in productos_destacados %}
+                <div class="diapositiva">
+                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+                </div>
+                {% endfor %}
+                <a class="anterior" id="btn-anterior">&#10094;</a>
+                <a class="siguiente" id="btn-siguiente">&#10095;</a>
+            </div>
+            <div class="text-center mt-3">
+                <div id="puntos-indicadores"></div>
+            </div>
+        </section>
+
+        <!-- Nuevos productos (dinámico desde Django) -->
+        <section class="py-1 bg-light">
+            <div class="container">
+                <h2 class="text-center mb-5 titulo-seccion">NUEVOS PRODUCTOS</h2>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 justify-content-center">
+                    {% for producto in productos_nuevos %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm producto-card" 
+                            data-nombre="{{ producto.nombre }}" 
+                            data-precio="{{ producto.precio }}">
+                            <img src="{{ producto.imagen.url }}" 
+                                class="card-img-top" 
+                                style="height: 192px; object-fit: cover;" 
+                                alt="{{ producto.nombre }}">
+                            <div class="card-body d-flex flex-column">
+                                <small class="text-muted text-uppercase">{{ producto.categoria }}</small>
+                                <h5 class="card-title mt-1">{{ producto.nombre|upper }}</h5>
+                                <p class="card-text text-danger fw-bold">
+                                    {% if producto.precio_desde %}DESDE {% endif %}
+                                    ${{ producto.precio|floatformat:0|intcomma }} IVA INCLUIDO
+                                </p>
+                                <div class="mt-auto d-flex gap-2">
+                                    {% if producto.tiene_opciones %}
+                                    <button class="btn btn-sm btn-opciones" data-tipo="{{ producto.slug }}">
+                                        SELECCIONAR OPCIONES
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-carrito" data-producto-id="{{ producto.id }}">
+                                        AÑADIR AL CARRITO
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-outline-secondary btn-sm">🔗</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Testimonios -->
+        <section class="py-5 bg-white">
+            <div class="container">
+                <h2 class="text-center mb-5 titulo-seccion">LO QUE DICEN NUESTROS CLIENTES</h2>
+                <div class="row g-4">
+                    {% for testimonio in testimonios %}
+                    <div class="col-md-4">
+                        <div class="p-4 border rounded shadow-sm h-100">
+                            <div class="d-flex align-items-center mb-3">
+                                <!-- Avatar del cliente -->
+                                <img src="{{ testimonio.avatar|default:'https://ui-avatars.com/api/?name=Cliente&background=6c757d&color=fff&size=100' }}" 
+                                    alt="{{ testimonio.nombre_cliente }}" 
+                                    class="rounded-circle me-3" 
+                                    style="width: 50px; height: 50px; object-fit: cover;"
+                                    onerror="this.src='https://ui-avatars.com/api/?name=Cliente&background=6c757d&color=fff&size=100'">
+                                
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ testimonio.nombre_cliente }}</h6>
+                                    
+                                    <!--  Estrellas (versión simple con llenas y vacías) -->
+                                    <div class="text-warning">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= testimonio.estrellas %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="mb-0 text-muted fst-italic">"{{ testimonio.comentario }}"</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer-bg text-dark pb-1 text-center">
+        <div class="container">
+            <div class="mb-1">
+                <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" style="height: 48px;">
+            </div>
+            <div class="mb-4">
+                <span class="text-muted mx-2">Quiénes somos</span> |  <!-- Texto plano, no es clickeable -->               
+                <span class="text-muted mx-2">Términos y Condiciones</span> |
+                <span class="text-muted mx-2">Preguntas Frecuentes</span>
+            </div>
+            <div class="mb-4">
+                <a href="#" class="text-muted mx-2">Garantía</a> |
+                <a href="#" class="text-muted mx-2">Mis pedidos</a> |
+                <a href="#" class="text-muted mx-2">Seguimiento de envíos</a> |
+                <a href="#" class="text-muted mx-2">PQRS</a>
+            </div>
+            <div class="mb-4">
+                <h5 class="fw-bold">SEDE</h5>
+                <p class="text-muted">Carrera 13 # 65 - 10 | Bogotá - Colombia</p>
+            </div>
+            <div class="mb-4">
+                <h5 class="fw-bold">HORARIOS</h5>
+                <p class="text-muted">Lunes a Sábado 9AM – 6PM | Domingos y Festivos 10AM – 2PM</p>
+            </div>
+            <div class="mb-4">
+                <h5 class="fw-bold">CONTACTO</h5>
+                <p class="text-muted">
+                    📞 TELÉFONO FIJO: 797 7090 |
+                    📞 WHATSAPP: <a href="https://wa.me/573166712526" class="text-dark">(+57) 316 671 2526</a>
+                </p>
+            </div>
+            <div class="mb-4">
+                <span class="text-muted me-3">SÍGUENOS EN:</span>
+                <a href="#" class="mx-2">
+                    <img src="{% static 'img/Facebook1.png' %}" alt="Facebook" style="width: 24px; height: 24px;">
+                </a>
+                <a href="#" class="mx-2">
+                    <img src="{% static 'img/Instagram1.png' %}" alt="Instagram" style="width: 24px; height: 24px;">
+                </a>
+            </div>
+            <div class="border-top border-secondary pt-3 mt-4 text-muted" style="font-size: 0.875rem;">
+                &copy; {% now "Y" %} ORDER RAE. Todos los derechos reservados.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Botón WhatsApp -->
+    <a href="https://wa.me/573166712526" class="btn-flotante-whatsapp" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- MODAL DE OPCIONES -->
+    <div class="modal-opciones-overlay" id="modalOpciones">
+        <div class="modal-opciones-content">
+            <button class="modal-opciones-close" onclick="cerrarModalOpciones()">&times;</button>
+            <h5 class="mb-4" id="modal-titulo">Selecciona una opción</h5>
+            <div class="row g-3" id="opciones-contenedor">
+                <!-- Se llena dinámicamente con JS o desde Django -->
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">Haz clic en un modelo para ver más</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (URL corregida sin espacios) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts de datos desde Django (con validación) -->
+    <script id="datos-opciones" type="application/json">
+        {{ datos_opciones_json|default:"{}"|safe }}
+    </script>
+
+    <script id="productos-busqueda" type="application/json">
+        {{ productos_busqueda_json|default:"[]"|safe }}
+    </script>
+
+    <script id="carrito-cantidad" type="application/json">
+        {{ carrito_cantidad|default:0 }}
+    </script>
+
+    <!-- Script principal con correcciones -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Script inicializado');
+        
+        // === FUNCIÓN SEGURA PARA OBTENER DATOS JSON ===
+        function getJsonData(elementId, defaultValue) {
+            try {
+                const element = document.getElementById(elementId);
+                if (!element || !element.textContent) {
+                    console.warn(`⚠️ Elemento #${elementId} no encontrado o vacío`);
+                    return defaultValue;
+                }
+                return JSON.parse(element.textContent.trim());
+            } catch (e) {
+                console.error(`❌ Error parseando ${elementId}:`, e);
+                return defaultValue;
+            }
+        }
+        
+        // === DATOS DE PRODUCTOS (inyectados desde Django) ===
+        const datosOpciones = getJsonData('datos-opciones', {});
+        console.log('📦 datosOpciones:', datosOpciones);
+        
+        // === CONTADOR CARRITO ===
+        const carritoRaw = getJsonData('carrito-cantidad', 0);
+        let contadorCarrito = parseInt(carritoRaw) || 0;
+        const contadorEl = document.getElementById('contador-carrito');
+        if (contadorEl) {
+            contadorEl.textContent = contadorCarrito;
+        }
+        
+        let tipoActual = null;
+        
+        // === EVENT LISTENER PARA BOTONES DE OPCIONES ===
+        document.querySelectorAll('.btn-opciones').forEach(btn => {
+            btn.addEventListener('click', () => {
+                tipoActual = btn.dataset.tipo;
+                const titulo = tipoActual === 'escritorio' ? 'Modelos de Escritorio' : 'Modelos de Cama';
+                const modalTitulo = document.getElementById('modal-titulo');
+                if (modalTitulo) modalTitulo.textContent = titulo;
+                cargarOpciones(tipoActual);
+                const modal = document.getElementById('modalOpciones');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        });
+        
+        // === BÚSQUEDA ===
+        const busqueda = document.getElementById('Buscador');
+        const sugerencias = document.getElementById('sugerencias-busqueda');
+        const productos = getJsonData('productos-busqueda', []);
+        
+        if (busqueda && sugerencias) {
+            busqueda.addEventListener('input', () => {
+                const valor = busqueda.value.toLowerCase();
+                sugerencias.innerHTML = '';
+                if (valor.length > 0) {
+                    const coincidencias = productos.filter(p => p.toLowerCase().includes(valor));
+                    coincidencias.forEach(p => {
+                        const item = document.createElement('a');
+                        item.classList.add('list-group-item', 'list-group-item-action');
+                        item.textContent = p;
+                        item.href = `/buscar/?q=${encodeURIComponent(p)}`;
+                        item.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            busqueda.value = p;
+                            sugerencias.style.display = 'none';
+                            window.location.href = item.href;
+                        });
+                        sugerencias.appendChild(item);
+                    });
+                    sugerencias.style.display = coincidencias.length ? 'block' : 'none';
+                } else {
+                    sugerencias.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!busqueda.contains(e.target) && !sugerencias.contains(e.target)) {
+                    sugerencias.style.display = 'none';
+                }
+            });
+        }
+        
+        // === BOTONES DEL CARRITO ===
+        document.querySelectorAll('.btn-carrito').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const card = btn.closest('.producto-card');
+                const productoId = card?.dataset.productoId;
+                const nombre = card?.dataset.nombre || 'Producto';
+                const precio = parseInt(card?.dataset.precio) || 0;
+                
+                if (productoId) {
+                    agregarAlCarritoAPI(productoId, nombre, precio);
+                } else {
+                    console.warn('⚠️ No se encontró producto_id en el botón');
+                }
+            });
+        });
+        
+        // === FUNCIONES AUXILIARES ===
+        function cargarOpciones(tipo) {
+            const contenedor = document.getElementById('opciones-contenedor');
+            if (!contenedor) {
+                console.error('❌ No se encontró #opciones-contenedor');
+                return;
+            }
+            contenedor.innerHTML = '';
+            const opciones = datosOpciones[tipo] || [];
+            
+            if (opciones.length === 0) {
+                contenedor.innerHTML = '<div class="col-12 text-center text-muted">No hay opciones disponibles</div>';
+                return;
+            }
+            
+            opciones.forEach(opt => {
+                const col = document.createElement('div');
+                col.className = 'col-6 col-md-3 opcion-item';
+                col.innerHTML = `
+                    <img src="${opt.img || '/static/img/placeholder.jpg'}" class="opcion-img" alt="${opt.nombre || 'Producto'}">
+                    <div class="opcion-nombre">${opt.nombre || 'Sin nombre'}</div>
+                    <div class="p-2">
+                        <button class="btn btn-sm btn-primary w-100 mb-1 btn-ver-detalle" 
+                                data-nombre="${opt.nombre || ''}" 
+                                data-tipo="${tipo}"
+                                data-slug="${opt.slug || ''}">
+                            Ver detalles
+                        </button>
+                        <button class="btn btn-sm btn-success w-100 btn-agregar-rapido" 
+                                data-nombre="${opt.nombre || ''}" 
+                                data-precio="${opt.precio || 0}"
+                                data-id="${opt.id || ''}">
+                            Añadir al carrito
+                        </button>
+                    </div>
+                `;
+                contenedor.appendChild(col);
+            });
+            
+            // Event listeners para botones dinámicos
+            contenedor.querySelectorAll('.btn-ver-detalle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const slug = btn.dataset.slug;
+                    const tipo = btn.dataset.tipo;
+                    if (slug && tipo) {
+                        window.location.href = `/producto/${tipo}/${slug}/`;
+                    }
+                });
+            });
+            
+            contenedor.querySelectorAll('.btn-agregar-rapido').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const nombre = btn.dataset.nombre;
+                    const precio = parseInt(btn.dataset.precio);
+                    const productoId = btn.dataset.id;
+                    if (productoId) {
+                        agregarAlCarritoAPI(productoId, nombre, precio);
+                    }
+                });
+            });
+        }
+        
+        function cerrarModalOpciones() {
+            const modal = document.getElementById('modalOpciones');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+        
+        const modalOpciones = document.getElementById('modalOpciones');
+        if (modalOpciones) {
+            modalOpciones.addEventListener('click', (e) => {
+                if (e.target.id === 'modalOpciones') cerrarModalOpciones();
+            });
+        }
+        
+        // === FUNCIÓN PARA OBTENER CSRF TOKEN (Corregida) ===
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie) {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            if (!cookieValue) {
+                console.warn('⚠️ CSRF token no encontrado en cookies');
+            }
+            return cookieValue;
+        }
+        
+        // === API CARRITO ===
+        async function agregarAlCarritoAPI(productoId, nombre, precio) {
+            try {
+                console.log(`🛒 Añadiendo: ${nombre} (ID: ${productoId})`);
+                
+                const csrfToken = getCookie('csrftoken');
+                if (!csrfToken) {
+                    throw new Error('CSRF token no encontrado');
+                }
+                
+                const response = await fetch('/pagina/api/carrito/agregar/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        producto_id: productoId,
+                        cantidad: 1,
+                        precio: precio
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    contadorCarrito = data.cantidad_total;
+                    if (contadorEl) contadorEl.textContent = contadorCarrito;
+                    guardarNotificacion(`¡${nombre} añadido al carrito!`);
+                    console.log('✅ Producto añadido correctamente');
+                    setTimeout(() => cerrarModalOpciones(), 1200);
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+            } catch (error) {
+                console.error('❌ Error al añadir al carrito:', error);
+                alert('⚠️ No se pudo añadir el producto al carrito. Intenta nuevamente.');
+            }
+        }
+        
+        // === NOTIFICACIONES ===
+        function guardarNotificacion(mensaje) {
+            fetch('/pagina/api/notificaciones/crear/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ mensaje, tipo: 'carrito' })
+            }).catch(err => console.warn('⚠️ No se pudo guardar notificación:', err));
+        }
+        
+        // === NOTIFICACIONES UI (Bell) ===
+        const notificationsBell = document.getElementById('notifications-bell');
+        const notificationsDropdown = document.getElementById('notifications-dropdown');
+        const bellBadge = document.getElementById('bell-badge');
+        
+        if (notificationsBell && notificationsDropdown) {
+            notificationsBell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                notificationsDropdown.classList.toggle('show');
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!notificationsBell.contains(e.target)) {
+                    notificationsDropdown.classList.remove('show');
+                }
+            });
+        }
+        
+        const clearNotifications = document.getElementById('clear-notifications');
+        if (clearNotifications) {
+            clearNotifications.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (bellBadge) {
+                    bellBadge.textContent = '0';
+                    bellBadge.style.display = 'none';
+                }
+                const notificationsList = document.getElementById('notifications-list');
+                if (notificationsList) {
+                    notificationsList.innerHTML = '<div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>';
+                }
+            });
+        }
+        
+        // === SLIDESHOW (si existe) ===
+        const diapositivas = document.querySelectorAll('.diapositiva');
+        const contenedorPuntos = document.getElementById('puntos-indicadores');
+        
+        if (diapositivas.length > 0 && contenedorPuntos) {
+            let indiceActual = 0;
+            let intervalo;
+            
+            // Crear puntos indicadores
+            diapositivas.forEach((_, i) => {
+                const punto = document.createElement('span');
+                punto.classList.add('punto');
+                punto.dataset.index = i;
+                punto.addEventListener('click', () => mostrarDiapositiva(i));
+                contenedorPuntos.appendChild(punto);
+            });
+            const puntos = document.querySelectorAll('.punto');
+            
+            function mostrarDiapositiva(n) {
+                if (n >= diapositivas.length) n = 0;
+                if (n < 0) n = diapositivas.length - 1;
+                indiceActual = n;
+                diapositivas.forEach((d, i) => {
+                    d.style.display = i === indiceActual ? 'block' : 'none';
+                });
+                puntos.forEach((p, i) => {
+                    p.classList.toggle('activo', i === indiceActual);
+                });
+            }
+            
+            function siguienteDiapositiva() {
+                mostrarDiapositiva(indiceActual + 1);
+            }
+            
+            const btnAnterior = document.getElementById('btn-anterior');
+            const btnSiguiente = document.getElementById('btn-siguiente');
+            
+            if (btnAnterior) btnAnterior.addEventListener('click', () => mostrarDiapositiva(indiceActual - 1));
+            if (btnSiguiente) btnSiguiente.addEventListener('click', () => mostrarDiapositiva(indiceActual + 1));
+            
+            function iniciarSlideshow() {
+                intervalo = setInterval(siguienteDiapositiva, 5000);
+            }
+            function detenerSlideshow() {
+                clearInterval(intervalo);
+            }
+            
+            const contenedorSlides = document.querySelector('.contenedor-diapositivas');
+            if (contenedorSlides) {
+                contenedorSlides.addEventListener('mouseenter', detenerSlideshow);
+                contenedorSlides.addEventListener('mouseleave', iniciarSlideshow);
+            }
+            
+            mostrarDiapositiva(0);
+            iniciarSlideshow();
+        }
+        
+        console.log('✅ Script cargado completamente');
+    });
+    </script>
+</body>
+</html>

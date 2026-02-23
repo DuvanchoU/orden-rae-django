@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    'django.contrib.humanize',
     # Nuestras Apps
     'dashboard',
     'usuarios',
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'ventas',
     'compras',
     'produccion',
+    'pagina',
 ]
 
 MIDDLEWARE = [
@@ -85,7 +87,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'bd_orden_rae_django',
         'USER': 'root', 
-        'PASSWORD': 'jeic8demivid397$.', 
+        'PASSWORD': '', 
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
@@ -141,3 +143,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Configuración para el sistema de mensajes
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+LOGOUT_REDIRECT_URL = '/'  # ← Redirige a la página principal
+
+# URL de login (opcional)
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
