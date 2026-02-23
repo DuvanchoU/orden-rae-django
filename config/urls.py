@@ -1,34 +1,39 @@
 """
 URL configuration for orden_rae project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import RedirectView
+from django.contrib.auth import views as auth_views
+from pagina import views as pagina_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Pagina De Inicio
-    path('', include('dashboard.urls')), 
+    # URLs de auth de Django (sin namespace - están en root)
+    path('accounts/login/', auth_views.LoginView.as_view(
+        template_name='pagina/login.html', 
+        next_page='pagina:home'       
+    ), name='login'),
 
-    # Nuestras Apps
-    path('produccion/', include('produccion.urls')),
-    path('inventario/', include('inventario.urls')),
-    path('ventas/', include('ventas.urls')),
-    path('compras/', include('compras.urls')),
-    path('usuarios/', include('usuarios.urls')),
+    path('accounts/logout/', auth_views.LogoutView.as_view(
+        next_page='/'
+    ), name='logout'), 
     
+    path('accounts/password-reset/', auth_views.PasswordResetView.as_view(
+        template_name='pagina/password_reset.html'
+    ), name='password_reset'),
+
+    # Registro (sin namespace - está en root)
+    path('registro/', pagina_views.registro_view, name='registro'),
+    
+    # INCLUYE NAMESPACES AQUÍ (esto es lo que faltaba) 
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
+    path('', include('pagina.urls', namespace='pagina')),
+
+    #  Otras apps con namespaces
+    path('produccion/', include('produccion.urls', namespace='produccion')),
+    path('inventario/', include('inventario.urls', namespace='inventario')),
+    path('ventas/', include('ventas.urls', namespace='ventas')),
+    path('compras/', include('compras.urls', namespace='compras')),
+    path('usuarios/', include('usuarios.urls', namespace='usuarios')),
 ]

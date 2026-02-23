@@ -54,7 +54,16 @@
                 <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
                     <li><a class="dropdown-item" href="#">Configuración</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#">Cerrar sesión</a></li>
+                    <li>
+                        <form method="post" action="{% url 'dashboard:logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'pagina:home' %}">
+                            <button type="submit" class="dropdown-item border-0 bg-transparent text-white w-100 text-start">
+                                <i class="bi bi-box-arrow-right me-2"></i>
+                                Cerrar sesión
+                            </button>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>
