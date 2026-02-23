@@ -1,0 +1,185 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - ORDEN R.A.E</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Personalizado (MISMO que registro) -->
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body>
+
+<div class="register-container">
+    <div class="register-card">
+        
+        <!-- Header con Logo -->
+        <div class="register-header">
+            <div class="logo-container">
+                <img src="{% static 'img/Logo3-orden.png' %}" alt="ORDEN R.A.E">
+            </div>
+            <div class="header-content">
+                <h1>Bienvenido</h1>
+                <p>Ingresa para continuar</p>
+            </div>
+        </div>
+
+        <!-- Mensajes de Django -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert-custom alert-{{ message.tags }} animate-in" role="alert">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                <span>{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Mensaje de acceso restringido -->
+        {% if request.GET.next %}
+        <div class="alert-custom alert-info animate-in" role="alert">
+            <i class="fas fa-lock"></i>
+            <span>Debes iniciar sesión para acceder a esta página</span>
+        </div>
+        {% endif %}
+
+        <!-- Formulario de Login -->
+        <form method="post" action="{% url 'pagina:login' %}" id="loginForm" novalidate>
+            {% csrf_token %}
+
+            <!-- Campo: Correo/Usuario -->
+            <div class="input-group-custom animate-in">
+                <label for="id_username">Correo electrónico <span class="required">*</span></label>
+                <input type="text" 
+                       name="username" 
+                       id="id_username" 
+                       class="form-control-custom {% if form.errors.username %}error{% endif %}"
+                       value="{{ request.POST.username|default:'' }}" 
+                       placeholder="tu@email.com"
+                       required 
+                       autocomplete="username"
+                       autofocus>
+                {% if form.errors.username %}
+                <div class="field-error show">
+                    <i class="fas fa-exclamation-triangle"></i> {{ form.errors.username.0 }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Campo: Contraseña con Toggle -->
+            <div class="input-group-custom animate-in">
+                <label for="id_password">Contraseña <span class="required">*</span></label>
+                <div class="password-wrapper">
+                    <input type="password" 
+                           name="password" 
+                           id="id_password" 
+                           class="form-control-custom {% if form.errors.password %}error{% endif %}"
+                           placeholder="••••••••"
+                           required 
+                           autocomplete="current-password">
+                    <button type="button" class="password-toggle" data-target="id_password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                {% if form.errors.password %}
+                <div class="field-error show">
+                    <i class="fas fa-exclamation-triangle"></i> {{ form.errors.password.0 }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recordarme -->
+            <div class="terms-container animate-in" style="margin: 1.5rem 0; padding: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                    <input type="checkbox" name="remember" id="rememberMe" class="terms-checkbox" style="width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--color-primary);">
+                    <span style="font-size: 0.9rem; color: var(--color-text);">Recordarme en este dispositivo</span>
+                </label>
+            </div>
+
+            <!-- 🔹 Botones: Ingresar + Registrarse (MISMO estilo que registro) -->
+            <div class="actions-container animate-in">
+                <button type="submit" class="btn-primary-custom" id="submitBtn">
+                    <div class="spinner"></div>
+                    <span class="btn-text">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Ingresar
+                    </span>
+                </button>
+                <a href="{% url 'pagina:registro' %}" class="btn-outline-custom">
+                    <i class="fas fa-user-plus"></i>
+                    Crear cuenta
+                </a>
+            </div>
+
+            <!-- Link a Recuperar Contraseña -->
+            <div class="text-center mt-3 animate-in">
+                <a href="{% url 'password_reset' %}" class="forgot-password" style="color: var(--color-primary-light); text-decoration: none; font-size: 0.9rem; font-weight: 500;">
+                    ¿Olvidaste tu contraseña?
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- JavaScript Personalizado -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Toggle visibilidad de contraseña
+    document.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+    });
+
+    // Submit con estado de carga
+    const form = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    form?.addEventListener('submit', function() {
+        submitBtn.classList.add('btn-loading');
+        submitBtn.disabled = true;
+    });
+
+    // Validación básica de email
+    const usernameInput = document.getElementById('id_username');
+    usernameInput?.addEventListener('blur', function() {
+        if (this.value && !this.value.includes('@')) {
+            this.classList.add('error');
+        } else {
+            this.classList.remove('error');
+        }
+    });
+
+    // Animación de entrada escalonada
+    document.querySelectorAll('.animate-in').forEach((el, index) => {
+        setTimeout(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, 100 + (index * 60));
+    });
+});
+</script>
+
+</body>
+</html>

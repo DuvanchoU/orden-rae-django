@@ -1,0 +1,387 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear cuenta - ORDEN R.A.E</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tu CSS personalizado con Django static -->
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body>
+
+<div class="register-container">
+    <div class="register-card">
+        
+        <!-- Header -->
+        <div class="register-header">
+            <div class="logo-container">
+                <img src="{% static 'img/Logo3-orden.png' %}" alt="ORDEN R.A.E">
+            </div>
+            <div class="header-content">
+                <h1>Crear cuenta</h1>
+                <p>Completa tus datos para comenzar</p>
+            </div>
+        </div>
+
+        <!-- Mensajes de Error/Éxito -->
+        {% if error %}
+        <div class="alert-custom alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert-custom alert-{{ message.tags }}" role="alert">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Formulario -->
+        <form method="post" action="{% url 'pagina:registro' %}" id="registerForm" novalidate>
+            {% csrf_token %}
+
+            <!-- Fila 1: Datos Personales (4 columnas) -->
+            <div class="form-grid">
+                <div class="input-group-custom animate-in">
+                    <label for="nombre">Nombre <span class="required">*</span></label>
+                    <input type="text" 
+                           name="nombre" 
+                           id="nombre" 
+                           class="form-control-custom {% if field_errors.nombre %}error{% endif %}"
+                           value="{{ form_data.nombre|default:'' }}" 
+                           placeholder="Tu nombre"
+                           required 
+                           autocomplete="given-name">
+                    {% if field_errors.nombre %}
+                    <div class="field-error show">
+                        <i class="fas fa-exclamation-triangle"></i> {{ field_errors.nombre }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="input-group-custom animate-in">
+                    <label for="apellidos">Apellidos <span class="required">*</span></label>
+                    <input type="text" 
+                           name="apellidos" 
+                           id="apellidos" 
+                           class="form-control-custom {% if field_errors.apellidos %}error{% endif %}"
+                           value="{{ form_data.apellidos|default:'' }}" 
+                           placeholder="Tus apellidos"
+                           required 
+                           autocomplete="family-name">
+                    {% if field_errors.apellidos %}
+                    <div class="field-error show">
+                        <i class="fas fa-exclamation-triangle"></i> {{ field_errors.apellidos }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="input-group-custom animate-in">
+                    <label for="documento">Documento <span class="required">*</span></label>
+                    <input type="text" 
+                           name="documento" 
+                           id="documento" 
+                           class="form-control-custom {% if field_errors.documento %}error{% endif %}"
+                           value="{{ form_data.documento|default:'' }}" 
+                           placeholder="Número de documento"
+                           required 
+                           autocomplete="off">
+                    {% if field_errors.documento %}
+                    <div class="field-error show">
+                        <i class="fas fa-exclamation-triangle"></i> {{ field_errors.documento }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="input-group-custom animate-in">
+                    <label for="genero">Género</label>
+                    <select name="genero" id="genero" class="form-select-custom">
+                        <option value="">Seleccionar</option>
+                        <option value="Masculino" {% if form_data.genero == 'Masculino' %}selected{% endif %}>Masculino</option>
+                        <option value="Femenino" {% if form_data.genero == 'Femenino' %}selected{% endif %}>Femenino</option>
+                        <option value="Otro" {% if form_data.genero == 'Otro' %}selected{% endif %}>Otro</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Fila 2: Contacto (2 columnas) -->
+            <div class="form-grid-2">
+                <div class="input-group-custom animate-in">
+                    <label for="telefono">Teléfono</label>
+                    <input type="tel" 
+                           name="telefono" 
+                           id="telefono" 
+                           class="form-control-custom"
+                           value="{{ form_data.telefono|default:'' }}" 
+                           placeholder="+57 300 123 4567"
+                           pattern="[0-9+\-\s()]{7,20}"
+                           autocomplete="tel">
+                </div>
+
+                <div class="input-group-custom animate-in">
+                    <label for="correo">Correo electrónico <span class="required">*</span></label>
+                    <input type="email" 
+                           name="correo" 
+                           id="correo" 
+                           class="form-control-custom {% if field_errors.correo %}error{% endif %}"
+                           value="{{ form_data.correo|default:'' }}" 
+                           placeholder="tu@email.com"
+                           required 
+                           autocomplete="email">
+                    {% if field_errors.correo %}
+                    <div class="field-error show">
+                        <i class="fas fa-exclamation-triangle"></i> {{ field_errors.correo }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Fila 3: Contraseñas (2 columnas) -->
+            <div class="form-grid-2">
+                <div class="input-group-custom animate-in">
+                    <label for="password">Contraseña <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               name="password" 
+                               id="password" 
+                               class="form-control-custom"
+                               placeholder="Mínimo 8 caracteres"
+                               required 
+                               minlength="8"
+                               autocomplete="new-password">
+                        <button type="button" class="password-toggle" data-target="password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="strengthBar"></div>
+                    </div>
+                </div>
+
+                <div class="input-group-custom animate-in">
+                    <label for="password2">Confirmar Contraseña <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               name="password2" 
+                               id="password2" 
+                               class="form-control-custom"
+                               placeholder="Repite la contraseña"
+                               required 
+                               autocomplete="new-password">
+                        <button type="button" class="password-toggle" data-target="password2">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="field-error" id="passwordMatchError">
+                        <i class="fas fa-exclamation-triangle"></i> Las contraseñas no coinciden
+                    </div>
+                </div>
+            </div>
+
+            <!-- Términos y Condiciones -->
+            <div class="animate-in">
+                <label class="terms-container" for="termsCheck">
+                    <input type="checkbox" 
+                           id="termsCheck" 
+                           class="terms-checkbox"
+                           required>
+                    <span class="terms-label">
+                        Acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Términos y Condiciones</a> 
+                        y la <a href="#">Política de Privacidad</a> <span class="required">*</span>
+                    </span>
+                </label>
+                <div class="terms-error" id="termsError">
+                    <i class="fas fa-exclamation-triangle"></i> Debes aceptar los términos para continuar
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="actions-container animate-in">
+                <button type="submit" class="btn-primary-custom" id="submitBtn">
+                    <div class="spinner"></div>
+                    <span class="btn-text">
+                        <i class="fas fa-user-plus"></i>
+                        Registrarse
+                    </span>
+                </button>
+                <a href="{% url 'pagina:login' %}" class="btn-outline-custom">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Iniciar sesión
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- Modal Términos y Condiciones -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius: var(--radius-lg); border: none;">
+            <div class="modal-header" style="border-bottom: 2px solid var(--color-border); padding: 1.5rem;">
+                <h5 class="modal-title" style="color: var(--color-primary); font-weight: 700;">Términos y Condiciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; color: var(--color-text-muted); line-height: 1.6;">
+                <p style="margin-bottom: 1rem;"><strong>Última actualización:</strong> <span id="currentDate"></span></p>
+                <p>Bienvenido a ORDEN R.A.E. Al registrarte y utilizar nuestros servicios, aceptas cumplir con los términos y condiciones establecidos...</p>
+                <p style="margin-bottom: 0;"><em>[Texto completo de términos y condiciones]</em></p>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid var(--color-border); padding: 1rem 1.5rem;">
+                <button type="button" class="btn btn-outline-custom" data-bs-dismiss="modal" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- JavaScript Personalizado -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Toggle visibilidad de contraseña
+    document.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+    });
+
+    // Medidor de fortaleza de contraseña
+    const passwordInput = document.getElementById('password');
+    const strengthBar = document.getElementById('strengthBar');
+    
+    passwordInput?.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+        
+        if (password.length >= 8) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+        
+        strengthBar.className = 'password-strength-bar';
+        
+        if (password.length === 0) {
+            strengthBar.style.width = '0%';
+        } else if (strength <= 2) {
+            strengthBar.classList.add('strength-weak');
+        } else if (strength <= 4) {
+            strengthBar.classList.add('strength-medium');
+        } else {
+            strengthBar.classList.add('strength-strong');
+        }
+    });
+
+    // Validación de coincidencia de contraseñas
+    const password2Input = document.getElementById('password2');
+    const passwordMatchError = document.getElementById('passwordMatchError');
+    
+    function validatePasswordMatch() {
+        if (password2Input.value && passwordInput.value !== password2Input.value) {
+            password2Input.classList.add('error');
+            passwordMatchError.classList.add('show');
+            return false;
+        } else {
+            password2Input.classList.remove('error');
+            passwordMatchError.classList.remove('show');
+            return true;
+        }
+    }
+    
+    [passwordInput, password2Input].forEach(input => {
+        input?.addEventListener('input', validatePasswordMatch);
+    });
+
+    // Validación de términos
+    const termsCheck = document.getElementById('termsCheck');
+    const termsError = document.getElementById('termsError');
+    
+    termsCheck?.addEventListener('change', function() {
+        if (this.checked) {
+            termsError.classList.remove('show');
+        }
+    });
+
+    // Submit del formulario
+    const form = document.getElementById('registerForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    form?.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Validar contraseñas
+        if (!validatePasswordMatch()) {
+            isValid = false;
+            password2Input?.focus();
+        }
+        
+        // Validar términos
+        if (termsCheck && !termsCheck.checked) {
+            termsError.classList.add('show');
+            isValid = false;
+            termsCheck.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Activar estado de carga
+        submitBtn.classList.add('btn-loading');
+        submitBtn.disabled = true;
+    });
+
+    // Formato de teléfono
+    const telefonoInput = document.getElementById('telefono');
+    telefonoInput?.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^\d+\-\s()]/g, '');
+    });
+
+    // Fecha actual en modal
+    const currentDateEl = document.getElementById('currentDate');
+    if (currentDateEl) {
+        const today = new Date();
+        currentDateEl.textContent = today.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
+    // Animación de campos al cargar
+    document.querySelectorAll('.animate-in').forEach((el, index) => {
+        setTimeout(() => {
+            el.style.opacity = '1';
+        }, 100 + (index * 50));
+    });
+});
+</script>
+
+</body>
+</html>
