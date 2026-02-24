@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Cotizaciones{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-modern">
+            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">N° Cotización *</label>
+                        {{ form.numero_cotizacion }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Cliente *</label>
+                        {{ form.cliente }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Fecha Vencimiento *</label>
+                        {{ form.fecha_vencimiento }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Tiempo Entrega</label>
+                        {{ form.tiempo_entrega }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Subtotal</label>
+                        {{ form.subtotal }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Impuesto</label>
+                        {{ form.impuesto }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">Descuento</label>
+                        {{ form.descuento }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Total *</label>
+                        {{ form.total }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Estado *</label>
+                        {{ form.estado }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Observaciones</label>
+                        {{ form.observaciones }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'ventas:cotizacion_list' %}" class="btn btn-light border">Cancelar</a>
+                    <button type="submit" class="btn btn-sand">Guardar Cotización</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+                input.classList.add('form-control');
+                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+            }
+        });
+    });
+</script>
+{% endblock %}

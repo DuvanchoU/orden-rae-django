@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Usuarios{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card-modern">
+            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Nombres *</label>
+                        {{ form.nombres }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Apellidos *</label>
+                        {{ form.apellidos }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Documento *</label>
+                        {{ form.documento }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Email *</label>
+                        {{ form.correo_usuario }}
+                    </div>
+                    {% if not object %}
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Contraseña *</label>
+                        {{ form.contrasena_usuario }}
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Teléfono</label>
+                        {{ form.telefono }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Género</label>
+                        {{ form.genero }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Rol *</label>
+                        {{ form.id_rol }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Estado *</label>
+                        {{ form.estado }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-light border">Cancelar</a>
+                    <button type="submit" class="btn btn-sand">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+                input.classList.add('form-control');
+                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+            }
+        });
+    });
+</script>
+{% endblock %}

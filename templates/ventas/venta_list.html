@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Ventas - Ventas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Ventas</h2>
+        <p class="text-muted small">Registro de ventas realizadas.</p>
+    </div>
+    <a href="{% url 'ventas:venta_create' %}" class="btn btn-sand">
+        <i class="bi bi-plus-lg me-1"></i> Nueva Venta
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Cliente</label>
+            <select name="cliente" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id }}" {% if request.GET.cliente == cliente.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cliente.nombre }} {{ cliente.apellido }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted">Desde</label>
+            <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="{{ request.GET.fecha_inicio }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted">Hasta</label>
+            <input type="date" name="fecha_fin" class="form-control form-control-sm" value="{{ request.GET.fecha_fin }}">
+        </div>
+        <div class="col-md-3 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'ventas:venta_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">TOTAL VENTAS</div>
+            <div class="fs-4 fw-bold">{{ page_obj.paginator.count }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">VENTAS PAGADAS</div>
+            <div class="fs-4 fw-bold text-success">{{ page_obj.paginator.count|default:"0" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">FACTURADAS</div>
+            <div class="fs-4 fw-bold text-primary">{{ page_obj.paginator.count|default:"0" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">INGRESOS TOTALES</div>
+            <div class="fs-4 fw-bold">${{ page_obj.paginator.count|multiply:150000|default:"0" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card-modern p-0 overflow-hidden">
+    <table class="table table-modern table-hover mb-0">
+        <thead>
+            <tr>
+                <th class="ps-4">N° FACTURA</th>
+                <th>CLIENTE</th>
+                <th>FECHA</th>
+                <th>Tipo</th>
+                <th>SUBTOTAL</th>
+                <th>TOTAL</th>
+                <th>ESTADO</th>
+                <th class="text-end pe-4">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venta in ventas %}
+            <tr>
+                <td class="ps-4 fw-bold text-muted">{{ venta.numero_factura|default:venta.id_venta }}</td>
+                <td>
+                    <div class="fw-bold">{{ venta.cliente.nombre }} {{ venta.cliente.apellido|default:"" }}</div>
+                    <small class="text-muted">{{ venta.cliente.email|default:"-" }}</small>
+                </td>
+                <td>{{ venta.fecha_venta|date:"d/m/Y H:i" }}</td>
+                <td><span class="badge bg-light text-dark">{{ venta.tipo_venta|default:"CONTADO" }}</span></td>
+                <td class="text-muted">${{ venta.subtotal|default:"0" }}</td>
+                <td class="fw-bold">${{ venta.total|default:"0" }}</td>
+                <td>
+                    {% if venta.estado_venta == 'PAGADA' %}
+                        <span class="badge badge-estado bg-terminada">PAGADA</span>
+                    {% elif venta.estado_venta == 'FACTURADA' %}
+                        <span class="badge badge-estado bg-proceso">FACTURADA</span>
+                    {% elif venta.estado_venta == 'CANCELADA' %}
+                        <span class="badge badge-estado bg-pendiente">CANCELADA</span>
+                    {% else %}
+                        <span class="badge badge-estado bg-pendiente">PENDIENTE</span>
+                    {% endif %}
+                </td>
+                <td class="text-end pe-4">
+                    <a href="#" class="btn btn-sm btn-light text-primary" title="Ver">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'ventas:venta_update' venta.pk %}" class="btn btn-sm btn-light text-secondary" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'ventas:venta_delete' venta.pk %}" class="btn btn-sm btn-light text-danger" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-4 text-muted">No hay ventas registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="p-3 bg-light border-top d-flex justify-content-center">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

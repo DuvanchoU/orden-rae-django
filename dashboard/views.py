@@ -14,7 +14,7 @@ class DashboardView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['total_produccion'] = Produccion.objects.count()
-        context['total_pedidos'] = Pedido.objects.count()
+        context['total_pedido'] = Pedido.objects.count()
         context['total_ventas'] = Ventas.objects.count()
         context['total_productos'] = Producto.objects.count()
         return context

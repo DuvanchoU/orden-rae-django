@@ -33,7 +33,7 @@ urlpatterns = [
     #  Otras apps con namespaces
     path('produccion/', include('produccion.urls', namespace='produccion')),
     path('inventario/', include('inventario.urls', namespace='inventario')),
-    path('ventas/', include('ventas.urls', namespace='ventas')),
+    path('ventas/', include('ventas.urls')),
     path('compras/', include('compras.urls', namespace='compras')),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')),
 ]

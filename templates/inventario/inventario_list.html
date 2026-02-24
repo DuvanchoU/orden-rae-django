@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Stock de Inventario</h2>
+        <p class="text-muted small">Controla las existencias por bodega.</p>
+    </div>
+    <a href="{% url 'inventario:inventario_create' %}" class="btn btn-sand">
+        <i class="bi bi-plus-lg me-1"></i> Nuevo Registro
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Producto</label>
+            <select name="producto" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for prod in productos %}
+                <option value="{{ prod.id }}" {% if request.GET.producto == prod.id|stringformat:"s" %}selected{% endif %}>
+                    {{ prod.codigo_producto }} - {{ prod.referencia_producto }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Bodega</label>
+            <select name="bodega" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for bod in bodegas %}
+                <option value="{{ bod.id }}" {% if request.GET.bodega == bod.id|stringformat:"s" %}selected{% endif %}>
+                    {{ bod.nombre_bodega }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla -->
+<div class="card-modern p-0 overflow-hidden">
+    <table class="table table-modern table-hover mb-0">
+        <thead>
+            <tr>
+                <th class="ps-4">ID</th>
+                <th>PRODUCTO</th>
+                <th>BODEGA</th>
+                <th>CANTIDAD</th>
+                <th>ESTADO</th>
+                <th>FECHA REGISTRO</th>
+                <th class="text-end pe-4">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in inventarios %}
+            <tr>
+                <td class="ps-4 fw-bold text-muted">{{ item.id_inventario }}</td>
+                <td>
+                    <div class="fw-bold">{{ item.producto.codigo_producto }}</div>
+                    <small class="text-muted">{{ item.producto.referencia_producto|truncatechars:30 }}</small>
+                </td>
+                <td>{{ item.bodega.nombre_bodega }}</td>
+                <td class="fw-bold">{{ item.cantidad_disponible }}</td>
+                <td>
+                    {% if item.estado == 'DISPONIBLE' %}
+                        <span class="badge badge-estado bg-terminada">DISPONIBLE</span>
+                    {% elif item.estado == 'RESERVADO' %}
+                        <span class="badge badge-estado bg-proceso">RESERVADO</span>
+                    {% else %}
+                        <span class="badge badge-estado bg-pendiente">AGOTADO</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted small">{{ item.fecha_registro|date:"d/m/Y" }}</td>
+                <td class="text-end pe-4">
+                    <a href="{% url 'inventario:inventario_update' item.pk %}" class="btn btn-sm btn-light text-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'inventario:inventario_delete' item.pk %}" class="btn btn-sm btn-light text-danger">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No hay registros de inventario.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="p-3 bg-light border-top d-flex justify-content-center">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

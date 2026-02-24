@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Productos - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Productos</h2>
+        <p class="text-muted small">Gestiona el catálogo de productos.</p>
+    </div>
+    <a href="{% url 'inventario:producto_create' %}" class="btn btn-sand">
+        <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Buscar</label>
+            <input type="text" name="busqueda" class="form-control form-control-sm" 
+                   placeholder="Código, referencia o color" value="{{ request.GET.busqueda }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Categoría</label>
+            <select name="categoria" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cat.nombre_categoria }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'inventario:producto_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla -->
+<div class="card-modern p-0 overflow-hidden">
+    <table class="table table-modern table-hover mb-0">
+        <thead>
+            <tr>
+                <th class="ps-4">CÓDIGO</th>
+                <th>PRODUCTO</th>
+                <th>CATEGORÍA</th>
+                <th>COLOR</th>
+                <th>PRECIO</th>
+                <th>ESTADO</th>
+                <th class="text-end pe-4">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in productos %}
+            <tr>
+                <td class="ps-4 fw-bold text-muted">{{ producto.codigo_producto }}</td>
+                <td>
+                    <div class="fw-bold">{{ producto.referencia_producto|default:"Sin referencia" }}</div>
+                    <small class="text-muted">{{ producto.tipo_madera|default:"" }}</small>
+                </td>
+                <td>{{ producto.categoria.nombre_categoria }}</td>
+                <td>{{ producto.color_producto|default:"-" }}</td>
+                <td class="fw-bold">${{ producto.precio_actual }}</td>
+                <td>
+                    {% if producto.estado == 'ACTIVO' %}
+                        <span class="badge badge-estado bg-terminada">ACTIVO</span>
+                    {% elif producto.estado == 'INACTIVO' %}
+                        <span class="badge badge-estado bg-pendiente">INACTIVO</span>
+                    {% else %}
+                        <span class="badge badge-estado bg-proceso">AGOTADO</span>
+                    {% endif %}
+                </td>
+                <td class="text-end pe-4">
+                    <a href="{% url 'inventario:producto_update' producto.pk %}" class="btn btn-sm btn-light text-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'inventario:producto_delete' producto.pk %}" class="btn btn-sm btn-light text-danger">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No hay productos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="p-3 bg-light border-top d-flex justify-content-center">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

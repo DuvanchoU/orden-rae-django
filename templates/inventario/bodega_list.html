@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Bodegas - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Bodegas</h2>
+        <p class="text-muted small">Gestiona las ubicaciones de almacenamiento.</p>
+    </div>
+    <a href="{% url 'inventario:bodega_create' %}" class="btn btn-sand">
+        <i class="bi bi-plus-lg me-1"></i> Nueva Bodega
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Buscar</label>
+            <input type="text" name="busqueda" class="form-control form-control-sm" 
+                   placeholder="Nombre o dirección" value="{{ request.GET.busqueda }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'inventario:bodega_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla -->
+<div class="card-modern p-0 overflow-hidden">
+    <table class="table table-modern table-hover mb-0">
+        <thead>
+            <tr>
+                <th class="ps-4">ID</th>
+                <th>NOMBRE</th>
+                <th>DIRECCIÓN</th>
+                <th>ESTADO</th>
+                <th>ACTUALIZADO</th>
+                <th class="text-end pe-4">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bodega in bodegas %}
+            <tr>
+                <td class="ps-4 fw-bold text-muted">{{ bodega.id_bodega }}</td>
+                <td class="fw-bold">{{ bodega.nombre_bodega }}</td>
+                <td>{{ bodega.direccion|default:"-" }}</td>
+                <td>
+                    {% if bodega.estado == 'ACTIVO' %}
+                        <span class="badge badge-estado bg-terminada">ACTIVO</span>
+                    {% else %}
+                        <span class="badge badge-estado bg-pendiente">INACTIVO</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted small">{{ bodega.updated_at|date:"d/m/Y"|default:"-" }}</td>
+                <td class="text-end pe-4">
+                    <a href="{% url 'inventario:bodega_update' bodega.pk %}" class="btn btn-sm btn-light text-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'inventario:bodega_delete' bodega.pk %}" class="btn btn-sm btn-light text-danger">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No hay bodegas registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="p-3 bg-light border-top d-flex justify-content-center">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

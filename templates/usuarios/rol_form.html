@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Roles{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card-modern">
+            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Nombre Rol *</label>
+                        {{ form.nombre_rol }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Descripción</label>
+                        {{ form.descripcion }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'usuarios:rol_list' %}" class="btn btn-light border">Cancelar</a>
+                    <button type="submit" class="btn btn-sand">Guardar Rol</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+                input.classList.add('form-control');
+                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+            }
+        });
+    });
+</script>
+{% endblock %}

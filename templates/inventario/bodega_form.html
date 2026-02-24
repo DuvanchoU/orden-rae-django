@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Bodegas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card-modern">
+            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Nombre Bodega *</label>
+                        {{ form.nombre_bodega }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Dirección</label>
+                        {{ form.direccion }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Estado *</label>
+                        {{ form.estado }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'inventario:bodega_list' %}" class="btn btn-light border">Cancelar</a>
+                    <button type="submit" class="btn btn-sand">Guardar Bodega</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+                input.classList.add('form-control');
+                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+            }
+        });
+    });
+</script>
+{% endblock %}

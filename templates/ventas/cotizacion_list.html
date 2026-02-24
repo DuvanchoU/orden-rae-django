@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Cotizaciones - Ventas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Cotizaciones</h2>
+        <p class="text-muted small">Gestiona las cotizaciones enviadas a clientes.</p>
+    </div>
+    <a href="{% url 'ventas:cotizacion_create' %}" class="btn btn-sand">
+        <i class="bi bi-plus-lg me-1"></i> Nueva Cotización
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Cliente</label>
+            <select name="cliente" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id }}" {% if request.GET.cliente == cliente.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cliente.nombre }} {{ cliente.apellido }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Buscar</label>
+            <input type="text" name="busqueda" class="form-control form-control-sm" 
+                   placeholder="N° Cotización" value="{{ request.GET.busqueda }}">
+        </div>
+        <div class="col-md-3 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'ventas:cotizacion_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">TOTAL COTIZACIONES</div>
+            <div class="fs-4 fw-bold">{{ page_obj.paginator.count }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">PENDIENTES</div>
+            <div class="fs-4 fw-bold text-warning">{{ page_obj.paginator.count|default:"0" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">APROBADAS</div>
+            <div class="fs-4 fw-bold text-success">{{ page_obj.paginator.count|default:"0" }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-modern p-3">
+            <div class="text-muted small">TASA CONVERSIÓN</div>
+            <div class="fs-4 fw-bold text-primary">0%</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card-modern p-0 overflow-hidden">
+    <table class="table table-modern table-hover mb-0">
+        <thead>
+            <tr>
+                <th class="ps-4">N° COTIZACIÓN</th>
+                <th>CLIENTE</th>
+                <th>FECHA</th>
+                <th>VENCIMIENTO</th>
+                <th>TOTAL</th>
+                <th>ESTADO</th>
+                <th class="text-end pe-4">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cotizacion in cotizaciones %}
+            <tr>
+                <td class="ps-4 fw-bold text-muted">{{ cotizacion.numero_cotizacion }}</td>
+                <td>
+                    <div class="fw-bold">{{ cotizacion.cliente.nombre }} {{ cotizacion.cliente.apellido|default:"" }}</div>
+                    <small class="text-muted">{{ cotizacion.cliente.email|default:"-" }}</small>
+                </td>
+                <td>{{ cotizacion.fecha_cotizacion|date:"d/m/Y"|default:cotizacion.created_at|date:"d/m/Y" }}</td>
+                <td>{{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}</td>
+                <td class="fw-bold">${{ cotizacion.total|default:"0" }}</td>
+                <td>
+                    {% if cotizacion.estado == 'APROBADA' %}
+                        <span class="badge badge-estado bg-terminada">APROBADA</span>
+                    {% elif cotizacion.estado == 'RECHAZADA' %}
+                        <span class="badge badge-estado bg-pendiente">RECHAZADA</span>
+                    {% elif cotizacion.estado == 'EXPIRADA' %}
+                        <span class="badge badge-estado bg-pendiente">EXPIRADA</span>
+                    {% else %}
+                        <span class="badge badge-estado bg-proceso">PENDIENTE</span>
+                    {% endif %}
+                </td>
+                <td class="text-end pe-4">
+                    <a href="#" class="btn btn-sm btn-light text-primary" title="Ver">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'ventas:cotizacion_update' cotizacion.pk %}" class="btn btn-sm btn-light text-secondary" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'ventas:cotizacion_delete' cotizacion.pk %}" class="btn btn-sm btn-light text-danger" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No hay cotizaciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="p-3 bg-light border-top d-flex justify-content-center">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

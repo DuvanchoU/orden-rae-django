@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Categorías - Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Categorías</h2>
+        <p class="text-muted small">Clasifica tus productos.</p>
+    </div>
+    <a href="{% url 'inventario:categoria_create' %}" class="btn btn-sand">
+        <i class="bi bi-plus-lg me-1"></i> Nueva Categoría
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card-modern mb-4">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Buscar</label>
+            <input type="text" name="busqueda" class="form-control form-control-sm" 
+                   placeholder="Nombre categoría" value="{{ request.GET.busqueda }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted">Estado</label>
+            <select name="estado" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
+            <a href="{% url 'inventario:categoria_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla -->
+<div class="card-modern p-0 overflow-hidden">
+    <table class="table table-modern table-hover mb-0">
+        <thead>
+            <tr>
+                <th class="ps-4">ID</th>
+                <th>NOMBRE</th>
+                <th>ESTADO</th>
+                <th>PRODUCTOS</th>
+                <th class="text-end pe-4">ACCIONES</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for categoria in categorias %}
+            <tr>
+                <td class="ps-4 fw-bold text-muted">{{ categoria.id_categorias }}</td>
+                <td class="fw-bold">{{ categoria.nombre_categoria }}</td>
+                <td>
+                    {% if categoria.estado_categoria == 'ACTIVO' %}
+                        <span class="badge badge-estado bg-terminada">ACTIVO</span>
+                    {% else %}
+                        <span class="badge badge-estado bg-pendiente">INACTIVO</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted">-</td>
+                <td class="text-end pe-4">
+                    <a href="{% url 'inventario:categoria_update' categoria.pk %}" class="btn btn-sm btn-light text-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'inventario:categoria_delete' categoria.pk %}" class="btn btn-sm btn-light text-danger">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-4 text-muted">No hay categorías registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if is_paginated %}
+    <div class="p-3 bg-light border-top d-flex justify-content-center">
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

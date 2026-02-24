@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Productos{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-modern">
+            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Código Producto *</label>
+                        {{ form.codigo_producto }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Referencia</label>
+                        {{ form.referencia_producto }}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Categoría *</label>
+                        {{ form.categoria }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Tipo Madera</label>
+                        {{ form.tipo_madera }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Color</label>
+                        {{ form.color_producto }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Precio Actual *</label>
+                        {{ form.precio_actual }}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Estado *</label>
+                        {{ form.estado }}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'inventario:producto_list' %}" class="btn btn-light border">Cancelar</a>
+                    <button type="submit" class="btn btn-sand">Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+                input.classList.add('form-control');
+                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+            }
+        });
+    });
+</script>
+{% endblock %}
