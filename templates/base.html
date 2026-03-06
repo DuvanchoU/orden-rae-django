@@ -3,167 +3,144 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}ORDEN R.A.E ERP{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
+
+    <title>{% block title %}ORDEN R.A.E | ERP{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Iconos -->
+
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Tu CSS Personalizado -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- Dashboard CSS -->
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+
+    <script src="{% static 'js/theme.js' %}"></script>
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="d-flex">
-        <!-- Sidebar -->
-        <div class="sidebar d-flex flex-column p-3" style="width: 260px;">
-            <!-- LOGO DEL PROYECTO -->
-            <div class="logo-container text-center mb-4">
-                <a href="/" class="text-decoration-none">
-                    <img src="{% static 'img/Logo_Orden_Negro.png' %}" 
-                        alt="ORDEN R.A.E" 
-                        class="img-fluid logo-img">
-                </a>
-            </div>
-            <hr class="text-white-50">
-                <ul class="nav nav-pills flex-column mb-auto">
-                    <!-- DASHBOARD -->
+
+<div class="d-flex">
+
+    <div class="app-layout">
+    
+    <aside class="sidebar">
+
+        <!-- LOGO -->
+        <div class="sidebar-header text-center">
+            <a href="{% url 'dashboard:dashboard_home' %}">
+                <img src="{% static 'img/logo-orden-rae.png' %}"
+                        alt="ORDEN R.A.E"
+                        class="logo-img">
+            </a>
+        </div>
+
+        <hr>
+
+        <!-- MENÚ (SCROLL) -->
+        <nav class="sidebar-menu">
+            <ul class="nav nav-pills flex-column">
+
+                <!-- DASHBOARD -->
                 <li class="nav-item">
-                    <a href="{% url 'dashboard:dashboard_home' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard_home' %}active{% endif %}">
+                    <a href="{% url 'dashboard:dashboard_home' %}"
+                        class="nav-link {% if request.resolver_match.url_name == 'dashboard_home' %}active{% endif %}">
                         <i class="bi bi-speedometer2 me-2"></i> Dashboard
                     </a>
                 </li>
-                
+
                 <!-- INVENTARIO -->
-                <li class="nav-item">
-                    <small class="text-white-50 px-3 mt-3 d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Inventario</small>
-                </li>
-                <li>
-                    <a href="{% url 'inventario:producto_list' %}" class="nav-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-box-seam me-2"></i> Productos
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'inventario:inventario_list' %}" class="nav-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-clipboard-data me-2"></i> Stock
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'inventario:bodega_list' %}" class="nav-link {% if 'bodega' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-building me-2"></i> Bodegas
-                    </a>
-                </li>
-                <li>
-                     <a href="{% url 'inventario:categoria_list' %}" class="nav-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-tags me-2"></i> Categorías
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'inventario:proveedor_list' %}" class="nav-link {% if 'proveedor' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-truck me-2"></i> Proveedores
-                    </a>
-                </li>
+                <li class="nav-section">Inventario</li>
+                <li><a href="{% url 'inventario:producto_list' %}" class="nav-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-box-seam me-2"></i> Productos</a></li>
+                <li><a href="{% url 'inventario:inventario_list' %}" class="nav-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-clipboard-data me-2"></i> Stock</a></li>
+                <li><a href="{% url 'inventario:bodega_list' %}" class="nav-link {% if 'bodega' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-building me-2"></i> Bodegas</a></li>
+                <li><a href="{% url 'inventario:categoria_list' %}" class="nav-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-tags me-2"></i> Categorías</a></li>
+                <li><a href="{% url 'inventario:proveedor_list' %}" class="nav-link {% if 'proveedor' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-truck me-2"></i> Proveedores</a></li>
 
                 <!-- PRODUCCIÓN -->
-                <li class="nav-item">
-                    <small class="text-white-50 px-3 mt-3 d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Producción</small>
-                </li>
-                <li>
-                    <a href="{% url 'produccion:produccion_list' %}" class="nav-link {% if 'produccion' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-gear-wide-connected me-2"></i> Producción
-                    </a>
-                </li>
+                <li class="nav-section">Producción</li>
+                <li><a href="{% url 'produccion:produccion_list' %}" class="nav-link {% if 'produccion' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-gear-wide-connected me-2"></i> Producción</a></li>
 
                 <!-- VENTAS -->
-                <li class="nav-item">
-                    <small class="text-white-50 px-3 mt-3 d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Ventas</small>
-                </li>
-                <li>
-                    <a href="{% url 'ventas:cliente_list' %}" class="nav-link {% if 'cliente' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-people me-2"></i> Clientes
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'ventas:pedido_list' %}" class="nav-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-receipt me-2"></i> Pedidos
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'ventas:venta_list' %}" class="nav-link {% if 'venta' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-currency-dollar me-2"></i> Ventas
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'ventas:cotizacion_list' %}" class="nav-link {% if 'cotizacion' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-file-earmark-text me-2"></i> Cotizaciones
-                    </a>
-                </li>
+                <li class="nav-section">Ventas</li>
+                <li><a href="{% url 'ventas:cliente_list' %}" class="nav-link {% if 'cliente' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-people me-2"></i> Clientes</a></li>
+                <li><a href="{% url 'ventas:pedido_list' %}" class="nav-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-receipt me-2"></i> Pedidos</a></li>
+                <li><a href="{% url 'ventas:venta_list' %}" class="nav-link {% if 'venta' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-currency-dollar me-2"></i> Ventas</a></li>
+                <li><a href="{% url 'ventas:cotizacion_list' %}" class="nav-link {% if 'cotizacion' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-file-earmark-text me-2"></i> Cotizaciones</a></li>
 
                 <!-- COMPRAS -->
-                <li class="nav-item">
-                    <small class="text-white-50 px-3 mt-3 d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Compras</small>
-                </li>
-                <li>
-                    <a href="{% url 'compras:compra_list' %}" class="nav-link {% if 'compra' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-cart me-2"></i> Compras
-                    </a>
-                </li>
+                <li class="nav-section">Compras</li>
+                <li><a href="{% url 'compras:compra_list' %}" class="nav-link {% if 'compra' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-cart me-2"></i> Compras</a></li>
 
-                <!-- USUARIOS -->
-                <li class="nav-item">
-                    <small class="text-white-50 px-3 mt-3 d-block text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Administración</small>
-                </li>
+                <!-- ADMIN -->
+                <li class="nav-section">Administración</li>
+                <li><a href="{% url 'usuarios:usuario_list' %}" class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-person-badge me-2"></i> Usuarios</a></li>
+                <li><a href="{% url 'usuarios:rol_list' %}" class="nav-link {% if 'rol' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-shield-lock me-2"></i> Roles</a></li>
+
+            </ul>
+        </nav>
+
+        <!-- FOOTER SIDEBAR -->
+        <div class="sidebar-footer">
+
+        <!-- BOTÓN CAMBIO DE TEMA -->
+        <button id="themeToggle" class="btn btn-outline-light btn-sm w-100 mb-3">
+            <i class="bi bi-moon-fill me-1"></i> Modo oscuro
+        </button>
+
+        <!-- FOOTER PERFIL -->
+        <div class="dropdown">
+            <a href="#" class="d-flex align-items-center dropdown-toggle"
+                data-bs-toggle="dropdown">
+                <img src="https://ui-avatars.com/api/?name=Administrador"
+                    class="rounded-circle me-2" width="32">
+                <strong>Administrador</strong>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark">
                 <li>
-                    <a href="{% url 'usuarios:usuario_list' %}" class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-person-badge me-2"></i> Usuarios
+                    <a class="dropdown-item text-danger"
+                        href="#"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        Cerrar sesión
                     </a>
-                </li>
-                <li>
-                    <a href="{% url 'usuarios:rol_list' %}" class="nav-link {% if 'rol' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-shield-lock me-2"></i> Roles
-                    </a>
+                    <form id="logout-form" method="post" action="{% url 'logout' %}" style="display:none;">
+                        {% csrf_token %}
+                    </form>
                 </li>
             </ul>
-
-            <!-- Perfil de Usuario -->
-            <div class="dropdown">
-                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="https://ui-avatars.com/api/?name=Administrador&background=d4c4a8&color=fff" alt="" width="32" height="32" class="rounded-circle me-2">
-                    <strong>Administrador</strong>
-                </a>
-                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i> Configuración</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i> Mi Perfil</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item text-danger" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                            <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
-                        </a>
-                        <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: none;">
-                            {% csrf_token %}
-                        </form>
-                    </li>
-                </ul>
-            </div>
         </div>
 
-        <!-- Contenido Principal -->
-        <div class="flex-grow-1 p-4" style="overflow-y: auto; height: 100vh;">
-            {% if messages %}
-            <div class="messages mb-3">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
+    </aside>
 
-            {% block content %}{% endblock %}
-        </div>
-    </div>
+    <!-- ===============================
+            CONTENIDO PRINCIPAL
+            =============================== -->
+    <main class="main-content">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    {% block extra_js %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>
