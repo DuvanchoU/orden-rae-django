@@ -1,0 +1,760 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>🛍️ Productos - ORDER RAE</title>
+    <meta name="description" content="Explora nuestros muebles hechos a mano: sofás, camas, escritorios y más.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- Bootstrap + Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Tu CSS -->
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    <link rel="stylesheet" href="{% static 'css/productos.css' %}">
+    
+</head>
+<body class="bg-light">
+
+    <!-- Encabezado -->
+    <header id="barra_superior" class="bg-white border-bottom">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <a href="{% url 'pagina:home' %}">
+                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+            </a>
+
+            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
+                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
+                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
+            </div>
+
+            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+                <!-- NOTIFICACIONES -->
+                <div class="notifications-bell position-relative" id="notifications-bell">
+                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
+                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                    <div class="notifications-dropdown" id="notifications-dropdown">
+                        <div class="notifications-header">
+                            Notificaciones
+                            <a href="#" id="clear-notifications">Marcar como leídas</a>
+                        </div>
+                        <div id="notifications-list">
+                            {% if notificaciones %}
+                                {% for notif in notificaciones %}
+                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
+                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
+                                    <div class="notification-content">
+                                        <strong>{{ notif.mensaje }}</strong>
+                                        <span class="notification-time">{{ notif.fecha }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO -->
+                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                        {{ carrito_cantidad|default:0 }}
+                    </span>
+                </a>
+
+                <!-- Usuario -->
+                {% if user.is_authenticated %}
+                <div class="menu-usuario position-relative">
+                    <div class="d-flex align-items-center position-relative">
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                             alt="Usuario" class="icono-img">
+                        <span class="user-tooltip ms-2 text-dark">
+                            {{ user.get_full_name|default:user.username }}
+                        </span>
+                    </div>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
+                        <a href="{% url 'logout' %}">Cerrar sesión</a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="menu-usuario position-relative">
+                    <a href="#"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-2 bg-light">
+            <div class="container">
+                <nav class="navegacion d-flex flex-wrap justify-content-center">
+                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1 fw-bold" style="color: #7A4B32;">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
+                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
+                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Contenido principal -->
+    <main class="container main-with-fixed-header">
+        
+        <!-- Header de productos -->
+        <section class="products-header">
+            <h1 class="products-title">Nuestros Productos</h1>
+            <p class="products-subtitle">Muebles hechos a mano por artesanos colombianos</p>
+            
+            <!-- Filtros por categoría -->
+            <div class="filters-bar">
+                <button class="filter-btn active" data-filter="all">
+                    <i class="fas fa-th-large"></i> Todos
+                </button>
+                <button class="filter-btn" data-filter="colechos">
+                    <i class="fas fa-baby"></i> Colechos
+                </button>
+                <button class="filter-btn" data-filter="cunas">
+                    <i class="fas fa-bed"></i> Cunas
+                </button>
+                <button class="filter-btn" data-filter="sofas">
+                    <i class="fas fa-couch"></i> Sofás
+                </button>
+                <button class="filter-btn" data-filter="sillas">
+                    <i class="fas fa-chair"></i> Sillas
+                </button>
+                <button class="filter-btn" data-filter="escritorios">
+                    <i class="fas fa-table"></i> Escritorios
+                </button>
+                <button class="filter-btn" data-filter="camas">
+                    <i class="fas fa-bed"></i> Camas
+                </button>
+            </div>
+        </section>
+        
+        <!-- Grid de categorías -->
+        {% if categorias %}
+        <div class="categories-grid" id="categories-grid">
+            {% for categoria in categorias %}
+            <div class="category-card" data-category="{{ categoria.slug }}">
+                <div class="img-container">
+                    <img src="{{ categoria.imagen_url|default:'/static/img/placeholder.jpg' }}" 
+                         alt="{{ categoria.nombre }}"
+                         loading="lazy"
+                         onerror="this.src='https://via.placeholder.com/400x300?text=Categoria'">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">{{ categoria.nombre|upper }}</h2>
+                    <p class="card-text">{{ categoria.descripcion_corta }}</p>
+                    <button class="btn-category" 
+                            onclick="verCategoria('{{ categoria.slug }}', '{{ categoria.nombre|escapejs }}')"
+                            data-slug="{{ categoria.slug }}"
+                            data-nombre="{{ categoria.nombre|escapejs }}">
+                        <i class="fas fa-arrow-right"></i> Ver {{ categoria.nombre|lower }}
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Fallback estático -->
+        <div class="categories-grid" id="categories-grid">
+            <div class="category-card" data-category="colechos">
+                <div class="img-container">
+                    <img src="{% static 'img/Colecho-1.jpg' %}" alt="Colechos" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">COLECHOS</h2>
+                    <p class="card-text">Perfectos para compartir con tu bebé</p>
+                    <button class="btn-category" onclick="verCategoria('colechos', 'Colechos')" data-slug="colechos" data-nombre="Colechos">
+                        <i class="fas fa-arrow-right"></i> Ver colechos
+                    </button>
+                </div>
+            </div>
+            <div class="category-card" data-category="cunas">
+                <div class="img-container">
+                    <img src="{% static 'img/CamaCunas1.JPG' %}" alt="Cunas" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">CUNAS</h2>
+                    <p class="card-text">Diseño clásico y funcional</p>
+                    <button class="btn-category" onclick="verCategoria('cunas', 'Cunas')" data-slug="cunas" data-nombre="Cunas">
+                        <i class="fas fa-arrow-right"></i> Ver cunas
+                    </button>
+                </div>
+            </div>
+            <div class="category-card" data-category="sofas">
+                <div class="img-container">
+                    <img src="{% static 'img/Sofá4.JPG' %}" alt="Sofás" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">SOFÁS</h2>
+                    <p class="card-text">Confort y estilo para tu sala</p>
+                    <button class="btn-category" onclick="verCategoria('sofas', 'Sofás')" data-slug="sofas" data-nombre="Sofás">
+                        <i class="fas fa-arrow-right"></i> Ver sofás
+                    </button>
+                </div>
+            </div>
+            <div class="category-card" data-category="sillas">
+                <div class="img-container">
+                    <img src="{% static 'img/Poltronas1.JPG' %}" alt="Sillas" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">SILLAS</h2>
+                    <p class="card-text">Poltronas y sillas modernas</p>
+                    <button class="btn-category" onclick="verCategoria('sillas', 'Sillas')" data-slug="sillas" data-nombre="Sillas">
+                        <i class="fas fa-arrow-right"></i> Ver sillas
+                    </button>
+                </div>
+            </div>
+            <div class="category-card" data-category="escritorios">
+                <div class="img-container">
+                    <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorios" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">ESCRITORIOS</h2>
+                    <p class="card-text">Espacio ideal para trabajar o estudiar</p>
+                    <button class="btn-category" onclick="verCategoria('escritorios', 'Escritorios')" data-slug="escritorios" data-nombre="Escritorios">
+                        <i class="fas fa-arrow-right"></i> Ver escritorios
+                    </button>
+                </div>
+            </div>
+            <div class="category-card" data-category="camas">
+                <div class="img-container">
+                    <img src="{% static 'img/CamaMontessori1.jpg' %}" alt="Camas" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">CAMAS</h2>
+                    <p class="card-text">Camas Montessori y más</p>
+                    <button class="btn-category" onclick="verCategoria('camas', 'Camas')" data-slug="camas" data-nombre="Camas">
+                        <i class="fas fa-arrow-right"></i> Ver camas
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Productos destacados -->
+        <section class="featured-section">
+            <h2 class="featured-title">✨ Productos Destacados</h2>
+            
+            {% if productos_destacados %}
+            <div class="featured-grid">
+                {% for destacado in productos_destacados %}
+                <div class="featured-card" data-id="{{ destacado.id }}">
+                    <div class="img-container">
+                        <img src="{{ destacado.imagen_url|default:'/static/img/placeholder.jpg' }}" 
+                             alt="{{ destacado.nombre }}"
+                             loading="lazy"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=Producto'">
+                    </div>
+                    <h5 class="card-title">{{ destacado.nombre }}</h5>
+                    <p class="price">${{ destacado.precio|floatformat:0|intcomma }}</p>
+                    <button class="btn-featured" 
+                            onclick="verProducto('{{ destacado.slug|default:destacado.id }}', '{{ destacado.nombre|escapejs }}', {{ destacado.precio }})"
+                            data-slug="{{ destacado.slug|default:destacado.id }}"
+                            data-nombre="{{ destacado.nombre|escapejs }}"
+                            data-precio="{{ destacado.precio }}">
+                        Más info
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Fallback estático -->
+            <div class="featured-grid">
+                <div class="featured-card">
+                    <div class="img-container">
+                        <img src="{% static 'img/sofapremiun.jpeg' %}" alt="Sofá Premium" loading="lazy">
+                    </div>
+                    <h5 class="card-title">Sofá Premium</h5>
+                    <p class="price">$1.200.000</p>
+                    <button class="btn-featured" onclick="verProducto('sofa-premium', 'Sofá Premium', 1200000)">Más info</button>
+                </div>
+                <div class="featured-card">
+                    <div class="img-container">
+                        <img src="{% static 'img/cunaLujo.jpg' %}" alt="Cuna Lujo" loading="lazy">
+                    </div>
+                    <h5 class="card-title">Cuna Lujo</h5>
+                    <p class="price">$950.000</p>
+                    <button class="btn-featured" onclick="verProducto('cuna-lujo', 'Cuna Lujo', 950000)">Más info</button>
+                </div>
+                <div class="featured-card">
+                    <div class="img-container">
+                        <img src="{% static 'img/escritorioEjecutivo.jpg' %}" alt="Escritorio Ejecutivo" loading="lazy">
+                    </div>
+                    <h5 class="card-title">Escritorio Ejecutivo</h5>
+                    <p class="price">$850.000</p>
+                    <button class="btn-featured" onclick="verProducto('escritorio-ejecutivo', 'Escritorio Ejecutivo', 850000)">Más info</button>
+                </div>
+                <div class="featured-card">
+                    <div class="img-container">
+                        <img src="{% static 'img/ColechoDestacado.jpg' %}" alt="Colecho Plus" loading="lazy">
+                    </div>
+                    <h5 class="card-title">Colecho Plus</h5>
+                    <p class="price">$720.000</p>
+                    <button class="btn-featured" onclick="verProducto('colecho-plus', 'Colecho Plus', 720000)">Más info</button>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+        
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-moderno footer-bg text-dark">
+        <!-- ... contenido del footer (igual que antes) ... -->
+        <div class="container">
+            <div class="row g-4 g-lg-5">
+                <!-- Columna 1: Logo + Redes + Newsletter -->
+                <div class="col-12 col-lg-4">
+                    <div class="footer-brand mb-4">
+                        <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" class="footer-logo" />
+                        <p class="footer-description text-muted mt-3">
+                            Diseñamos muebles con alma para transformar tu hogar en un espacio único, cálido y funcional.
+                        </p>
+                    </div>
+                    
+                    <div class="footer-social mb-4">
+                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-newsletter">
+                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
+                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
+                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
+                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Columna 2: Empresa -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">EMPRESA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Quiénes somos</a></li>
+                        <li><a href="#">Nuestra historia</a></li>
+                        <li><a href="#">Sostenibilidad</a></li>
+                        <li><a href="#">Trabaja con nosotros</a></li>
+                        <li><a href="#">Blog de decoración</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 3: Ayuda -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">AYUDA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Preguntas Frecuentes</a></li>
+                        <li><a href="#">Guía de tallas</a></li>
+                        <li><a href="#">Cuidado de muebles</a></li>
+                        <li><a href="#">Política de envíos</a></li>
+                        <li><a href="#">Devoluciones</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 4: Legal -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">LEGAL</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Política de Cookies</a></li>
+                        <li><a href="#">Accesibilidad Web</a></li>
+                        <li><a href="#">PQRS</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 5: Contacto -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">CONTACTO</h6>
+                    <ul class="footer-contact list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-phone text-primary me-2"></i>
+                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
+                        </li>
+                        <li>
+                            <i class="fab fa-whatsapp text-primary me-2"></i>
+                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Métodos de pago y certificaciones -->
+            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-lg-6">
+                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
+                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
+                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
+                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 text-lg-end">
+                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
+                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
+                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
+                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright + Back to top -->
+            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <p class="mb-0 small text-muted">
+                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
+                </p>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Dark Mode Toggle -->
+    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema" aria-label="Alternar modo oscuro">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Datos desde Django -->
+    <script id="productos-data" type="application/json">
+        {
+            "carrito_cantidad": {{ carrito_cantidad|default:0 }},
+            "notificaciones_nuevas": {{ notificaciones_nuevas|default:0 }},
+            "categorias": {{ categorias_json|default:"[]"|safe }},
+            "destacados": {{ destacados_json|default:"[]"|safe }}
+        }
+    </script>
+
+    <!-- Script principal -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🛍️ Página de productos cargada');
+        
+        // === DATOS DESDE DJANGO ===
+        const djangoData = JSON.parse(document.getElementById('productos-data')?.textContent || '{}');
+        let contadorCarrito = djangoData.carrito_cantidad || 0;
+        let notificaciones = [];
+        
+        const contadorEl = document.getElementById('contador-carrito');
+        if (contadorEl) contadorEl.textContent = contadorCarrito;
+        
+        // === FUNCIÓN CSRF TOKEN ===
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // === FILTROS POR CATEGORÍA ===
+        document.querySelectorAll('[data-filter]').forEach(button => {
+            button.addEventListener('click', () => {
+                // Actualizar botones activos
+                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                
+                const filter = button.dataset.filter;
+                const items = document.querySelectorAll('.category-card');
+                
+                items.forEach(item => {
+                    const category = item.dataset.category;
+                    const show = (filter === 'all' || category === filter);
+                    
+                    if (show) {
+                        item.style.display = 'block';
+                        // Animación de entrada
+                        item.style.opacity = '0';
+                        item.style.transform = 'translateY(10px)';
+                        setTimeout(() => {
+                            item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            item.style.opacity = '1';
+                            item.style.transform = 'translateY(0)';
+                        }, 50);
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                // Notificación
+                const nombreFiltro = filter === 'all' ? 'todos' : button.textContent.trim();
+                showToast(`🔍 Filtrando: ${nombreFiltro}`, 'info', { duration: 2000 });
+            });
+        });
+        
+        // === VER CATEGORÍA ===
+        window.verCategoria = function(slug, nombre) {
+            console.log('📂 Ver categoría:', { slug, nombre });
+            
+            // Notificación
+            showToast(`📂 Navegando a: ${nombre}`, 'info');
+            
+            // En producción: redirigir a la URL real
+            // window.location.href = `/productos/${slug}/`;
+            
+            // Demo: mostrar mensaje
+            setTimeout(() => {
+                showToast(`✅ Redirigiendo a categoría "${nombre}"...`, 'success');
+            }, 500);
+        };
+        
+        // === VER PRODUCTO ===
+        window.verProducto = function(slug, nombre, precio) {
+            console.log('👁️ Ver producto:', { slug, nombre, precio });
+            
+            // Notificación
+            showToast(`👁️ Viendo: ${nombre}`, 'info');
+            
+            // En producción: redirigir al detalle
+            // window.location.href = `/producto/${slug}/`;
+            
+            // Demo: mostrar mensaje
+            setTimeout(() => {
+                showToast(`✅ Detalles de "${nombre}" - $${precio.toLocaleString('es-CO')}`, 'success');
+            }, 500);
+        };
+        
+        // === SISTEMA DE NOTIFICACIONES ===
+        const notificationsList = document.getElementById('notifications-list');
+        const bellBadge = document.getElementById('bell-badge');
+        const notificationsDropdown = document.getElementById('notifications-dropdown');
+        const notificationsBell = document.getElementById('notifications-bell');
+        
+        if (bellBadge && djangoData.notificaciones_nuevas > 0) {
+            bellBadge.textContent = djangoData.notificaciones_nuevas;
+            bellBadge.style.display = 'block';
+        }
+        
+        function guardarNotificacion(mensaje, tipo = 'sistema') {
+            const notif = {
+                id: Date.now(),
+                mensaje,
+                tipo,
+                leida: false,
+                fecha: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            notificaciones.unshift(notif);
+            actualizarNotificaciones();
+        }
+        
+        function actualizarNotificaciones() {
+            const nuevas = notificaciones.filter(n => !n.leida);
+            
+            if (bellBadge) {
+                bellBadge.textContent = nuevas.length || '';
+                bellBadge.style.display = nuevas.length ? 'block' : 'none';
+            }
+            
+            if (notificaciones.length === 0 && notificationsList) {
+                notificationsList.innerHTML = '<div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>';
+                return;
+            }
+            
+            if (notificationsList) {
+                notificationsList.innerHTML = notificaciones.map(n => `
+                    <div class="notification-item ${n.leida ? '' : 'new'}">
+                        <span class="notification-icon">${n.tipo === 'carrito' ? '🛒' : '👀'}</span>
+                        <div class="notification-content">
+                            <strong>${n.mensaje}</strong>
+                            <span class="notification-time">${n.fecha}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        if (notificationsBell) {
+            notificationsBell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (notificationsDropdown) notificationsDropdown.classList.toggle('show');
+                notificaciones.forEach(n => n.leida = true);
+                actualizarNotificaciones();
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!notificationsBell.contains(e.target)) {
+                    if (notificationsDropdown) notificationsDropdown.classList.remove('show');
+                }
+            });
+            
+            const clearBtn = document.getElementById('clear-notifications');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    notificaciones = [];
+                    actualizarNotificaciones();
+                });
+            }
+        }
+        
+        // === TOAST NOTIFICATIONS ===
+        window.showToast = function(message, type = 'info', options = {}) {
+            const container = document.getElementById('toast-container') || createToastContainer();
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-modern ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info}"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${type === 'success' ? '¡Éxito!' : 'Atención'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.closest('.toast-modern').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'fadeOut 0.3s ease forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, options.duration || 5000);
+        };
+        
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        }
+        
+        // === DARK MODE TOGGLE ===
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+                themeToggle.querySelector('i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+                localStorage.setItem('theme', isDark ? 'light' : 'dark');
+                showToast(`🌓 Modo ${isDark ? 'claro' : 'oscuro'} activado`, 'info');
+            });
+            
+            // Aplicar tema guardado
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                themeToggle.querySelector('i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+        
+        // === BÚSQUEDA EN TIEMPO REAL ===
+        const busquedaInput = document.getElementById('Buscador');
+        const sugerenciasBox = document.getElementById('sugerencias-busqueda');
+        
+        if (busquedaInput && sugerenciasBox) {
+            const categoriasBusqueda = djangoData.categorias?.map(c => c.nombre) || 
+                ['Colechos', 'Cunas', 'Sofás', 'Sillas', 'Escritorios', 'Camas'];
+            
+            busquedaInput.addEventListener('input', () => {
+                const valor = busquedaInput.value.toLowerCase().trim();
+                sugerenciasBox.innerHTML = '';
+                
+                if (valor.length >= 2) {
+                    const coincidencias = categoriasBusqueda.filter(c => 
+                        c.toLowerCase().includes(valor)
+                    );
+                    
+                    if (coincidencias.length > 0) {
+                        coincidencias.forEach(nombre => {
+                            const item = document.createElement('a');
+                            item.href = '#';
+                            item.className = 'list-group-item list-group-item-action';
+                            item.textContent = nombre;
+                            item.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                busquedaInput.value = nombre;
+                                sugerenciasBox.style.display = 'none';
+                                showToast(`🔍 Buscando: ${nombre}`, 'info');
+                            });
+                            sugerenciasBox.appendChild(item);
+                        });
+                        sugerenciasBox.style.display = 'block';
+                    } else {
+                        sugerenciasBox.style.display = 'none';
+                    }
+                } else {
+                    sugerenciasBox.style.display = 'none';
+                }
+            });
+            
+            // Cerrar sugerencias al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!busquedaInput.contains(e.target) && !sugerenciasBox.contains(e.target)) {
+                    sugerenciasBox.style.display = 'none';
+                }
+            });
+        }
+        
+        // Inicializar
+        actualizarNotificaciones();
+        console.log('✅ Script de productos cargado');
+    });
+    </script>
+</body>
+</html>

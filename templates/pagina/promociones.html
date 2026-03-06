@@ -1,0 +1,1179 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Promociones Exclusivas - ORDER RAE</title>
+    <meta name="description" content="Descuentos exclusivos en muebles hechos a mano. Ofertas por tiempo limitado.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- Bootstrap + Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Tu CSS -->
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    
+    <style>
+        :root {
+            --color-primario: #8B5E3C;
+            --color-primario-dark: #6B462C;
+            --color-secundario: #7A4B32;
+            --color-acento: #ffd166;
+            --color-exito: #06d6a0;
+            --color-peligro: #ef476f;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-full: 9999px;
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --border-color: #3a3a5a;
+        }
+        
+        body {
+            background: var(--bg-secondary);
+            font-family: 'Figtree', sans-serif;
+            color: var(--text-primary);
+        }
+        
+        .main-with-fixed-header {
+            padding-top: clamp(120px, 20vh, 180px);
+            padding-bottom: 4rem;
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast-modern {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--color-primario);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 320px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
+            pointer-events: auto;
+        }
+        
+        .toast-modern.success { border-left-color: var(--color-exito); }
+        .toast-modern.error { border-left-color: var(--color-peligro); }
+        .toast-modern.warning { border-left-color: var(--color-acento); }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
+        
+        /* Hero Promoción */
+        .promo-hero {
+            background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 3rem 2rem;
+            margin: 2rem auto;
+            max-width: 1400px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .promo-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .promo-hero .container { position: relative; z-index: 1; }
+        
+        .promo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--color-acento);
+            color: #333;
+            padding: 0.5rem 1.5rem;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(255, 209, 102, 0.4);
+            animation: bounce 2s ease infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .promo-hero h1 {
+            color: #fff;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .promo-price {
+            color: var(--color-acento);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin: 1rem 0;
+        }
+        
+        .promo-image-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 450px;
+            margin: 0 auto;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        
+        .promo-image-container:hover {
+            transform: rotate(0deg) scale(1.03);
+        }
+        
+        .promo-image-container img {
+            border-radius: var(--radius-md);
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+        
+        /* Countdown */
+        .countdown-container {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .countdown-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.2);
+            border-radius: var(--radius-md);
+            min-width: 70px;
+        }
+        
+        .countdown-item .number {
+            display: block;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            font-family: monospace;
+        }
+        
+        .countdown-item .label {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.9);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+        
+        /* Botones */
+        .btn-combo-promo {
+            background: linear-gradient(135deg, var(--color-acento) 0%, #ff9e6d 100%);
+            border: none;
+            color: #333;
+            font-weight: 700;
+            padding: 1rem 2.5rem;
+            border-radius: var(--radius-full);
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(255, 158, 109, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn-combo-promo:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(255, 158, 109, 0.7);
+            color: #333;
+        }
+        
+        /* Promo Cards */
+        .promo-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border: none;
+            height: 100%;
+        }
+        
+        .promo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .promo-card .img-wrapper {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+            background: var(--bg-secondary);
+        }
+        
+        .promo-card .img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .promo-card:hover .img-wrapper img {
+            transform: scale(1.1);
+        }
+        
+        .promo-badges {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 2;
+        }
+        
+        .badge-discount {
+            background: var(--color-peligro);
+            color: white;
+            padding: 0.35rem 0.85rem;
+            border-radius: var(--radius-full);
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        
+        .promo-card .card-body {
+            padding: 1.25rem;
+        }
+        
+        .promo-card .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .price-container {
+            margin: 0.75rem 0 1rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        .price-promo {
+            color: var(--color-primario);
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+        
+        .price-original {
+            color: var(--text-secondary);
+            text-decoration: line-through;
+            font-size: 1rem;
+        }
+        
+        .btn-add-cart {
+            width: 100%;
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            border: none;
+            color: white;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-add-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 94, 60, 0.4);
+        }
+        
+        .btn-add-cart.added {
+            background: var(--color-exito);
+        }
+        
+        /* Filtros */
+        .promo-filters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1.25rem;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: var(--radius-full);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover,
+        .filter-btn.active {
+            border-color: var(--color-primario);
+            background: var(--color-primario);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* Estado vacío */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .promo-hero { padding: 2rem 1rem; }
+            .promo-hero h1 { font-size: 1.8rem; }
+            .promo-price { font-size: 2.5rem; }
+            .countdown-grid { grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+            .countdown-item { padding: 0.75rem 0.5rem; min-width: 60px; }
+            .countdown-item .number { font-size: 1.5rem; }
+            .promo-filters { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Encabezado -->
+    <header id="barra_superior" class="bg-white border-bottom">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <a href="{% url 'pagina:home' %}">
+                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+            </a>
+
+            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
+                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
+                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
+            </div>
+
+            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+                <!-- NOTIFICACIONES -->
+                <div class="notifications-bell position-relative" id="notifications-bell">
+                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
+                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                    <div class="notifications-dropdown" id="notifications-dropdown">
+                        <div class="notifications-header">
+                            Notificaciones
+                            <a href="#" id="clear-notifications">Marcar como leídas</a>
+                        </div>
+                        <div id="notifications-list">
+                            {% if notificaciones %}
+                                {% for notif in notificaciones %}
+                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
+                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
+                                    <div class="notification-content">
+                                        <strong>{{ notif.mensaje }}</strong>
+                                        <span class="notification-time">{{ notif.fecha }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO -->
+                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                        {{ carrito_cantidad|default:0 }}
+                    </span>
+                </a>
+
+                <!-- Usuario -->
+                {% if user.is_authenticated %}
+                <div class="menu-usuario position-relative">
+                    <div class="d-flex align-items-center position-relative">
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                             alt="Usuario" class="icono-img">
+                        <span class="user-tooltip ms-2 text-dark">
+                            {{ user.get_full_name|default:user.username }}
+                        </span>
+                    </div>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
+                        <a href="{% url 'logout' %}">Cerrar sesión</a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="menu-usuario position-relative">
+                    <a href="#"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-2 bg-light">
+            <div class="container">
+                <nav class="navegacion d-flex flex-wrap justify-content-center">
+                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1 fw-bold" style="color: #8B5E3C;">PROMOCIONES</a>
+                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
+                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Contenido principal -->
+    <main class="container main-with-fixed-header">
+        
+        <!-- OFERTA DESTACADA HERO -->
+        <section class="promo-hero">
+            <div class="container">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-7 text-center text-lg-start">
+                        <span class="promo-badge">
+                            <i class="fas fa-gift"></i> ¡OFERTA EXCLUSIVA!
+                        </span>
+                        <h1>¡OFERTA DEL MES!</h1>
+                        <p class="lead">Combo premium: Sofá + Comedor + Mesa de centro</p>
+                        
+                        {% if promo_combo %}
+                        <div class="promo-price">
+                            ${{ promo_combo.precio|default:2490000|floatformat:0|intcomma }}
+                        </div>
+                        <p class="promo-savings">
+                            <i class="fas fa-fire text-warning me-1"></i>
+                            ¡Ahorra <strong>${{ promo_combo.ahorro|default:800000|floatformat:0|intcomma }}</strong> hoy!
+                        </p>
+                        {% else %}
+                        <div class="promo-price">$2.490.000</div>
+                        <p class="promo-savings">
+                            <i class="fas fa-fire text-warning me-1"></i>
+                            ¡Ahorra <strong>$800.000</strong> hoy!
+                        </p>
+                        {% endif %}
+                        
+                        <!-- Countdown -->
+                        <div class="countdown-container">
+                            <div id="countdown" class="countdown-grid">
+                                <!-- Se llena con JavaScript -->
+                            </div>
+                            <p class="text-white-50 mt-2 mb-0 text-center small">
+                                <i class="fas fa-clock me-1"></i>¡Oferta por tiempo limitado!
+                            </p>
+                        </div>
+                        
+                        <!-- CTA Button -->
+                        <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                            <button class="btn-combo-promo" id="btn-combo"
+                                    data-nombre="{{ promo_combo.nombre|default:'Combo Sofá + Comedor' }}"
+                                    data-precio="{{ promo_combo.precio|default:2490000 }}"
+                                    data-producto-id="{{ promo_combo.id|default:999 }}">
+                                <i class="fas fa-shopping-cart"></i> COMPRAR AHORA
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-5">
+                        <div class="promo-image-container">
+                            {% if promo_combo and promo_combo.imagen_url %}
+                            <img src="{{ promo_combo.imagen_url }}" alt="Combo promocional" loading="lazy">
+                            {% else %}
+                            <img src="{% static 'img/Sofá5.jpg' %}" alt="Combo promocional" loading="lazy">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- FILTROS Y PROMOCIONES -->
+        <section class="promo-section">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <h2 class="section-title">PROMOCIONES EXCLUSIVAS</h2>
+                    <p class="section-subtitle">Descuentos limitados en muebles hechos a mano</p>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="promo-filters">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-th-large"></i> Todos
+                    </button>
+                    <button class="filter-btn" data-filter="sofas">
+                        <i class="fas fa-couch"></i> Sofás
+                    </button>
+                    <button class="filter-btn" data-filter="camas">
+                        <i class="fas fa-bed"></i> Camas
+                    </button>
+                    <button class="filter-btn" data-filter="escritorios">
+                        <i class="fas fa-table"></i> Escritorios
+                    </button>
+                </div>
+                
+                <!-- Grid de promociones -->
+                {% if promociones %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="promociones-grid">
+                    {% for promo in promociones %}
+                    <div class="col promo-item" 
+                         data-category="{{ promo.categoria|default:'general' }}"
+                         data-price="{{ promo.precio_promo }}"
+                         data-id="{{ promo.id }}">
+                        
+                        <article class="promo-card"
+                                 data-product-id="{{ promo.id }}"
+                                 data-product-name="{{ promo.nombre|escapejs }}"
+                                 data-product-price="{{ promo.precio_promo }}"
+                                 data-product-image="{{ promo.imagen_url|default:'/static/img/placeholder.jpg' }}">
+                            
+                            <!-- Imagen con badges -->
+                            <div class="img-wrapper">
+                                <img src="{{ promo.imagen_url|default:'/static/img/placeholder.jpg' }}" 
+                                     alt="{{ promo.nombre }}"
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/400x300?text=Promocion'">
+                                
+                                <div class="promo-badges">
+                                    {% if promo.porcentaje_descuento %}
+                                    <span class="badge-discount">-{{ promo.porcentaje_descuento }}%</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Contenido -->
+                            <div class="card-body">
+                                <h5 class="card-title">{{ promo.nombre }}</h5>
+                                
+                                <!-- Precios -->
+                                <div class="price-container">
+                                    <span class="price-promo">${{ promo.precio_promo|floatformat:0|intcomma }}</span>
+                                    {% if promo.precio_original %}
+                                    <span class="price-original">${{ promo.precio_original|floatformat:0|intcomma }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Botón añadir -->
+                                <button class="btn-add-cart" onclick="addToCartFromDataset(this)">
+                                    <i class="fas fa-cart-plus"></i> Añadir al carrito
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <!-- Estado vacío -->
+                <div class="empty-state">
+                    <i class="fas fa-gift"></i>
+                    <h4>Próximamente</h4>
+                    <p>Estamos preparando increíbles promociones para ti.</p>
+                </div>
+                {% endif %}
+                
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- Footer -->
+        <footer class="footer-moderno footer-bg text-dark">
+        <div class="container">
+            <div class="row g-4 g-lg-5">
+                
+                <!-- Columna 1: Logo + Redes + Newsletter -->
+                <div class="col-12 col-lg-4">
+                    <div class="footer-brand mb-4">
+                        <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" class="footer-logo" />
+                        <p class="footer-description text-muted mt-3">
+                            Diseñamos muebles con alma para transformar tu hogar en un espacio único, cálido y funcional.
+                        </p>
+                    </div>
+                    
+                    <div class="footer-social mb-4">
+                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-newsletter">
+                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
+                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
+                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
+                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Columna 2: Empresa -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">EMPRESA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Quiénes somos</a></li>
+                        <li><a href="#">Nuestra historia</a></li>
+                        <li><a href="#">Sostenibilidad</a></li>
+                        <li><a href="#">Trabaja con nosotros</a></li>
+                        <li><a href="#">Blog de decoración</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 3: Ayuda -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">AYUDA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Preguntas Frecuentes</a></li>
+                        <li><a href="#">Guía de tallas</a></li>
+                        <li><a href="#">Cuidado de muebles</a></li>
+                        <li><a href="#">Política de envíos</a></li>
+                        <li><a href="#">Devoluciones</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 4: Legal -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">LEGAL</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Política de Cookies</a></li>
+                        <li><a href="#">Accesibilidad Web</a></li>
+                        <li><a href="#">PQRS</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 5: Contacto -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">CONTACTO</h6>
+                    <ul class="footer-contact list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-phone text-primary me-2"></i>
+                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
+                        </li>
+                        <li>
+                            <i class="fab fa-whatsapp text-primary me-2"></i>
+                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Métodos de pago y certificaciones -->
+            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-lg-6">
+                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
+                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
+                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
+                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 text-lg-end">
+                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
+                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
+                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
+                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright + Back to top -->
+            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <p class="mb-0 small text-muted">
+                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
+                </p>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+                    <button class="btn btn-sm btn-back-to-top d-none" id="btnBackToTop" aria-label="Volver arriba">
+                        <i class="fas fa-arrow-up"></i> <span class="d-none d-sm-inline">Arriba</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Datos desde Django -->
+    <script id="promo-data" type="application/json">
+        {
+            "carrito_cantidad": {{ carrito_cantidad|default:0 }},
+            "notificaciones_nuevas": {{ notificaciones_nuevas|default:0 }},
+            "promociones": {{ promociones_json|default:'[]'|safe }}
+        }
+    </script>
+
+    <!-- Script principal -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('🎁 Página de promociones cargada');
+        
+        // === DATOS DESDE DJANGO ===
+        const djangoData = JSON.parse(document.getElementById('promo-data').textContent || '{}');
+        let contadorCarrito = djangoData.carrito_cantidad || 0;
+        let notificaciones = [];
+        
+        const contadorEl = document.getElementById('contador-carrito');
+        const btnCombo = document.getElementById('btn-combo');
+        
+        if (contadorEl) {
+            contadorEl.textContent = contadorCarrito;
+            console.log('✅ Contador inicializado:', contadorCarrito);
+        }
+        
+        // === FUNCIÓN PARA OBTENER CSRF TOKEN (NIVEL GLOBAL) ===
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            console.log('🍪 CSRF Token:', cookieValue ? 'Encontrado' : 'NO encontrado');
+            return cookieValue;
+        }
+        
+        /* === COUNTDOWN === */
+        const promoEnd = new Date();
+        promoEnd.setDate(promoEnd.getDate() + 30);
+        const countdownEl = document.getElementById('countdown');
+        
+        function updateCountdown() {
+            const now = new Date();
+            const diff = promoEnd - now;
+            
+            if (diff <= 0) {
+                if (countdownEl) {
+                    countdownEl.innerHTML = '<div class="col-12 text-center"><span class="badge bg-danger fs-6">¡Promoción finalizada!</span></div>';
+                }
+                return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+            
+            if (countdownEl) {
+                countdownEl.innerHTML = `
+                    <div class="countdown-item">
+                        <span class="number">${String(days).padStart(2, '0')}</span>
+                        <span class="label">Días</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="number">${String(hours).padStart(2, '0')}</span>
+                        <span class="label">Horas</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="number">${String(minutes).padStart(2, '0')}</span>
+                        <span class="label">Min</span>
+                    </div>
+                    <div class="countdown-item">
+                        <span class="number">${String(seconds).padStart(2, '0')}</span>
+                        <span class="label">Seg</span>
+                    </div>
+                `;
+            }
+        }
+        
+        updateCountdown();
+        const countdownInterval = setInterval(updateCountdown, 1000);
+        
+        /* === SISTEMA DE NOTIFICACIONES === */
+        const notificationsList = document.getElementById('notifications-list');
+        const bellBadge = document.getElementById('bell-badge');
+        const notificationsDropdown = document.getElementById('notifications-dropdown');
+        const notificationsBell = document.getElementById('notifications-bell');
+        
+        if (bellBadge && djangoData.notificaciones_nuevas > 0) {
+            bellBadge.textContent = djangoData.notificaciones_nuevas;
+            bellBadge.style.display = 'block';
+        }
+        
+        function guardarNotificacion(mensaje, tipo = 'carrito') {
+            console.log('🔔 Guardando notificación:', mensaje);
+            const notif = {
+                id: Date.now(),
+                mensaje,
+                tipo,
+                leida: false,
+                fecha: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            notificaciones.unshift(notif);
+            actualizarNotificaciones();
+        }
+        
+        function actualizarNotificaciones() {
+            const nuevas = notificaciones.filter(n => !n.leida);
+            if (bellBadge) {
+                bellBadge.textContent = nuevas.length || '';
+                bellBadge.style.display = nuevas.length ? 'block' : 'none';
+            }
+            
+            if (notificaciones.length === 0 && notificationsList) {
+                notificationsList.innerHTML = '<div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>';
+                return;
+            }
+            
+            if (notificationsList) {
+                notificationsList.innerHTML = notificaciones.map(n => `
+                    <div class="notification-item ${n.leida ? '' : 'new'}">
+                        <span class="notification-icon">${n.tipo === 'carrito' ? '🛒' : '📣'}</span>
+                        <div class="notification-content">
+                            <strong>${n.mensaje}</strong>
+                            <span class="notification-time">${n.fecha}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        if (notificationsBell) {
+            notificationsBell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const dropdown = document.getElementById('notifications-dropdown');
+                if (dropdown) dropdown.classList.toggle('show');
+                notificaciones.forEach(n => n.leida = true);
+                actualizarNotificaciones();
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!notificationsBell.contains(e.target)) {
+                    const dropdown = document.getElementById('notifications-dropdown');
+                    if (dropdown) dropdown.classList.remove('show');
+                }
+            });
+            
+            const clearBtn = document.getElementById('clear-notifications');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    notificaciones = [];
+                    localStorage.removeItem('notificaciones');
+                    actualizarNotificaciones();
+                });
+            }
+        }
+        
+        /* === API CARRITO === */
+        async function agregarAlCarritoAPI(productoId, nombre, precio) {
+            console.log('🛒 Intentando añadir al carrito:', { productoId, nombre, precio });
+            
+            const csrfToken = getCookie('csrftoken');
+            
+            if (!csrfToken) {
+                console.error('❌ CSRF token no encontrado');
+                showToast('⚠️ Error de seguridad. Recarga la página.', 'error');
+                return false;
+            }
+            
+            try {
+                const response = await fetch('/pagina/api/carrito/agregar/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        producto_id: productoId,
+                        cantidad: 1,
+                        precio: precio,
+                        nombre: nombre
+                    })
+                });
+                
+                console.log('📡 Respuesta del servidor:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Error HTTP:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Respuesta JSON:', data);
+                
+                if (data.success) {
+                    contadorCarrito = data.cantidad_total;
+                    if (contadorEl) {
+                        contadorEl.textContent = contadorCarrito;
+                        // Animación del contador
+                        contadorEl.style.transform = 'scale(1.3)';
+                        setTimeout(() => contadorEl.style.transform = 'scale(1)', 200);
+                    }
+                    guardarNotificacion(`¡${nombre} añadido al carrito!`);
+                    showToast('✅ ¡Producto añadido al carrito!', 'success');
+                    return true;
+                } else {
+                    console.error('❌ Error en respuesta:', data.error);
+                    showToast('⚠️ Error: ' + (data.error || 'No se pudo añadir'), 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Error en fetch:', error);
+                showToast('❌ Error de conexión. Verifica tu internet.', 'error');
+                return false;
+            }
+        }
+        
+        /* === BOTÓN COMBO PROMOCIONAL === */
+        if (btnCombo) {
+            console.log('✅ Botón combo encontrado');
+            console.log('📋 Data attributes:', {
+                id: btnCombo.dataset.productoId,
+                nombre: btnCombo.dataset.nombre,
+                precio: btnCombo.dataset.precio
+            });
+            
+            btnCombo.addEventListener('click', async function(e) {
+                e.preventDefault();
+                console.log('🖱️ Click en COMPRAR AHORA');
+                
+                const originalHTML = this.innerHTML;
+                const nombre = this.dataset.nombre || 'Combo Promocional';
+                const precio = parseInt(this.dataset.precio) || 0;
+                const productoId = this.dataset.productoId;
+                
+                console.log('📦 Datos del producto:', { nombre, precio, productoId });
+                
+                if (!productoId) {
+                    console.error('❌ No hay producto_id');
+                    showToast('⚠️ Error: Producto no identificado', 'error');
+                    return;
+                }
+                
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+                this.disabled = true;
+                
+                try {
+                    const exito = await agregarAlCarritoAPI(productoId, nombre, precio);
+                    
+                    if (exito) {
+                        this.innerHTML = '<i class="fas fa-check me-2"></i>¡Añadido!';
+                        this.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalHTML;
+                            this.disabled = false;
+                            this.classList.remove('btn-success');
+                        }, 2000);
+                    } else {
+                        throw new Error('No se pudo añadir al carrito');
+                    }
+                } catch (error) {
+                    console.error('❌ Error:', error);
+                    this.innerHTML = '<i class="fas fa-times me-2"></i>Error';
+                    this.classList.add('btn-danger');
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+                        this.classList.remove('btn-danger');
+                    }, 2000);
+                }
+            });
+        } else {
+            console.error('❌ Botón combo NO encontrado');
+        }
+        
+        /* === BOTONES DE PROMOCIONES REGULARES === */
+        document.querySelectorAll('.btn-add-cart').forEach(btn => {
+            console.log('✅ Botón add-cart encontrado:', btn.dataset.nombre);
+            
+            btn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                console.log('🖱️ Click en Añadir al carrito');
+                
+                const originalHTML = this.innerHTML;
+                const nombre = this.dataset.nombre || 'Producto';
+                const precio = parseInt(this.dataset.precio) || 0;
+                const productoId = this.dataset.productoId;
+                
+                console.log('📦 Datos:', { nombre, precio, productoId });
+                
+                if (!productoId) {
+                    console.error('❌ No hay producto_id');
+                    return;
+                }
+                
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+                this.disabled = true;
+                
+                try {
+                    const exito = await agregarAlCarritoAPI(productoId, nombre, precio);
+                    
+                    if (exito) {
+                        this.innerHTML = '<i class="fas fa-check me-2"></i>¡Añadido!';
+                        this.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalHTML;
+                            this.disabled = false;
+                            this.classList.remove('btn-success');
+                        }, 2000);
+                    }
+                } catch (error) {
+                    console.error('❌ Error:', error);
+                    this.innerHTML = '<i class="fas fa-times me-2"></i>Error';
+                    this.classList.add('btn-danger');
+                    
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+                        this.classList.remove('btn-danger');
+                    }, 2000);
+                }
+            });
+        });
+        
+        /* === TOAST NOTIFICATIONS === */
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show`;
+            toast.style.cssText = 'position: fixed; top: 100px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 150);
+            }, 3000);
+        }
+        
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            document.body.appendChild(container);
+            return container;
+        }
+        
+        // Inicializar notificaciones
+        actualizarNotificaciones();
+        console.log('✅ Script de promociones completamente cargado');
+    });
+    </script>
+</body>
+</html>

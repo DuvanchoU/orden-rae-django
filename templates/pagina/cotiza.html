@@ -1,0 +1,2002 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cotiza tu proyecto - ORDER RAE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- Bootstrap + Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Tu CSS con Django static -->
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    
+    <!-- Estilos avanzados para cotización 2026 -->
+    <style>
+        :root {
+            /* Colores principales de la marca */
+            --color-primario: #8B5E3C;
+            --color-primario-dark: #6B462C;
+            --color-secundario: #7A4B32;
+            --color-acento: #ffd166;
+            --color-exito: #06d6a0;
+            --color-advertencia: #ffd166;
+            --color-peligro: #ef476f;
+            --color-info: #118ab2;
+            
+            /* Colores de interfaz */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            
+            /* Efectos */
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
+            --shadow-glow: 0 0 25px rgba(139, 94, 60, 0.35);
+            
+            /* Animaciones */
+            --transition-fast: 150ms ease;
+            --transition-normal: 300ms ease;
+            --transition-slow: 500ms ease;
+            
+            /* Border radius */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-full: 9999px;
+        }
+        
+        /* === DARK MODE === */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --border-color: #3a3a5a;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        
+        /* === BASE === */
+        * { box-sizing: border-box; }
+        
+        body {
+            background: var(--bg-secondary);
+            font-family: 'Figtree', sans-serif;
+            color: var(--text-primary);
+            transition: background var(--transition-normal), color var(--transition-normal);
+            line-height: 1.6;
+        }
+        
+        /* === HEADER FIJO - Espaciado inteligente === */
+        .main-with-fixed-header {
+            padding-top: clamp(120px, 20vh, 180px);
+            padding-bottom: 4rem;
+        }
+        
+        /* === TOAST NOTIFICATIONS MODERNAS === */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast-modern {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--color-primario);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 320px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+        
+        .toast-modern.success { border-left-color: var(--color-exito); }
+        .toast-modern.error { border-left-color: var(--color-peligro); }
+        .toast-modern.warning { border-left-color: var(--color-advertencia); }
+        .toast-modern.info { border-left-color: var(--color-info); }
+        
+        .toast-modern i { font-size: 1.25rem; }
+        .toast-modern.success i { color: var(--color-exito); }
+        .toast-modern.error i { color: var(--color-peligro); }
+        .toast-modern.warning i { color: var(--color-advertencia); }
+        .toast-modern.info i { color: var(--color-info); }
+        
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; margin-bottom: 0.25rem; }
+        .toast-message { font-size: 0.9rem; color: var(--text-secondary); }
+        .toast-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: var(--radius-sm);
+            transition: background var(--transition-fast);
+        }
+        .toast-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
+        
+        /* === TARJETA DE COTIZACIÓN PREMIUM === */
+        .cotiza-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: box-shadow var(--transition-normal);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cotiza-card:hover { box-shadow: var(--shadow-lg); }
+        
+        .cotiza-header {
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cotiza-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+        }
+        
+        .cotiza-header h2 {
+            position: relative;
+            z-index: 1;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cotiza-header p {
+            position: relative;
+            z-index: 1;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .cotiza-body {
+            padding: 2.5rem;
+        }
+        
+        /* === PROGRESS STEPS DEL FORMULARIO === */
+        .form-progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .form-progress::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: var(--bg-tertiary);
+            z-index: 1;
+        }
+        
+        .form-progress::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-primario), var(--color-acento));
+            z-index: 2;
+            transition: width var(--transition-slow);
+            width: 0%;
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 3;
+            flex: 1;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 3px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all var(--transition-normal);
+            margin-bottom: 0.5rem;
+        }
+        
+        .step-circle.active {
+            background: var(--color-primario);
+            border-color: var(--color-primario);
+            color: white;
+            box-shadow: var(--shadow-glow);
+            transform: scale(1.1);
+        }
+        
+        .step-circle.completed {
+            background: var(--color-exito);
+            border-color: var(--color-exito);
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .step-label.active {
+            color: var(--color-primario);
+            font-weight: 600;
+        }
+        
+        /* === FORMULARIO === */
+        .form-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .form-label .required {
+            color: var(--color-peligro);
+        }
+        
+        .form-control {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.875rem 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all var(--transition-fast);
+            width: 100%;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primario);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.15);
+        }
+        
+        .form-control.is-invalid {
+            border-color: var(--color-peligro);
+        }
+        
+        .form-control.is-invalid:focus {
+            box-shadow: 0 0 0 4px rgba(239, 71, 111, 0.15);
+        }
+        
+        .form-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .invalid-feedback {
+            display: none;
+            color: var(--color-peligro);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+        
+        .form-control.is-invalid + .invalid-feedback {
+            display: block;
+        }
+        
+        /* === SELECT PERSONALIZADO === */
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 16px 12px;
+            padding-right: 2.5rem;
+        }
+        
+        /* === TEXTAREA CON CONTADOR === */
+        .textarea-wrapper {
+            position: relative;
+        }
+        
+        .char-count {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+        
+        .char-count.warning {
+            color: var(--color-advertencia);
+        }
+        
+        .char-count.danger {
+            color: var(--color-peligro);
+        }
+        
+        /* === BOTONES DE NAVEGACIÓN === */
+        .form-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .btn-prev {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-prev:hover {
+            background: var(--bg-primary);
+            border-color: var(--color-primario);
+            color: var(--color-primario);
+        }
+        
+        .btn-next, .btn-submit {
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-next:hover, .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .btn-next:disabled, .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* === BOTÓN DE ENVÍO === */
+        .btn-cotizar {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-cotizar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--color-secundario), var(--color-primario-dark));
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        
+        .btn-cotizar:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .btn-cotizar:hover::before {
+            opacity: 1;
+        }
+        
+        .btn-cotizar:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-cotizar .spinner {
+            display: none;
+        }
+        
+        .btn-cotizar.loading .btn-text { display: none; }
+        .btn-cotizar.loading .spinner { display: inline-block; }
+        
+        /* === MENSAJES DE ESTADO === */
+        .alert-cotiza {
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .alert-success-cotiza {
+            background: linear-gradient(135deg, var(--color-exito), #07b39b);
+            color: white;
+        }
+        
+        .alert-danger-cotiza {
+            background: linear-gradient(135deg, var(--color-peligro), #d62839);
+            color: white;
+        }
+        
+        .alert-info-cotiza {
+            background: linear-gradient(135deg, var(--color-info), #0d7a99);
+            color: white;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* === INFO ADICIONAL === */
+        .cotiza-info {
+            background: rgba(139, 94, 60, 0.05);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-left: 4px solid var(--color-primario);
+        }
+        
+        .cotiza-info h6 {
+            color: var(--color-primario);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .cotiza-info ul {
+            margin: 0;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .cotiza-info li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .cotiza-info li i {
+            color: var(--color-exito);
+            margin-right: 0.5rem;
+            width: 16px;
+        }
+        
+        /* === ESTIMACIÓN DE RESPUESTA === */
+        .response-estimate {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin: 1.5rem 0;
+            border-left: 3px solid var(--color-acento);
+        }
+        
+        .response-estimate i {
+            font-size: 1.5rem;
+            color: var(--color-primario);
+        }
+        
+        .response-estimate-text strong {
+            color: var(--color-primario);
+            font-weight: 600;
+        }
+        
+        /* === RECOMENDACIONES DE PRODUCTOS === */
+        .recommendations-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .recommendations-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+        
+        .recommendation-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+        
+        .recommendation-card:hover {
+            border-color: var(--color-primario);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .recommendation-img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.75rem;
+            background: var(--bg-tertiary);
+        }
+        
+        .recommendation-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+        
+        .recommendation-price {
+            font-weight: 600;
+            color: var(--color-primario);
+            font-size: 1rem;
+        }
+        
+        .recommendation-add {
+            margin-top: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: var(--color-primario);
+            color: white;
+            border: none;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+        
+        .recommendation-add:hover { background: var(--color-primario-dark); }
+        
+        /* === CHAT FLOTANTE === */
+        .chat-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            z-index: 1000;
+        }
+        
+        .chat-float:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+        }
+        
+        .chat-float::after {
+            content: '¿Necesitas ayuda?';
+            position: absolute;
+            right: 70px;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+            box-shadow: var(--shadow-md);
+            pointer-events: none;
+            color: var(--text-primary);
+        }
+        
+        .chat-float:hover::after { opacity: 1; }
+        
+        /* === DARK MODE TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(15deg);
+            border-color: var(--color-primario);
+        }
+        
+        /* === SHARE COTIZACIÓN === */
+        .share-cotiza {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            z-index: 100;
+            border: 1px solid var(--border-color);
+        }
+        
+        .share-cotiza:hover {
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--color-primario);
+        }
+        
+        .share-cotiza i {
+            color: #25D366;
+            font-size: 1.25rem;
+        }
+        
+        /* === CONFIRMACIÓN MODAL === */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-normal);
+        }
+        
+        .modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform var(--transition-normal);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-backdrop.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-exito), #07b39b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            animation: bounce 0.5s ease;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .modal-icon i {
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .modal-text {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+        
+        .cotizacion-number {
+            background: var(--bg-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-full);
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--color-primario);
+            margin: 1rem 0;
+            display: inline-block;
+        }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .cotiza-card .card-body {
+                padding: 1.5rem;
+            }
+            
+            .form-navigation {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .btn-prev, .btn-next, .btn-submit {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .recommendations-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .share-cotiza {
+                bottom: 5rem;
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .form-progress {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .form-progress::before,
+            .form-progress::after {
+                display: none;
+            }
+            
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* === ANIMACIONES DE CARGA === */
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-input { height: 44px; margin-bottom: 1rem; }
+        .skeleton-text { height: 1rem; margin: 0.5rem 0; }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Encabezado -->
+    <header id="barra_superior" class="bg-white border-bottom">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <a href="{% url 'pagina:home' %}">
+                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+            </a>
+
+            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
+                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
+                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
+            </div>
+
+            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+                <!-- NOTIFICACIONES -->
+                <div class="notifications-bell position-relative" id="notifications-bell">
+                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
+                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                    <div class="notifications-dropdown" id="notifications-dropdown">
+                        <div class="notifications-header">
+                            Notificaciones
+                            <a href="#" id="clear-notifications">Marcar como leídas</a>
+                        </div>
+                        <div id="notifications-list">
+                            {% if notificaciones %}
+                                {% for notif in notificaciones %}
+                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
+                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
+                                    <div class="notification-content">
+                                        <strong>{{ notif.mensaje }}</strong>
+                                        <span class="notification-time">{{ notif.fecha }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO -->
+                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                        {{ carrito_cantidad|default:0 }}
+                    </span>
+                </a>
+
+                <!-- Usuario autenticado -->
+                {% if user.is_authenticated %}
+                <div class="menu-usuario position-relative">
+                    <div class="d-flex align-items-center position-relative">
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                             alt="Usuario" class="icono-img user-trigger">
+                        <span class="user-tooltip ms-2 text-dark">
+                            {{ user.get_full_name|default:user.username }}
+                        </span>
+                    </div>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
+                        <a href="{% url 'logout' %}">Cerrar sesión</a> 
+                        
+                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <!-- Usuario NO autenticado -->
+                <div class="menu-usuario position-relative">
+                    <a href="#"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-2 bg-light">
+            <div class="container">
+                <nav class="navegacion d-flex flex-wrap">
+                    <a href="{% url 'pagina:home' %}" class="text-dark me-3">HOME</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark me-3">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark me-3">PROMOCIONES</a>
+                    <a href="{% url 'pagina:contacto' %}" class="text-dark me-3 fw-bold" style="color: #7A4B32;">CONTACTO</a>
+                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3">COTICE AQUÍ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Contenido principal -->
+    <main class="container main-with-fixed-header">
+        
+        <div class="text-center mb-4">
+            <h1 class="titulo-seccion mb-2">Cotiza tu Proyecto</h1>
+            <p class="text-muted">Recibe una cotización personalizada en menos de 24 horas</p>
+        </div>
+        
+        <!-- Tarjeta de cotización -->
+        <section class="cotiza-card">
+            
+            <!-- Header con gradiente -->
+            <div class="cotiza-header">
+                <h2>¡Cotiza Fácilmente!</h2>
+                <p>Completa el formulario y un asesor especializado te contactará</p>
+            </div>
+            
+            <div class="cotiza-body">
+                
+                <!-- Progress steps del formulario -->
+                <div class="form-progress" id="form-progress">
+                    <div class="progress-step">
+                        <div class="step-circle active">1</div>
+                        <span class="step-label active">Datos</span>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-circle">2</div>
+                        <span class="step-label">Producto</span>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-circle">3</div>
+                        <span class="step-label">Confirmar</span>
+                    </div>
+                </div>
+                
+                <!-- Mensajes de estado -->
+                {% if enviado %}
+                <div class="alert alert-success-cotiza text-center" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>¡Cotización enviada!</strong> Tu número de referencia es <strong>#COT-2026-{{ random_code }}</strong>
+                </div>
+                {% endif %}
+                
+                {% if errores %}
+                <div class="alert alert-danger-cotiza" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Por favor corrige:</strong>
+                    <ul class="mb-0 mt-2 small">
+                        {% for error in errores %}<li>{{ error }}</li>{% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <!-- Formulario multi-paso -->
+                <form id="form-cotiza" method="post" action="{% url 'pagina:cotiza' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Paso 1: Datos de contacto -->
+                    <div class="form-section active" id="step-1">
+                        <h4 class="mb-4">Tus datos</h4>
+                        
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre completo <span class="required">*</span></label>
+                            <input type="text" id="nombre" name="nombre" class="form-control"
+                                   placeholder="Ej: María González"
+                                   value="{{ form_data.nombre|default:'' }}" required
+                                   pattern="^[A-Za-zÁ-ú\s]{3,50}$"
+                                   title="Mínimo 3 letras, solo letras y espacios">
+                            <div class="invalid-feedback">Ingresa un nombre válido (mín. 3 letras)</div>
+                        </div>
+                        
+                        <div class="form-row mb-3">
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Correo <span class="required">*</span></label>
+                                <input type="email" id="email" name="email" class="form-control"
+                                        placeholder="tu@email.com"
+                                        value="{{ form_data.email|default:'' }}" required>
+                                <div class="invalid-feedback">Ingresa un correo válido</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="telefono" class="form-label">Teléfono <span class="required">*</span></label>
+                                <input type="tel" id="telefono" name="telefono" class="form-control"
+                                        placeholder="+57 300 123 4567"
+                                        value="{{ form_data.telefono|default:'' }}" required
+                                        pattern="^\+57\s[0-9]{3}\s[0-9]{3}\s[0-9]{4}$">
+                                <div class="form-text">Formato:+57 3XX XXX XXXX</div>
+                                <div class="invalid-feedback">Ingresa un teléfono colombiano válido</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ciudad" class="form-label">Ciudad <span class="required">*</span></label>
+                            <select id="ciudad" name="ciudad" class="form-control form-select" required>
+                                <option value="">Seleccionar ciudad...</option>
+                                <option value="bogota" {% if form_data.ciudad == 'bogota' %}selected{% endif %}>Bogotá D.C.</option>
+                                <option value="medellin" {% if form_data.ciudad == 'medellin' %}selected{% endif %}>Medellín</option>
+                                <option value="cali" {% if form_data.ciudad == 'cali' %}selected{% endif %}>Cali</option>
+                                <option value="barranquilla" {% if form_data.ciudad == 'barranquilla' %}selected{% endif %}>Barranquilla</option>
+                                <option value="otra" {% if form_data.ciudad == 'otra' %}selected{% endif %}>Otra ciudad</option>
+                            </select>
+                            <div class="invalid-feedback">Selecciona tu ciudad</div>
+                        </div>
+                        
+                        <div class="form-navigation">
+                            <div></div> <!-- Spacer -->
+                            <button type="button" class="btn-next" onclick="nextStep(2)">
+                                Continuar <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Paso 2: Detalles del producto -->
+                    <div class="form-section" id="step-2">
+                        <h4 class="mb-4">🪑 ¿Qué necesitas?</h4>
+                        
+                        <div class="mb-3">
+                            <label for="categoria" class="form-label">Categoría <span class="required">*</span></label>
+                            <select id="categoria" name="categoria" class="form-control form-select" required onchange="updateProductSuggestions()">
+                                <option value="">Seleccionar categoría...</option>
+                                <option value="sofas" {% if form_data.categoria == 'sofas' %}selected{% endif %}>Sofás</option>
+                                <option value="camas" {% if form_data.categoria == 'camas' %}selected{% endif %}>Camas</option>
+                                <option value="escritorios" {% if form_data.categoria == 'escritorios' %}selected{% endif %}>Escritorios</option>
+                                <option value="comedores" {% if form_data.categoria == 'comedores' %}selected{% endif %}>Comedores</option>
+                                <option value="sillas" {% if form_data.categoria == 'sillas' %}selected{% endif %}>Sillas</option>
+                                <option value="otro" {% if form_data.categoria == 'otro' %}selected{% endif %}>Otro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="producto" class="form-label">Producto específico</label>
+                            <input type="text" id="producto" name="producto" class="form-control"
+                                   placeholder="Ej: Sofá Fátima 3 puestos"
+                                   value="{{ form_data.producto|default:'' }}"
+                                   list="productos-sugeridos">
+                            <datalist id="productos-sugeridos">
+                                <!-- Se llena dinámicamente con JS -->
+                            </datalist>
+                            <div class="form-text">Escribe para ver sugerencias</div>
+                        </div>
+                        
+                        <div class="form-row mb-3">
+                            <div class="col-md-6">
+                                <label for="cantidad" class="form-label">Cantidad estimada</label>
+                                <input type="number" id="cantidad" name="cantidad" class="form-control"
+                                       min="1" max="100" value="{{ form_data.cantidad|default:1 }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="presupuesto" class="form-label">Presupuesto aproximado</label>
+                                <select id="presupuesto" name="presupuesto" class="form-control form-select">
+                                    <option value="">Sin definir</option>
+                                    <option value="bajo" {% if form_data.presupuesto == 'bajo' %}selected{% endif %}>Menos de $500.000</option>
+                                    <option value="medio" {% if form_data.presupuesto == 'medio' %}selected{% endif %}>$500.000 - $2.000.000</option>
+                                    <option value="alto" {% if form_data.presupuesto == 'alto' %}selected{% endif %}>Más de $2.000.000</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4 textarea-wrapper">
+                            <label for="mensaje" class="form-label">Detalles adicionales</label>
+                            <textarea id="mensaje" name="mensaje" rows="4" class="form-control"
+                                      placeholder="Medidas, colores, materiales, fecha límite, etc."
+                                      maxlength="500">{{ form_data.mensaje|default:'' }}</textarea>
+                            <span class="char-count" id="char-count">0/500</span>
+                        </div>
+                        
+                        <div class="form-navigation">
+                            <button type="button" class="btn-prev" onclick="prevStep(1)">
+                                <i class="fas fa-arrow-left"></i> Atrás
+                            </button>
+                            <button type="button" class="btn-next" onclick="nextStep(3)">
+                                Revisar <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Paso 3: Confirmación -->
+                    <div class="form-section" id="step-3">
+                        <h4 class="mb-4">✅ Revisa y envía</h4>
+                        
+                        <!-- Resumen de la cotización -->
+                        <div class="cotiza-info mb-4">
+                            <h6><i class="fas fa-clipboard-list me-2"></i>Resumen de tu solicitud</h6>
+                            <ul id="cotiza-resumen">
+                                <!-- Se llena dinámicamente con JS -->
+                                <li><strong>Nombre:</strong> <span id="resumen-nombre">-</span></li>
+                                <li><strong>Email:</strong> <span id="resumen-email">-</span></li>
+                                <li><strong>Teléfono:</strong> <span id="resumen-telefono">-</span></li>
+                                <li><strong>Ciudad:</strong> <span id="resumen-ciudad">-</span></li>
+                                <li><strong>Producto:</strong> <span id="resumen-producto">-</span></li>
+                                <li><strong>Cantidad:</strong> <span id="resumen-cantidad">-</span></li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Estimación de respuesta -->
+                        <div class="response-estimate">
+                            <i class="fas fa-clock"></i>
+                            <div class="response-estimate-text">
+                                <strong>Tiempo estimado de respuesta:</strong><br>
+                                <span id="response-time">2-4 horas hábiles</span> para Bogotá, hasta 24h para otras ciudades
+                            </div>
+                        </div>
+                        
+                        <!-- Términos y condiciones -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">
+                                Acepto los <a href="#" target="_blank">Términos y Condiciones</a> 
+                                y autorizo el contacto para fines de cotización <span class="required">*</span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
+                            <label class="form-check-label" for="newsletter">
+                                Deseo recibir ofertas exclusivas y novedades por correo
+                            </label>
+                        </div>
+                        
+                        <div class="form-navigation">
+                            <button type="button" class="btn-prev" onclick="prevStep(2)">
+                                <i class="fas fa-arrow-left"></i> Editar
+                            </button>
+                            <button type="submit" class="btn-submit" id="btn-cotizar">
+                                <span class="btn-text">
+                                    <i class="fas fa-paper-plane"></i> Enviar Cotización
+                                </span>
+                                <span class="spinner spinner-border spinner-border-sm" role="status"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                </form>
+                
+                <!-- Información adicional -->
+                <div class="cotiza-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>Consejos para una mejor cotización</h6>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Incluye medidas exactas (alto x ancho x fondo)</li>
+                        <li><i class="fas fa-check"></i> Especifica colores o materiales preferidos</li>
+                        <li><i class="fas fa-check"></i> Menciona si necesitas entrega urgente</li>
+                        <li><i class="fas fa-check"></i> Adjunta fotos de referencia si es posible</li>
+                    </ul>
+                </div>
+                
+            </div>
+        </section>
+        
+        <!-- Sección de recomendaciones -->
+        <div class="recommendations-section">
+            <h3 class="recommendations-title">
+                <i class="fas fa-sparkles"></i>
+                Productos populares para cotizar
+            </h3>
+            <div class="recommendations-grid" id="recommendations-grid">
+                <!-- Se llena dinámicamente con JS -->
+                <div class="recommendation-card" onclick="prefillCotizacion('sofas', 'Sofá Fátima 3 puestos')">
+                    <img src="{% static 'img/Sofá2.jpg' %}" alt="Sofá Fátima" class="recommendation-img">
+                    <div class="recommendation-name">Sofá Fátima 3 puestos</div>
+                    <div class="recommendation-price">Desde $1.890.000</div>
+                    <button class="recommendation-add">+ Cotizar</button>
+                </div>
+                <div class="recommendation-card" onclick="prefillCotizacion('camas', 'Cama Alpes King')">
+                    <img src="{% static 'img/Cama5.jpg' %}" alt="Cama Alpes" class="recommendation-img">
+                    <div class="recommendation-name">Cama Alpes King Size</div>
+                    <div class="recommendation-price">Desde $2.450.000</div>
+                    <button class="recommendation-add">+ Cotizar</button>
+                </div>
+                <div class="recommendation-card" onclick="prefillCotizacion('escritorios', 'Escritorio Ejecutivo')">
+                    <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorio" class="recommendation-img">
+                    <div class="recommendation-name">Escritorio Ejecutivo</div>
+                    <div class="recommendation-price">Desde $890.000</div>
+                    <button class="recommendation-add">+ Cotizar</button>
+                </div>
+                <div class="recommendation-card" onclick="prefillCotizacion('comedores', 'Comedor 6 puestos')">
+                    <img src="{% static 'img/Comedor3.jpeg' %}" alt="Comedor" class="recommendation-img">
+                    <div class="recommendation-name">Comedor 6 puestos</div>
+                    <div class="recommendation-price">Desde $1.650.000</div>
+                    <button class="recommendation-add">+ Cotizar</button>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+
+    <!-- Botones flotantes -->
+    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema" aria-label="Alternar modo oscuro">
+        <i class="fas fa-moon"></i>
+    </button>
+    
+    <button class="chat-float" id="chat-float" title="Chat de ayuda" aria-label="Abrir chat de WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </button>
+    
+    <button class="share-cotiza" id="share-cotiza" title="Compartir cotización" aria-label="Compartir por WhatsApp">
+        <i class="fab fa-whatsapp"></i> Compartir cotización
+    </button>
+
+    <!-- Modal de confirmación -->
+    <div class="modal-backdrop" id="modal-confirmacion">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 class="modal-title">¡Cotización enviada! 🎉</h3>
+            <p class="modal-text">
+                Hemos recibido tu solicitud. Un asesor se contactará contigo en:
+            </p>
+            <div class="response-estimate mb-4">
+                <i class="fas fa-clock"></i>
+                <div class="response-estimate-text">
+                    <strong id="modal-response-time">2-4 horas hábiles</strong>
+                </div>
+            </div>
+            <p class="modal-text small">
+                Número de referencia: <strong class="cotizacion-number" id="modal-cotizacion-num">COT-2026-{{ random_code|default:'XXXX' }}</strong>
+            </p>
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" style="background: var(--color-primario); border: none;" onclick="closeModal()">
+                    <i class="fas fa-home me-2"></i>Volver al inicio
+                </button>
+                <button class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print me-2"></i>Imprimir comprobante
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <footer class="footer-moderno footer-bg text-dark">
+        <div class="container">
+            <div class="row g-4 g-lg-5">
+                
+                <!-- Columna 1: Logo + Redes + Newsletter -->
+                <div class="col-12 col-lg-4">
+                    <div class="footer-brand mb-4">
+                        <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" class="footer-logo" />
+                        <p class="footer-description text-muted mt-3">
+                            Diseñamos muebles con alma para transformar tu hogar en un espacio único, cálido y funcional.
+                        </p>
+                    </div>
+                    
+                    <div class="footer-social mb-4">
+                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-newsletter">
+                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
+                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
+                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
+                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Columna 2: Empresa -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">EMPRESA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Quiénes somos</a></li>
+                        <li><a href="#">Nuestra historia</a></li>
+                        <li><a href="#">Sostenibilidad</a></li>
+                        <li><a href="#">Trabaja con nosotros</a></li>
+                        <li><a href="#">Blog de decoración</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 3: Ayuda -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">AYUDA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Preguntas Frecuentes</a></li>
+                        <li><a href="#">Guía de tallas</a></li>
+                        <li><a href="#">Cuidado de muebles</a></li>
+                        <li><a href="#">Política de envíos</a></li>
+                        <li><a href="#">Devoluciones</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 4: Legal -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">LEGAL</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Política de Cookies</a></li>
+                        <li><a href="#">Accesibilidad Web</a></li>
+                        <li><a href="#">PQRS</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 5: Contacto -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">CONTACTO</h6>
+                    <ul class="footer-contact list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-phone text-primary me-2"></i>
+                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
+                        </li>
+                        <li>
+                            <i class="fab fa-whatsapp text-primary me-2"></i>
+                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Métodos de pago y certificaciones -->
+            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-lg-6">
+                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
+                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
+                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
+                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 text-lg-end">
+                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
+                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
+                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
+                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright + Back to top -->
+            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <p class="mb-0 small text-muted">
+                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
+                </p>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+                    <button class="btn btn-sm btn-back-to-top d-none" id="btnBackToTop" aria-label="Volver arriba">
+                        <i class="fas fa-arrow-up"></i> <span class="d-none d-sm-inline">Arriba</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Datos desde Django para JavaScript -->
+    <script id="cotiza-data" type="application/json">
+        {
+            "carrito_cantidad": {{ carrito_cantidad|default:0 }},
+            "notificaciones_nuevas": {{ notificaciones_nuevas|default:0 }},
+            "enviado": {{ enviado|default:'false' }},
+            "random_code": "{{ random_code|default:'ABCD12' }}",
+            "form_data": {{ form_data_json|default:'{}'|safe }},
+            "productos_sugeridos": {{ productos_sugeridos_json|default:'[]'|safe }}
+        }
+    </script>
+
+    <!-- Script avanzado de cotización 2026 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('📋 Cotización Profesional 2026 cargada');
+        
+        // === CONFIGURACIÓN ===
+        const CONFIG = {
+            MAX_CHARS_MENSAJE: 500,
+            RESPONSE_TIMES: {
+                'bogota': '2-4 horas hábiles',
+                'medellin': '4-8 horas hábiles',
+                'cali': '4-8 horas hábiles',
+                'barranquilla': '8-12 horas hábiles',
+                'otra': 'hasta 24 horas hábiles'
+            },
+            TOAST_DURATION: 5000
+        };
+        
+        // === ESTADO GLOBAL ===
+        const state = {
+            currentStep: 1,
+            totalSteps: 3,
+            formData: {},
+            theme: localStorage.getItem('theme') || 'light',
+            cotizacionNumber: null
+        };
+        
+        // === INICIALIZACIÓN ===
+        init();
+        
+        function init() {
+            // Cargar datos desde Django
+            const djangoData = JSON.parse(document.getElementById('cotiza-data').textContent || '{}');
+            state.formData = djangoData.form_data || {};
+            state.cotizacionNumber = djangoData.random_code;
+            
+            // Aplicar tema guardado
+            applyTheme(state.theme);
+            
+            // Inicializar UI
+            updateProgress();
+            updateCharCount();
+            setupFormValidation();
+            setupPhoneFormatting();
+            setupEventListeners();
+            
+            // Si ya fue enviado, mostrar modal
+            if (djangoData.enviado === 'true') {
+                showConfirmationModal();
+            }
+            
+            console.log('✅ Cotización inicializada');
+        }
+        
+        // === PROGRESS STEPS ===
+        function updateProgress() {
+            const progressLine = document.querySelector('.form-progress::after');
+            const circles = document.querySelectorAll('.step-circle');
+            const labels = document.querySelectorAll('.step-label');
+            
+            // Calcular porcentaje
+            const percent = ((state.currentStep - 1) / (state.totalSteps - 1)) * 100;
+            if (progressLine) {
+                progressLine.style.width = `${percent}%`;
+            }
+            
+            // Actualizar círculos y labels
+            circles.forEach((circle, index) => {
+                const stepNum = index + 1;
+                circle.classList.remove('active', 'completed');
+                
+                if (stepNum < state.currentStep) {
+                    circle.classList.add('completed');
+                    circle.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (stepNum === state.currentStep) {
+                    circle.classList.add('active');
+                    circle.textContent = stepNum;
+                } else {
+                    circle.textContent = stepNum;
+                }
+            });
+            
+            labels.forEach((label, index) => {
+                label.classList.toggle('active', index + 1 === state.currentStep);
+            });
+        }
+        
+        // === NAVEGACIÓN ENTRE PASOS ===
+        window.nextStep = function(targetStep) {
+            // Validar paso actual antes de avanzar
+            if (!validateStep(state.currentStep)) {
+                showToast('⚠️ Completa los campos requeridos', 'warning');
+                return;
+            }
+            
+            // Guardar datos del paso actual
+            saveStepData(state.currentStep);
+            
+            // Actualizar UI
+            document.getElementById(`step-${state.currentStep}`).classList.remove('active');
+            state.currentStep = targetStep;
+            document.getElementById(`step-${state.currentStep}`).classList.add('active');
+            
+            // Actualizar progress
+            updateProgress();
+            
+            // Si es el paso final, actualizar resumen
+            if (state.currentStep === 3) {
+                updateSummary();
+            }
+            
+            // Scroll suave al formulario
+            document.querySelector('.cotiza-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        
+        window.prevStep = function(targetStep) {
+            saveStepData(state.currentStep);
+            
+            document.getElementById(`step-${state.currentStep}`).classList.remove('active');
+            state.currentStep = targetStep;
+            document.getElementById(`step-${state.currentStep}`).classList.add('active');
+            
+            updateProgress();
+            document.querySelector('.cotiza-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        
+        // === VALIDACIÓN DE PASOS ===
+        function validateStep(step) {
+            const section = document.getElementById(`step-${step}`);
+            if (!section) return true;
+            
+            let isValid = true;
+            
+            section.querySelectorAll('[required]').forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+            
+            // Validaciones específicas
+            if (step === 1) {
+                const email = document.getElementById('email');
+                if (email.value && !isValidEmail(email.value)) {
+                    email.classList.add('is-invalid');
+                    isValid = false;
+                }
+                
+                const telefono = document.getElementById('telefono');
+                if (telefono.value && !isValidPhone(telefono.value)) {
+                    telefono.classList.add('is-invalid');
+                    isValid = false;
+                }
+            }
+            
+            return isValid;
+        }
+        
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        function isValidPhone(phone) {
+            return /^\+57\s[0-9]{3}\s[0-9]{3}\s[0-9]{4}$/.test(phone);
+        }
+        
+        // === GUARDAR DATOS DEL PASO ===
+        function saveStepData(step) {
+            const section = document.getElementById(`step-${step}`);
+            if (!section) return;
+            
+            section.querySelectorAll('input, select, textarea').forEach(field => {
+                if (field.name) {
+                    state.formData[field.name] = field.value;
+                }
+            });
+        }
+        
+        // === ACTUALIZAR RESUMEN ===
+        function updateSummary() {
+            const categorias = {
+                'sofas': 'Sofás',
+                'camas': 'Camas',
+                'escritorios': 'Escritorios',
+                'comedores': 'Comedores',
+                'sillas': 'Sillas',
+                'otro': 'Otro'
+            };
+            
+            document.getElementById('resumen-nombre').textContent = state.formData.nombre || '-';
+            document.getElementById('resumen-email').textContent = state.formData.email || '-';
+            document.getElementById('resumen-telefono').textContent = state.formData.telefono || '-';
+            document.getElementById('resumen-ciudad').textContent = 
+                state.formData.ciudad ? (document.querySelector(`#ciudad option[value="${state.formData.ciudad}"]`)?.textContent || '-') : '-';
+            document.getElementById('resumen-producto').textContent = 
+                `${state.formData.producto || 'No especificado'} ${state.formData.cantidad ? `(x${state.formData.cantidad})` : ''}`;
+            document.getElementById('resumen-cantidad').textContent = state.formData.cantidad || '1';
+            
+            // Actualizar tiempo de respuesta estimado
+            const ciudad = state.formData.ciudad || 'bogota';
+            document.getElementById('response-time').textContent = CONFIG.RESPONSE_TIMES[ciudad] || CONFIG.RESPONSE_TIMES.otra;
+        }
+        
+        // === CONTADOR DE CARACTERES ===
+        function updateCharCount() {
+            const textarea = document.getElementById('mensaje');
+            const counter = document.getElementById('char-count');
+            
+            if (textarea && counter) {
+                const count = textarea.value.length;
+                counter.textContent = `${count}/${CONFIG.MAX_CHARS_MENSAJE}`;
+                
+                counter.classList.remove('warning', 'danger');
+                if (count > CONFIG.MAX_CHARS_MENSAJE * 0.9) {
+                    counter.classList.add('danger');
+                } else if (count > CONFIG.MAX_CHARS_MENSAJE * 0.7) {
+                    counter.classList.add('warning');
+                }
+            }
+        }
+        
+        // === FORMATO DE TELÉFONO ===
+        function setupPhoneFormatting() {
+            const telefono = document.getElementById('telefono');
+            if (!telefono) return;
+            
+            telefono.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                if (value.startsWith('57')) {
+                    value = value.slice(2);
+                }
+                
+                if (value.length > 0) value = '+57 ' + value;
+                if (value.length > 7) value = value.slice(0, 4) + ' ' + value.slice(4);
+                if (value.length > 12) value = value.slice(0, 8) + ' ' + value.slice(8);
+                
+                e.target.value = value.slice(0, 17);
+            });
+        }
+        
+        // === VALIDACIÓN EN TIEMPO REAL ===
+        function setupFormValidation() {
+            document.querySelectorAll('.form-control[required]').forEach(input => {
+                input.addEventListener('blur', () => {
+                    if (input.value.trim()) {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+                
+                input.addEventListener('input', () => {
+                    if (input.classList.contains('is-invalid') && input.value.trim()) {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+            });
+            
+            // Contador de caracteres
+            document.getElementById('mensaje')?.addEventListener('input', updateCharCount);
+        }
+        
+        // === SUGERENCIAS DE PRODUCTOS ===
+        window.updateProductSuggestions = function() {
+            const categoria = document.getElementById('categoria')?.value;
+            const datalist = document.getElementById('productos-sugeridos');
+            
+            if (!categoria || !datalist) return;
+            
+            const sugerencias = {
+                'sofas': ['Sofá Fátima 3 puestos', 'Sofá Moderno 2 puestos', 'Sofá Ejecutivo', 'Sofá Cama'],
+                'camas': ['Cama Alpes King', 'Cama Doble Clásica', 'Cama Juvenil', 'Cama Montessori'],
+                'escritorios': ['Escritorio Ejecutivo', 'Escritorio Minimalista', 'Escritorio con Cajones'],
+                'comedores': ['Comedor 6 puestos', 'Comedor Familiar', 'Comedor Moderno'],
+                'sillas': ['Silla Poltrona', 'Silla Ergonómica', 'Silla de Oficina']
+            };
+            
+            datalist.innerHTML = '';
+            (sugerencias[categoria] || []).forEach(prod => {
+                const option = document.createElement('option');
+                option.value = prod;
+                datalist.appendChild(option);
+            });
+        };
+        
+        // === PRE-LLENAR COTIZACIÓN DESDE RECOMENDACIÓN ===
+        window.prefillCotizacion = function(categoria, producto) {
+            // Navegar al paso 2 si estamos en el 1
+            if (state.currentStep === 1) {
+                nextStep(2);
+            }
+            
+            // Pre-llenar campos
+            const categoriaSelect = document.getElementById('categoria');
+            const productoInput = document.getElementById('producto');
+            
+            if (categoriaSelect) {
+                categoriaSelect.value = categoria;
+                updateProductSuggestions();
+            }
+            
+            if (productoInput) {
+                productoInput.value = producto;
+                productoInput.focus();
+            }
+            
+            showToast(`📋 "${producto}" agregado a tu cotización`, 'success');
+        };
+        
+        // === ENVÍO DEL FORMULARIO ===
+        const formCotiza = document.getElementById('form-cotiza');
+        const btnCotizar = document.getElementById('btn-cotizar');
+        
+        if (formCotiza) {
+            formCotiza.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Validación final
+                if (!validateStep(3) || !document.getElementById('terms')?.checked) {
+                    showToast('⚠️ Debes aceptar los términos para continuar', 'warning');
+                    return;
+                }
+                
+                // Guardar datos finales
+                saveStepData(3);
+                
+                // Estado de carga
+                btnCotizar.classList.add('loading');
+                btnCotizar.disabled = true;
+                
+                try {
+                    // Preparar datos para enviar
+                    const formData = new FormData(formCotiza);
+                    
+                    // Enviar vía Fetch API
+                    const response = await fetch(formCotiza.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            // Mostrar modal de confirmación
+                            state.cotizacionNumber = data.cotizacion_number || state.cotizacionNumber;
+                            showConfirmationModal();
+                            
+                            // Guardar notificación
+                            guardarNotificacion('¡Tu cotización ha sido enviada! Te contactaremos pronto.');
+                            
+                            // Resetear formulario
+                            formCotiza.reset();
+                            state.currentStep = 1;
+                            updateProgress();
+                        } else {
+                            throw new Error(data.error || 'Error al procesar');
+                        }
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error al enviar cotización:', error);
+                    showToast('❌ Error al enviar. Intenta nuevamente.', 'error');
+                } finally {
+                    btnCotizar.classList.remove('loading');
+                    btnCotizar.disabled = false;
+                }
+            });
+        }
+        
+        // === MODAL DE CONFIRMACIÓN ===
+        function showConfirmationModal() {
+            document.getElementById('modal-cotizacion-num').textContent = `COT-2026-${state.cotizacionNumber}`;
+            
+            const ciudad = state.formData.ciudad || 'bogota';
+            document.getElementById('modal-response-time').textContent = CONFIG.RESPONSE_TIMES[ciudad];
+            
+            const modal = document.getElementById('modal-confirmacion');
+            modal.classList.add('active');
+            
+            // Cerrar al hacer clic fuera
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+        
+        window.closeModal = function() {
+            document.getElementById('modal-confirmacion').classList.remove('active');
+        };
+        
+        // === TOAST NOTIFICATIONS ===
+        window.showToast = function(message, type = 'info', options = {}) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-modern ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info}"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${type === 'success' ? '¡Éxito!' : type === 'error' ? 'Error' : 'Atención'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.closest('.toast-modern').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'fadeOut 0.3s ease forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, options.duration || CONFIG.TOAST_DURATION);
+        };
+        
+        // === SISTEMA DE NOTIFICACIONES (campana) ===
+        // ... (código de notificaciones igual que antes) ...
+        
+        // === THEME TOGGLE ===
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            applyTheme(state.theme);
+            localStorage.setItem('theme', state.theme);
+            
+            const icon = document.querySelector('#theme-toggle i');
+            if (icon) {
+                icon.className = state.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+            }
+        });
+        
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        
+        // === CHAT FLOTANTE (WhatsApp) ===
+        document.getElementById('chat-float')?.addEventListener('click', () => {
+            const message = encodeURIComponent('Hola ORDER RAE, necesito ayuda con una cotización.');
+            window.open(`https://wa.me/573166712526?text=${message}`, '_blank');
+            showToast('💬 Abriendo chat de WhatsApp...', 'info');
+        });
+        
+        // === COMPARTIR COTIZACIÓN ===
+        document.getElementById('share-cotiza')?.addEventListener('click', () => {
+            if (!state.formData.nombre || !state.formData.producto) {
+                showToast('⚠️ Completa al menos nombre y producto para compartir', 'warning');
+                return;
+            }
+            
+            const message = encodeURIComponent(
+                `📋 *Cotización ORDER RAE*\n\n` +
+                `👤 ${state.formData.nombre}\n` +
+                `🪑 ${state.formData.producto || 'Producto no especificado'}\n` +
+                `📍 ${state.formData.ciudad || 'Ciudad no especificada'}\n` +
+                `📞 ${state.formData.telefono || 'Teléfono no especificado'}\n\n` +
+                `💬 ¿Me pueden enviar una cotización?`
+            );
+            
+            window.open(`https://wa.me/?text=${message}`, '_blank');
+            showToast('📤 Cotización compartida por WhatsApp', 'success');
+        });
+        
+        // === EVENT LISTENERS ===
+        function setupEventListeners() {
+            // Cerrar toast al hacer clic en X
+            document.getElementById('toast-container')?.addEventListener('click', (e) => {
+                if (e.target.closest('.toast-close')) {
+                    e.target.closest('.toast-modern').remove();
+                }
+            });
+            
+            // Auto-save del formulario cada 30 segundos
+            setInterval(() => {
+                saveStepData(state.currentStep);
+                localStorage.setItem('cotiza_draft', JSON.stringify(state.formData));
+            }, 30000);
+            
+            // Cargar borrador guardado al iniciar
+            const draft = localStorage.getItem('cotiza_draft');
+            if (draft && !state.formData.nombre) {
+                try {
+                    const parsed = JSON.parse(draft);
+                    Object.keys(parsed).forEach(key => {
+                        const field = document.querySelector(`[name="${key}"]`);
+                        if (field) field.value = parsed[key];
+                    });
+                    showToast('📝 Borrador cargado', 'info', { duration: 3000 });
+                } catch (e) {
+                    console.warn('Error cargando borrador:', e);
+                }
+            }
+        }
+        
+        // === UTILIDADES ===
+        function formatearMoneda(valor) {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency', currency: 'COP', minimumFractionDigits: 0
+            }).format(valor);
+        }
+        
+        // Exponer estado para debugging (solo localhost)
+        if (window.location.hostname === 'localhost') {
+            window.__COTIZA_STATE__ = state;
+            console.log('🔧 Estado expuesto en window.__COTIZA_STATE__');
+        }
+    });
+    </script>
+</body>
+</html>

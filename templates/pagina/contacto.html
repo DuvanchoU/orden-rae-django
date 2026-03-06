@@ -1,0 +1,1629 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contáctanos - ORDER RAE</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+    <!-- Bootstrap + Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Tu CSS con Django static -->
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    
+    <!-- Estilos avanzados para contacto 2026 -->
+    <style>
+        :root {
+            /* Colores principales de la marca */
+            --color-primario: #8B5E3C;
+            --color-primario-dark: #6B462C;
+            --color-secundario: #7A4B32;
+            --color-acento: #ffd166;
+            --color-exito: #06d6a0;
+            --color-advertencia: #ffd166;
+            --color-peligro: #ef476f;
+            --color-info: #118ab2;
+            
+            /* Colores de interfaz */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            
+            /* Efectos */
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
+            --shadow-glow: 0 0 25px rgba(139, 94, 60, 0.35);
+            
+            /* Animaciones */
+            --transition-fast: 150ms ease;
+            --transition-normal: 300ms ease;
+            --transition-slow: 500ms ease;
+            
+            /* Border radius */
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-full: 9999px;
+        }
+        
+        /* === DARK MODE === */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --border-color: #3a3a5a;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        
+        /* === BASE === */
+        * { box-sizing: border-box; }
+        
+        body {
+            background: var(--bg-secondary);
+            font-family: 'Figtree', sans-serif;
+            color: var(--text-primary);
+            transition: background var(--transition-normal), color var(--transition-normal);
+            line-height: 1.6;
+        }
+        
+        /* === HEADER FIJO - Espaciado inteligente === */
+        .main-with-fixed-header {
+            padding-top: clamp(120px, 20vh, 180px);
+            padding-bottom: 4rem;
+        }
+        
+        /* === TOAST NOTIFICATIONS MODERNAS === */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast-modern {
+            background: var(--bg-primary);
+            border-left: 4px solid var(--color-primario);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 320px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
+            pointer-events: auto;
+        }
+        
+        .toast-modern.success { border-left-color: var(--color-exito); }
+        .toast-modern.error { border-left-color: var(--color-peligro); }
+        .toast-modern.warning { border-left-color: var(--color-advertencia); }
+        .toast-modern.info { border-left-color: var(--color-info); }
+        
+        .toast-modern i { font-size: 1.25rem; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 600; margin-bottom: 0.25rem; }
+        .toast-message { font-size: 0.9rem; color: var(--text-secondary); }
+        .toast-close {
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; padding: 0.25rem; border-radius: var(--radius-sm);
+        }
+        .toast-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
+        
+        /* === TARJETAS DE CONTACTO PREMIUM === */
+        .contact-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: box-shadow var(--transition-normal);
+            height: 100%;
+        }
+        
+        .contact-card:hover { box-shadow: var(--shadow-lg); }
+        
+        .contact-header {
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+        
+        .contact-header h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .contact-body {
+            padding: 2rem;
+        }
+        
+        /* === FORMULARIO AVANZADO === */
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .form-label .required { color: var(--color-peligro); }
+        
+        .form-control {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.875rem 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all var(--transition-fast);
+            width: 100%;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primario);
+            background: var(--bg-primary);
+            box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.15);
+        }
+        
+        .form-control.is-invalid {
+            border-color: var(--color-peligro);
+        }
+        
+        .form-control.is-invalid:focus {
+            box-shadow: 0 0 0 4px rgba(239, 71, 111, 0.15);
+        }
+        
+        .form-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .invalid-feedback {
+            display: none;
+            color: var(--color-peligro);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+        
+        .form-control.is-invalid + .invalid-feedback { display: block; }
+        
+        /* === TEXTAREA CON CONTADOR === */
+        .textarea-wrapper { position: relative; }
+        
+        .char-count {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+        
+        .char-count.warning { color: var(--color-advertencia); }
+        .char-count.danger { color: var(--color-peligro); }
+        
+        /* === SELECT DE ASUNTO INTELIGENTE === */
+        .asunto-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .asunto-option {
+            position: relative;
+        }
+        
+        .asunto-option input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .asunto-option label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+            gap: 0.5rem;
+        }
+        
+        .asunto-option input:checked + label {
+            border-color: var(--color-primario);
+            background: rgba(139, 94, 60, 0.1);
+            box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.15);
+        }
+        
+        .asunto-option label i {
+            font-size: 1.5rem;
+            color: var(--color-primario);
+        }
+        
+        .asunto-option label span {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        /* === BOTÓN DE ENVÍO === */
+        .btn-enviar {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-enviar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--color-secundario), var(--color-primario-dark));
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+        
+        .btn-enviar:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        .btn-enviar:hover::before { opacity: 1; }
+        .btn-enviar:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .btn-enviar .spinner { display: none; }
+        .btn-enviar.loading .btn-text { display: none; }
+        .btn-enviar.loading .spinner { display: inline-block; }
+        
+        /* === INFO DE CONTACTO === */
+        .contact-info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        
+        .contact-info-item:last-child { border-bottom: none; }
+        
+        .contact-info-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: rgba(139, 94, 60, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-primario);
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        
+        .contact-info-content h6 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+        
+        .contact-info-content p,
+        .contact-info-content a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0;
+            font-size: 0.95rem;
+            transition: color var(--transition-fast);
+        }
+        
+        .contact-info-content a:hover {
+            color: var(--color-primario);
+        }
+        
+        /* === MAPA INTERACTIVO === */
+        .map-container {
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin: 1.5rem 0;
+            position: relative;
+            background: var(--bg-tertiary);
+        }
+        
+        .map-container iframe {
+            width: 100%;
+            height: 250px;
+            border: 0;
+            display: block;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .map-overlay a {
+            color: var(--color-primario);
+            font-weight: 500;
+            text-decoration: none;
+        }
+        
+        .map-overlay a:hover { text-decoration: underline; }
+        
+        /* === ESTIMACIÓN DE RESPUESTA === */
+        .response-estimate {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(17, 138, 178, 0.1);
+            border-radius: var(--radius-md);
+            margin: 1.5rem 0;
+            border-left: 3px solid var(--color-info);
+        }
+        
+        .response-estimate i {
+            font-size: 1.5rem;
+            color: var(--color-info);
+        }
+        
+        .response-estimate-text strong {
+            color: var(--color-primario);
+            font-weight: 600;
+        }
+        
+        /* === FAQ ACORDEÓN === */
+        .faq-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .faq-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .accordion-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md) !important;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+        }
+        
+        .accordion-button {
+            font-weight: 500;
+            padding: 1rem 1.25rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .accordion-button:not(.collapsed) {
+            background: rgba(139, 94, 60, 0.1);
+            color: var(--color-primario);
+            box-shadow: none;
+        }
+        
+        .accordion-button::after {
+            background-image: url("image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238B5E3C'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+        }
+        
+        .accordion-button:not(.collapsed)::after {
+            background-image: url("image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238B5E3C'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+            transform: rotate(-180deg);
+        }
+        
+        .accordion-body {
+            padding: 1rem 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        /* === CHAT FLOTANTE === */
+        .chat-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            z-index: 1000;
+        }
+        
+        .chat-float:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+        }
+        
+        .chat-float::after {
+            content: '¿Necesitas ayuda?';
+            position: absolute;
+            right: 70px;
+            background: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+            box-shadow: var(--shadow-md);
+            pointer-events: none;
+            color: var(--text-primary);
+        }
+        
+        .chat-float:hover::after { opacity: 1; }
+        
+        /* === DARK MODE TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(15deg);
+            border-color: var(--color-primario);
+        }
+        
+        /* === CONFIRMACIÓN MODAL === */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-normal);
+        }
+        
+        .modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform var(--transition-normal);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-backdrop.active .modal-content { transform: scale(1); }
+        
+        .modal-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-exito), #07b39b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            animation: bounce 0.5s ease;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .modal-icon i { font-size: 2rem; color: white; }
+        .modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+        .modal-text { color: var(--text-secondary); margin-bottom: 2rem; }
+        
+        .ticket-number {
+            background: var(--bg-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-full);
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--color-primario);
+            margin: 1rem 0;
+            display: inline-block;
+        }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .contact-card .card-body { padding: 1.5rem; }
+            .asunto-selector { grid-template-columns: repeat(2, 1fr); }
+            .contact-info-item { flex-direction: column; text-align: center; }
+            .contact-info-icon { margin: 0 auto; }
+        }
+        
+        @media (max-width: 576px) {
+            .asunto-selector { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Encabezado -->
+    <header id="barra_superior" class="bg-white border-bottom">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <a href="{% url 'pagina:home' %}">
+                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+            </a>
+
+            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
+                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
+                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
+            </div>
+
+            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+                <!-- NOTIFICACIONES -->
+                <div class="notifications-bell position-relative" id="notifications-bell">
+                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
+                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                    <div class="notifications-dropdown" id="notifications-dropdown">
+                        <div class="notifications-header">
+                            Notificaciones
+                            <a href="#" id="clear-notifications">Marcar como leídas</a>
+                        </div>
+                        <div id="notifications-list">
+                            {% if notificaciones %}
+                                {% for notif in notificaciones %}
+                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
+                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
+                                    <div class="notification-content">
+                                        <strong>{{ notif.mensaje }}</strong>
+                                        <span class="notification-time">{{ notif.fecha }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO -->
+                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                        {{ carrito_cantidad|default:0 }}
+                    </span>
+                </a>
+
+                <!-- Usuario autenticado -->
+                {% if user.is_authenticated %}
+                <div class="menu-usuario position-relative">
+                    <div class="d-flex align-items-center position-relative">
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                            alt="Usuario" class="icono-img user-trigger">
+                        <span class="user-tooltip ms-2 text-dark">
+                            {{ user.get_full_name|default:user.username }}
+                        </span>
+                    </div>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
+                        <a href="{% url 'logout' %}">Cerrar sesión</a> 
+                        
+                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="menu-usuario position-relative">
+                    <a href="#"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-2 bg-light">
+            <div class="container">
+                <nav class="navegacion d-flex flex-wrap justify-content-center">
+                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1 fw-bold" style="color: #8B5E3C;">PROMOCIONES</a>
+                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
+                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Contenido principal -->
+    <main class="container main-with-fixed-header">
+        
+        <div class="text-center mb-5">
+            <h1 class="titulo-seccion mb-2">Contáctanos</h1>
+            <p class="text-muted">¿Tienes preguntas? Estamos aquí para ayudarte</p>
+        </div>
+        
+        <div class="row g-4">
+            
+            <!-- Columna izquierda: Formulario de contacto -->
+            <div class="col-lg-6">
+                <section class="contact-card">
+                    <div class="contact-header">
+                        <h3><i class="fas fa-envelope"></i> Envíanos un mensaje</h3>
+                    </div>
+                    <div class="contact-body">
+                        
+                        <!-- Mensaje de éxito -->
+                        {% if enviado %}
+                        <div class="alert alert-success-custom text-center mb-4" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>¡Mensaje enviado!</strong> Tu ticket es <strong>#{{ ticket_number }}</strong>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Mensajes de error -->
+                        {% if errores %}
+                        <div class="alert alert-danger-cotiza mb-4" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>Por favor corrige:</strong>
+                            <ul class="mb-0 mt-2 small">
+                                {% for error in errores %}<li>{{ error }}</li>{% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Formulario -->
+                        <form id="form-contacto" method="post" action="{% url 'pagina:contacto' %}">
+                            {% csrf_token %}
+                            
+                            <!-- Selector de asunto visual -->
+                            <label class="form-label">¿En qué podemos ayudarte? <span class="required">*</span></label>
+                            <div class="asunto-selector">
+                                <div class="asunto-option">
+                                    <input type="radio" name="asunto_categoria" id="asunto-general" value="general" required>
+                                    <label for="asunto-general">
+                                        <i class="fas fa-comment"></i>
+                                        <span>Consulta general</span>
+                                    </label>
+                                </div>
+                                <div class="asunto-option">
+                                    <input type="radio" name="asunto_categoria" id="asunto-pedido" value="pedido">
+                                    <label for="asunto-pedido">
+                                        <i class="fas fa-box"></i>
+                                        <span>Mi pedido</span>
+                                    </label>
+                                </div>
+                                <div class="asunto-option">
+                                    <input type="radio" name="asunto_categoria" id="asunto-cotiza" value="cotizacion">
+                                    <label for="asunto-cotiza">
+                                        <i class="fas fa-file-invoice"></i>
+                                        <span>Cotización</span>
+                                    </label>
+                                </div>
+                                <div class="asunto-option">
+                                    <input type="radio" name="asunto_categoria" id="asunto-soporte" value="soporte">
+                                    <label for="asunto-soporte">
+                                        <i class="fas fa-headset"></i>
+                                        <span>Soporte</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">Nombre completo <span class="required">*</span></label>
+                                <input type="text" id="nombre" name="nombre" class="form-control"
+                                       placeholder="Ej: María González"
+                                       value="{{ form_data.nombre|default:'' }}" required
+                                       pattern="^[A-Za-zÁ-ú\s]{3,50}$">
+                                <div class="invalid-feedback">Ingresa un nombre válido (mín. 3 letras)</div>
+                            </div>
+                            
+                            <div class="form-row mb-3">
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Correo <span class="required">*</span></label>
+                                    <input type="email" id="email" name="email" class="form-control"
+                                           placeholder="tu@email.com"
+                                           value="{{ form_data.email|default:'' }}" required>
+                                    <div class="invalid-feedback">Ingresa un correo válido</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="telefono" class="form-label">Teléfono</label>
+                                    <input type="tel" id="telefono" name="telefono" class="form-control"
+                                           placeholder="+57 300 123 4567"
+                                           value="{{ form_data.telefono|default:'' }}">
+                                    <div class="form-text">Opcional, para contacto rápido</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="asunto_detalle" class="form-label">Asunto específico</label>
+                                <input type="text" id="asunto_detalle" name="asunto_detalle" class="form-control"
+                                       placeholder="Ej: Consulta sobre entrega de sofá"
+                                       value="{{ form_data.asunto_detalle|default:'' }}">
+                            </div>
+                            
+                            <div class="mb-4 textarea-wrapper">
+                                <label for="mensaje" class="form-label">Mensaje <span class="required">*</span></label>
+                                <textarea id="mensaje" name="mensaje" rows="5" class="form-control"
+                                          placeholder="Cuéntanos cómo podemos ayudarte..."
+                                          maxlength="1000" required>{{ form_data.mensaje|default:'' }}</textarea>
+                                <span class="char-count" id="char-count">0/1000</span>
+                            </div>
+                            
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    Acepto la <a href="#" target="_blank">Política de Privacidad</a> <span class="required">*</span>
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn-enviar" id="btn-enviar">
+                                <span class="btn-text">
+                                    <i class="fas fa-paper-plane"></i> Enviar Mensaje
+                                </span>
+                                <span class="spinner spinner-border spinner-border-sm" role="status"></span>
+                            </button>
+                        </form>
+                        
+                        <!-- Estimación de respuesta -->
+                        <div class="response-estimate">
+                            <i class="fas fa-clock"></i>
+                            <div class="response-estimate-text">
+                                <strong>Tiempo estimado de respuesta:</strong><br>
+                                <span id="response-time">2-4 horas hábiles</span> en días laborables
+                            </div>
+                        </div>
+                        
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Columna derecha: Información de contacto -->
+            <div class="col-lg-6">
+                <section class="contact-card">
+                    <div class="contact-header">
+                        <h3><i class="fas fa-info-circle"></i> Información de contacto</h3>
+                    </div>
+                    <div class="contact-body contact-info">
+                        
+                        <!-- Ubicación con mapa -->
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="contact-info-content">
+                                <h6>Nuestra sede</h6>
+                                <p>Carrera 13 # 65 - 10<br>Bogotá D.C., Colombia</p>
+                                <a href="https://maps.google.com/?q=Carrera+13+65-10+Bogota" target="_blank" class="small">
+                                    <i class="fas fa-external-link-alt me-1"></i>Ver en Google Maps
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Mapa interactivo -->
+                        <div class="map-container">
+                            <iframe 
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3976.8!2d-74.075!3d4.648!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e3f9bfd2da6cb2f%3A0x23dc3f6f5f6e5e5e!2sCra.+13+%2365-10%2C+Bogot%C3%A1!5e0!3m2!1ses!2sco!4v1234567890" 
+                                allowfullscreen="" 
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade">
+                            </iframe>
+                            <div class="map-overlay">
+                                <i class="fas fa-directions text-primary"></i>
+                                <a href="https://maps.google.com/?q=Carrera+13+65-10+Bogota" target="_blank">
+                                    Cómo llegar
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Medios de contacto -->
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-info-content">
+                                <h6>Correo electrónico</h6>
+                                <a href="mailto:contacto@ordenrae.com">contacto@ordenrae.com</a>
+                                <p class="small text-muted mt-1">Respondemos en 24-48 horas</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="contact-info-content">
+                                <h6>Teléfono</h6>
+                                <a href="tel:+5717977090">797 7090</a>
+                                <p class="small text-muted mt-1">Lun-Vie: 9AM-6PM, Sáb: 9AM-2PM</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <div class="contact-info-content">
+                                <h6>WhatsApp</h6>
+                                <a href="https://wa.me/573166712526" target="_blank">(+57) 316 671 2526</a>
+                                <p class="small text-success mt-1"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Respuesta en minutos</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Redes sociales -->
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">
+                                <i class="fas fa-share-alt"></i>
+                            </div>
+                            <div class="contact-info-content">
+                                <h6>Síguenos en redes</h6>
+                                <div class="d-flex gap-3 mt-2">
+                                    <a href="#" class="text-decoration-none" aria-label="Facebook">
+                                        <i class="fab fa-facebook fa-lg" style="color: #1877F2;"></i>
+                                    </a>
+                                    <a href="#" class="text-decoration-none" aria-label="Instagram">
+                                        <i class="fab fa-instagram fa-lg" style="color: #E4405F;"></i>
+                                    </a>
+                                    <a href="#" class="text-decoration-none" aria-label="Pinterest">
+                                        <i class="fab fa-pinterest fa-lg" style="color: #E60023;"></i>
+                                    </a>
+                                    <a href="#" class="text-decoration-none" aria-label="TikTok">
+                                        <i class="fab fa-tiktok fa-lg" style="color: #000;"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </section>
+            </div>
+            
+        </div>
+        
+        <!-- Sección de Preguntas Frecuentes -->
+        <section class="faq-section">
+            <h3 class="faq-title"><i class="fas fa-question-circle"></i> Preguntas frecuentes</h3>
+            
+            <div class="accordion" id="faq-accordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            ¿Cuál es el tiempo de entrega?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faq-accordion">
+                        <div class="accordion-body">
+                            Los tiempos de entrega varían según la ubicación: Bogotá (3-5 días hábiles), otras ciudades principales (5-8 días), y zonas remotas (8-12 días). Te enviaremos un seguimiento con el número de guía una vez despachado tu pedido.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            ¿Aceptan pagos contra entrega?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faq-accordion">
+                        <div class="accordion-body">
+                            Sí, aceptamos pago contra entrega en efectivo para Bogotá, Medellín, Cali y Barranquilla. Para otras ciudades, ofrecemos pago anticipado vía PSE, tarjeta de crédito/débito o transferencia bancaria.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            ¿Puedo cambiar o cancelar mi pedido?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faq-accordion">
+                        <div class="accordion-body">
+                            Puedes modificar o cancelar tu pedido dentro de las primeras 2 horas después de confirmarlo. Después de ese tiempo, si el producto ya está en producción, aplican políticas de cambio. Contáctanos inmediatamente para evaluar tu caso.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            ¿Ofrecen garantía en los productos?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faq-accordion">
+                        <div class="accordion-body">
+                            Todos nuestros muebles tienen garantía de 12 meses contra defectos de fabricación. La garantía cubre estructura, mecanismos y acabados. No cubre daños por mal uso, accidentes o modificaciones no autorizadas.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- Botones flotantes -->
+    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema" aria-label="Alternar modo oscuro">
+        <i class="fas fa-moon"></i>
+    </button>
+    
+    <button class="chat-float" id="chat-float" title="Chat de ayuda" aria-label="Abrir chat de WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </button>
+
+    <!-- Modal de confirmación -->
+    <div class="modal-backdrop" id="modal-confirmacion">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 class="modal-title">¡Mensaje enviado! 🎉</h3>
+            <p class="modal-text">
+                Hemos recibido tu consulta. Un asesor se contactará contigo en:
+            </p>
+            <div class="response-estimate mb-4">
+                <i class="fas fa-clock"></i>
+                <div class="response-estimate-text">
+                    <strong id="modal-response-time">2-4 horas hábiles</strong>
+                </div>
+            </div>
+            <p class="modal-text small">
+                Número de ticket: <strong class="ticket-number" id="modal-ticket-num">#{{ ticket_number|default:'XXXX' }}</strong>
+            </p>
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary" style="background: var(--color-primario); border: none;" onclick="closeModal()">
+                    <i class="fas fa-home me-2"></i>Volver al inicio
+                </button>
+                <button class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print me-2"></i>Imprimir comprobante
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <footer class="footer-moderno footer-bg text-dark">
+        <div class="container">
+            <div class="row g-4 g-lg-5">
+                
+                <!-- Columna 1: Logo + Redes + Newsletter -->
+                <div class="col-12 col-lg-4">
+                    <div class="footer-brand mb-4">
+                        <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" class="footer-logo" />
+                        <p class="footer-description text-muted mt-3">
+                            Diseñamos muebles con alma para transformar tu hogar en un espacio único, cálido y funcional.
+                        </p>
+                    </div>
+                    
+                    <div class="footer-social mb-4">
+                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-newsletter">
+                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
+                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
+                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
+                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Columna 2: Empresa -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">EMPRESA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Quiénes somos</a></li>
+                        <li><a href="#">Nuestra historia</a></li>
+                        <li><a href="#">Sostenibilidad</a></li>
+                        <li><a href="#">Trabaja con nosotros</a></li>
+                        <li><a href="#">Blog de decoración</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 3: Ayuda -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">AYUDA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Preguntas Frecuentes</a></li>
+                        <li><a href="#">Guía de tallas</a></li>
+                        <li><a href="#">Cuidado de muebles</a></li>
+                        <li><a href="#">Política de envíos</a></li>
+                        <li><a href="#">Devoluciones</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 4: Legal -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">LEGAL</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Política de Cookies</a></li>
+                        <li><a href="#">Accesibilidad Web</a></li>
+                        <li><a href="#">PQRS</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 5: Contacto -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">CONTACTO</h6>
+                    <ul class="footer-contact list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-phone text-primary me-2"></i>
+                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
+                        </li>
+                        <li>
+                            <i class="fab fa-whatsapp text-primary me-2"></i>
+                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Métodos de pago y certificaciones -->
+            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-lg-6">
+                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
+                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
+                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
+                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 text-lg-end">
+                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
+                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
+                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
+                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright + Back to top -->
+            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <p class="mb-0 small text-muted">
+                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
+                </p>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+                    <button class="btn btn-sm btn-back-to-top d-none" id="btnBackToTop" aria-label="Volver arriba">
+                        <i class="fas fa-arrow-up"></i> <span class="d-none d-sm-inline">Arriba</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Datos desde Django para JavaScript -->
+    <script id="contacto-data" type="application/json">
+        {
+            "carrito_cantidad": {{ carrito_cantidad|default:0 }},
+            "notificaciones_nuevas": {{ notificaciones_nuevas|default:0 }},
+            "enviado": {{ enviado|default:'false' }},
+            "ticket_number": "{{ ticket_number|default:'ABCD12' }}",
+            "form_data": {{ form_data_json|default:'{}'|safe }},
+            "response_times": {
+                "general": "2-4 horas hábiles",
+                "pedido": "1-2 horas hábiles",
+                "cotizacion": "4-8 horas hábiles",
+                "soporte": "1 hora hábil"
+            }
+        }
+    </script>
+
+    <!-- Script avanzado de contacto 2026 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('📞 Contacto Profesional 2026 cargado');
+        
+        // === CONFIGURACIÓN ===
+        const CONFIG = {
+            MAX_CHARS_MENSAJE: 1000,
+            RESPONSE_TIMES: {
+                'general': '2-4 horas hábiles',
+                'pedido': '1-2 horas hábiles',
+                'cotizacion': '4-8 horas hábiles',
+                'soporte': '1 hora hábil'
+            },
+            TOAST_DURATION: 5000
+        };
+        
+        // === ESTADO GLOBAL ===
+        const state = {
+            formData: {},
+            theme: localStorage.getItem('theme') || 'light',
+            ticketNumber: null
+        };
+        
+        // === INICIALIZACIÓN ===
+        init();
+        
+        function init() {
+            // Cargar datos desde Django
+            const djangoData = JSON.parse(document.getElementById('contacto-data').textContent || '{}');
+            state.formData = djangoData.form_data || {};
+            state.ticketNumber = djangoData.ticket_number;
+            
+            // Aplicar tema guardado
+            applyTheme(state.theme);
+            
+            // Inicializar UI
+            updateCharCount();
+            setupFormValidation();
+            setupPhoneFormatting();
+            setupAsuntoSelector();
+            setupEventListeners();
+            
+            // Si ya fue enviado, mostrar modal
+            if (djangoData.enviado === 'true') {
+                showConfirmationModal();
+            }
+            
+            console.log('✅ Contacto inicializado');
+        }
+        
+        // === VALIDACIÓN DE FORMULARIO ===
+        function setupFormValidation() {
+            document.querySelectorAll('.form-control[required]').forEach(input => {
+                input.addEventListener('blur', () => validateField(input));
+                input.addEventListener('input', () => {
+                    if (input.classList.contains('is-invalid')) {
+                        validateField(input);
+                    }
+                });
+            });
+            
+            // Contador de caracteres
+            document.getElementById('mensaje')?.addEventListener('input', updateCharCount);
+        }
+        
+        function validateField(input) {
+            const value = input.value.trim();
+            const isValid = value.length > 0;
+            
+            if (!isValid && input.required) {
+                input.classList.add('is-invalid');
+                return false;
+            }
+            
+            // Validaciones específicas
+            if (input.type === 'email' && value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    input.classList.add('is-invalid');
+                    return false;
+                }
+            }
+            
+            if (input.id === 'nombre' && value) {
+                const nameRegex = /^[A-Za-zÁ-ú\s]{3,50}$/;
+                if (!nameRegex.test(value)) {
+                    input.classList.add('is-invalid');
+                    return false;
+                }
+            }
+            
+            input.classList.remove('is-invalid');
+            return true;
+        }
+        
+        function validateForm() {
+            let isValid = true;
+            
+            // Validar campos requeridos
+            document.querySelectorAll('#form-contacto [required]').forEach(input => {
+                if (!validateField(input)) {
+                    isValid = false;
+                }
+            });
+            
+            // Validar que se seleccionó un asunto
+            const asuntoSelected = document.querySelector('input[name="asunto_categoria"]:checked');
+            if (!asuntoSelected) {
+                showToast('⚠️ Selecciona un tipo de consulta', 'warning');
+                isValid = false;
+            }
+            
+            // Validar términos
+            const terms = document.getElementById('terms');
+            if (terms && !terms.checked) {
+                showToast('⚠️ Debes aceptar la política de privacidad', 'warning');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        // === FORMATO DE TELÉFONO ===
+        function setupPhoneFormatting() {
+            const telefono = document.getElementById('telefono');
+            if (!telefono) return;
+            
+            telefono.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                if (value.startsWith('57')) {
+                    value = value.slice(2);
+                }
+                
+                if (value.length > 0) value = '+57 ' + value;
+                if (value.length > 7) value = value.slice(0, 4) + ' ' + value.slice(4);
+                if (value.length > 12) value = value.slice(0, 8) + ' ' + value.slice(8);
+                
+                e.target.value = value.slice(0, 17);
+            });
+        }
+        
+        // === CONTADOR DE CARACTERES ===
+        function updateCharCount() {
+            const textarea = document.getElementById('mensaje');
+            const counter = document.getElementById('char-count');
+            
+            if (textarea && counter) {
+                const count = textarea.value.length;
+                counter.textContent = `${count}/${CONFIG.MAX_CHARS_MENSAJE}`;
+                
+                counter.classList.remove('warning', 'danger');
+                if (count > CONFIG.MAX_CHARS_MENSAJE * 0.9) {
+                    counter.classList.add('danger');
+                } else if (count > CONFIG.MAX_CHARS_MENSAJE * 0.7) {
+                    counter.classList.add('warning');
+                }
+            }
+        }
+        
+        // === SELECTOR DE ASUNTO INTELIGENTE ===
+        function setupAsuntoSelector() {
+            document.querySelectorAll('.asunto-option input').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    // Actualizar estimación de respuesta
+                    const categoria = e.target.value;
+                    const responseTime = CONFIG.RESPONSE_TIMES[categoria] || CONFIG.RESPONSE_TIMES.general;
+                    document.getElementById('response-time').textContent = responseTime;
+                    
+                    // Guardar en estado
+                    state.formData.asunto_categoria = categoria;
+                });
+            });
+        }
+        
+        // === ENVÍO DEL FORMULARIO ===
+        const formContacto = document.getElementById('form-contacto');
+        const btnEnviar = document.getElementById('btn-enviar');
+        
+        if (formContacto) {
+            formContacto.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Validación completa
+                if (!validateForm()) {
+                    return;
+                }
+                
+                // Guardar datos del formulario
+                const formData = new FormData(formContacto);
+                for (let [key, value] of formData.entries()) {
+                    state.formData[key] = value;
+                }
+                
+                // Estado de carga
+                btnEnviar.classList.add('loading');
+                btnEnviar.disabled = true;
+                
+                try {
+                    // Enviar vía Fetch API
+                    const response = await fetch(formContacto.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            // Mostrar modal de confirmación
+                            state.ticketNumber = data.ticket_number || state.ticketNumber;
+                            showConfirmationModal();
+                            
+                            // Guardar notificación
+                            guardarNotificacion('¡Tu mensaje ha sido enviado! Te responderemos pronto.');
+                            
+                            // Resetear formulario
+                            formContacto.reset();
+                            
+                            // Resetear selector de asunto
+                            document.querySelectorAll('.asunto-option input').forEach(r => r.checked = false);
+                            document.getElementById('response-time').textContent = CONFIG.RESPONSE_TIMES.general;
+                            
+                        } else {
+                            throw new Error(data.error || 'Error al procesar');
+                        }
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error al enviar mensaje:', error);
+                    showToast('❌ Error al enviar. Intenta nuevamente.', 'error');
+                } finally {
+                    btnEnviar.classList.remove('loading');
+                    btnEnviar.disabled = false;
+                }
+            });
+        }
+        
+        // === MODAL DE CONFIRMACIÓN ===
+        function showConfirmationModal() {
+            document.getElementById('modal-ticket-num').textContent = `#${state.ticketNumber}`;
+            
+            const categoria = state.formData.asunto_categoria || 'general';
+            document.getElementById('modal-response-time').textContent = CONFIG.RESPONSE_TIMES[categoria];
+            
+            const modal = document.getElementById('modal-confirmacion');
+            modal.classList.add('active');
+            
+            // Cerrar al hacer clic fuera
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+        
+        window.closeModal = function() {
+            document.getElementById('modal-confirmacion').classList.remove('active');
+        };
+        
+        // === TOAST NOTIFICATIONS ===
+        window.showToast = function(message, type = 'info', options = {}) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-modern ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info}"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${type === 'success' ? '¡Éxito!' : type === 'error' ? 'Error' : 'Atención'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.closest('.toast-modern').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.animation = 'fadeOut 0.3s ease forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, options.duration || CONFIG.TOAST_DURATION);
+        };
+        
+        // === SISTEMA DE NOTIFICACIONES (campana) ===
+        // ... (código de notificaciones igual que antes) ...
+        
+        // === THEME TOGGLE ===
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            applyTheme(state.theme);
+            localStorage.setItem('theme', state.theme);
+            
+            const icon = document.querySelector('#theme-toggle i');
+            if (icon) {
+                icon.className = state.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+            }
+        });
+        
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        
+        // === CHAT FLOTANTE (WhatsApp) ===
+        document.getElementById('chat-float')?.addEventListener('click', () => {
+            const message = encodeURIComponent('Hola ORDER RAE, necesito ayuda con una consulta.');
+            window.open(`https://wa.me/573166712526?text=${message}`, '_blank');
+            showToast('💬 Abriendo chat de WhatsApp...', 'info');
+        });
+        
+        // === EVENT LISTENERS ===
+        function setupEventListeners() {
+            // Cerrar toast al hacer clic en X
+            document.getElementById('toast-container')?.addEventListener('click', (e) => {
+                if (e.target.closest('.toast-close')) {
+                    e.target.closest('.toast-modern').remove();
+                }
+            });
+            
+            // Auto-save del formulario cada 30 segundos
+            setInterval(() => {
+                const formData = {};
+                document.querySelectorAll('#form-contacto input, #form-contacto textarea, #form-contacto select').forEach(field => {
+                    if (field.name && field.type !== 'submit') {
+                        formData[field.name] = field.value;
+                    }
+                });
+                localStorage.setItem('contacto_draft', JSON.stringify(formData));
+            }, 30000);
+            
+            // Cargar borrador guardado al iniciar
+            const draft = localStorage.getItem('contacto_draft');
+            if (draft && !state.formData.nombre) {
+                try {
+                    const parsed = JSON.parse(draft);
+                    Object.keys(parsed).forEach(key => {
+                        const field = document.querySelector(`[name="${key}"]`);
+                        if (field && field.type !== 'radio' && field.type !== 'checkbox') {
+                            field.value = parsed[key];
+                        }
+                    });
+                    showToast('📝 Borrador cargado', 'info', { duration: 3000 });
+                } catch (e) {
+                    console.warn('Error cargando borrador:', e);
+                }
+            }
+            
+            // FAQ: Abrir/cerrar con animación suave
+            document.querySelectorAll('.accordion-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.getAttribute('data-bs-target');
+                    const collapse = document.querySelector(target);
+                    if (collapse) {
+                        collapse.addEventListener('shown.bs.collapse', () => {
+                            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, { once: true });
+                    }
+                });
+            });
+        }
+        
+        // === UTILIDADES ===
+        function formatearMoneda(valor) {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency', currency: 'COP', minimumFractionDigits: 0
+            }).format(valor);
+        }
+        
+        // Exponer estado para debugging (solo localhost)
+        if (window.location.hostname === 'localhost') {
+            window.__CONTACTO_STATE__ = state;
+            console.log('🔧 Estado expuesto en window.__CONTACTO_STATE__');
+        }
+    });
+    </script>
+</body>
+</html>
