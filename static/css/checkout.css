@@ -56,12 +56,6 @@ body {
     line-height: 1.6;
 }
 
-/* Header fijo - spacing inteligente */
-.main-with-fixed-header {
-    padding-top: clamp(100px, 15vh, 140px);
-    padding-bottom: 4rem;
-}
-
 /* === PROGRESS STEPS === */
 .checkout-progress {
     background: var(--bg-primary);

@@ -34,11 +34,6 @@ body {
     transition: background var(--transition-normal), color var(--transition-normal);
 }
 
-.main-with-fixed-header {
-    padding-top: clamp(120px, 20vh, 180px);
-    padding-bottom: 4rem;
-}
-
 /* Toast Notifications */
 .toast-container {
     position: fixed;
