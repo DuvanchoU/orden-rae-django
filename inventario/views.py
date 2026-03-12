@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Producto, Bodegas, Categorias, Proveedores, Inventario
@@ -41,7 +41,7 @@ class ProductoListView(ListView):
 
 class ProductoCreateView(CreateView):
     model = Producto
-    template_name = 'inventario/producto_form.html'
+    template_name = 'inventario/producto_create.html'
     fields = ['codigo_producto', 'referencia_producto', 'categoria', 'tipo_madera', 
               'color_producto', 'precio_actual', 'estado']
     success_url = reverse_lazy('inventario:producto_list')
@@ -55,7 +55,7 @@ class ProductoCreateView(CreateView):
 
 class ProductoUpdateView(UpdateView):
     model = Producto
-    template_name = 'inventario/producto_form.html'
+    template_name = 'inventario/producto_create.html'
     fields = ['codigo_producto', 'referencia_producto', 'categoria', 'tipo_madera', 
               'color_producto', 'precio_actual', 'estado']
     success_url = reverse_lazy('inventario:producto_list')
@@ -71,6 +71,11 @@ class ProductoDeleteView(DeleteView):
     model = Producto
     template_name = 'inventario/producto_confirm_delete.html'
     success_url = reverse_lazy('inventario:producto_list')
+
+class ProductoDetailView(DetailView):
+    model = Producto
+    template_name = 'inventario/producto_detail.html'
+    context_object_name = 'producto'
 
 # BODEGAS
 class BodegaListView(ListView):

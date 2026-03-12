@@ -22,6 +22,9 @@ class Categorias(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
 
+    def __str__(self):
+        return self.nombre_categoria
+    
     class Meta:
         managed = True
         db_table = 'categorias'
@@ -57,6 +60,16 @@ class Producto(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
 
+    def precio_formateado(self):
+        """
+        Retorna el precio formateado sin decimales y con separador de miles
+        Ejemplo: 950000 → $950.000
+        """
+        return f"{int(self.precio_actual):,}".replace(",", ".")
+    
+    def __str__(self):
+        return f"{self.codigo_producto} - {self.referencia_producto}"
+    
     class Meta:
         managed = True
         db_table = 'producto'

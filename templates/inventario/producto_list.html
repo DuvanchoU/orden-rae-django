@@ -3,114 +3,183 @@
 {% block title %}Productos - Inventario{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2 class="fw-bold mb-0">Productos</h2>
-        <p class="text-muted small">Gestiona el catálogo de productos.</p>
+        <h1 class="page-title">Productos</h1>
+        <p class="page-subtitle">Gestiona el catálogo de productos</p>
     </div>
-    <a href="{% url 'inventario:producto_create' %}" class="btn btn-sand">
-        <i class="bi bi-plus-lg me-1"></i> Nuevo Producto
+    <a href="{% url 'inventario:producto_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nuevo Producto
     </a>
 </div>
 
 <!-- Filtros -->
-<div class="card-modern mb-4">
-    <form method="get" class="row g-3">
-        <div class="col-md-4">
-            <label class="form-label small text-muted">Buscar</label>
-            <input type="text" name="busqueda" class="form-control form-control-sm" 
-                   placeholder="Código, referencia o color" value="{{ request.GET.busqueda }}">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted">Categoría</label>
-            <select name="categoria" class="form-select form-select-sm">
-                <option value="">Todas</option>
-                {% for cat in categorias %}
-                <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
-                    {{ cat.nombre_categoria }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted">Estado</label>
-            <select name="estado" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for est in estados %}
-                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
-            <a href="{% url 'inventario:producto_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-x"></i>
-            </a>
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="busqueda" class="form-control" 
+                       placeholder="Código, referencia o color" 
+                       value="{{ request.GET.busqueda }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoría</label>
+                <select name="categoria" class="form-select">
+                    <option value="">Todas</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id_categorias }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.nombre_categoria }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="DISPONIBLE" {% if request.GET.estado == 'DISPONIBLE' %}selected{% endif %}>DISPONIBLE</option>
+                    <option value="AGOTADO" {% if request.GET.estado == 'AGOTADO' %}selected{% endif %}>AGOTADO</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>Filtrar
+                </button>
+                <a href="{% url 'inventario:producto_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
 <!-- Tabla -->
-<div class="card-modern p-0 overflow-hidden">
-    <table class="table table-modern table-modern mb-0">
-        <thead>
-            <tr>
-                <th class="ps-4">CÓDIGO</th>
-                <th>PRODUCTO</th>
-                <th>CATEGORÍA</th>
-                <th>COLOR</th>
-                <th>PRECIO</th>
-                <th>ESTADO</th>
-                <th class="text-end pe-4">ACCIONES</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for producto in productos %}
-            <tr>
-                <td class="ps-4 fw-bold text-muted">{{ producto.codigo_producto }}</td>
-                <td>
-                    <div class="fw-bold">{{ producto.referencia_producto|default:"Sin referencia" }}</div>
-                    <small class="text-muted">{{ producto.tipo_madera|default:"" }}</small>
-                </td>
-                <td>{{ producto.categoria.nombre_categoria }}</td>
-                <td>{{ producto.color_producto|default:"-" }}</td>
-                <td class="fw-bold">${{ producto.precio_actual }}</td>
-                <td>
-                    {% if producto.estado == 'ACTIVO' %}
-                        <span class="badge badge-estado bg-terminada">ACTIVO</span>
-                    {% elif producto.estado == 'INACTIVO' %}
-                        <span class="badge badge-estado bg-pendiente">INACTIVO</span>
-                    {% else %}
-                        <span class="badge badge-estado bg-proceso">AGOTADO</span>
-                    {% endif %}
-                </td>
-                <td class="text-end pe-4">
-                    <a href="{% url 'inventario:producto_update' producto.pk %}" class="btn btn-sm btn-light text-secondary">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{% url 'inventario:producto_delete' producto.pk %}" class="btn btn-sm btn-light text-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7" class="text-center py-4 text-muted">No hay productos registrados.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Código</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Color</th>
+                    <th>Precio</th>
+                    <th>Estado</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                <tr>
+                    <td class="ps-4 fw-semibold" data-label="Código">
+                        {{ producto.codigo_producto }}
+                    </td>
+                    <td data-label="Producto">
+                        <div class="fw-semibold">{{ producto.referencia_producto|default:"Sin referencia" }}</div>
+                        {% if producto.tipo_madera %}
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            {{ producto.tipo_madera }}
+                        </small>
+                        {% endif %}
+                    </td>
+                    <td data-label="Categoría">
+                        {{ producto.categoria.nombre_categoria }}
+                    </td>
+                    <td data-label="Color">
+                        {{ producto.color_producto|default:"-" }}
+                    </td>
+                    <td data-label="Precio" class="fw-bold">
+                        ${{ producto.precio_formateado }}
+                    </td>
+                    <td data-label="Estado">
+                        {% if producto.estado == 'DISPONIBLE' %}
+                            <span class="badge-estado disponible">
+                                DISPONIBLE
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                AGOTADO
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'inventario:producto_detail' producto.pk %}" 
+                                class="btn-action btn-action-view" 
+                                title="Ver">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="{% url 'inventario:producto_update' producto.pk %}" 
+                                class="btn-action btn-action-edit" 
+                                title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'inventario:producto_delete' producto.pk %}" 
+                                class="btn-action btn-action-delete" 
+                                title="Eliminar"
+                                onclick="return confirm('¿Estás seguro de eliminar este producto?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay productos registrados</p>
+                            <a href="{% url 'inventario:producto_create' %}" class="btn btn-nuevo">
+                                <i class="bi bi-plus-lg"></i>Crear primero
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
+    <!-- Paginación -->
     {% if is_paginated %}
-    <div class="p-3 bg-light border-top d-flex justify-content-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination-compact">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                        Siguiente
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>

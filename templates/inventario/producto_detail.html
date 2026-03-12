@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ producto.codigo_producto }} - Información{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Características del producto</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'inventario:producto_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'inventario:producto_update' producto.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Código -->
+                <div class="col-md-6">
+                    <label class="info-label">CÓDIGO</label>
+                    <p class="info-value fw-bold">{{ producto.codigo_producto }}</p>
+                </div>
+                
+                <!-- Referencia -->
+                <div class="col-md-6">
+                    <label class="info-label">REFERENCIA</label>
+                    <p class="info-value fw-bold">{{ producto.referencia_producto|default:"Sin referencia" }}</p>
+                </div>
+                
+                <!-- Categoría -->
+                <div class="col-md-6">
+                    <label class="info-label">CATEGORÍA</label>
+                    <p class="info-value">{{ producto.categoria.nombre_categoria }}</p>
+                </div>
+                
+                <!-- Tipo de Madera -->
+                <div class="col-md-6">
+                    <label class="info-label">TIPO DE MADERA</label>
+                    <p class="info-value">{{ producto.tipo_madera|default:"No especificado" }}</p>
+                </div>
+                
+                <!-- Color -->
+                <div class="col-md-6">
+                    <label class="info-label">COLOR</label>
+                    <p class="info-value">{{ producto.color_producto|default:"No especificado" }}</p>
+                </div>
+                
+                <!-- Proveedor -->
+                <div class="col-md-6">
+                    <label class="info-label">PROVEEDOR</label>
+                    <p class="info-value">
+                        {% if producto.proveedor %}
+                            {{ producto.proveedor.nombre }}
+                        {% else %}
+                            No especificado
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Precio -->
+                <div class="col-md-6">
+                    <label class="info-label">PRECIO ACTUAL</label>
+                    <p class="info-price">${{ producto.precio_formateado }}</p>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if producto.estado == 'DISPONIBLE' %}
+                            <span class="badge-estado disponible">
+                                <span class="dot"></span>DISPONIBLE
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                <span class="dot"></span>AGOTADO
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral - Información Adicional -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'inventario:inventario_list' %}?producto={{ producto.pk }}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-box-seam me-2"></i>Ver Stock
+                </a>
+                <a href="{% url 'produccion:produccion_list' %}?producto={{ producto.pk }}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-gear-wide-connected me-2"></i>Ver Producción
+                </a>
+            </div>
+            
+            <!-- Fechas e ID -->
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">FECHA DE CREACIÓN</label>
+                    <p class="info-text">{{ producto.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ producto.updated_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ producto.pk }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
