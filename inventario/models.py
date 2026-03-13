@@ -13,6 +13,8 @@ class Bodegas(models.Model):
         managed = True
         db_table = 'bodegas'
 
+    def __str__(self):
+        return self.nombre_bodega
 
 class Categorias(models.Model):
     id_categorias = models.AutoField(primary_key=True)
@@ -22,14 +24,13 @@ class Categorias(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
 
-    def __str__(self):
-        return self.nombre_categoria
-    
     class Meta:
         managed = True
         db_table = 'categorias'
 
-
+    def __str__(self):
+        return self.nombre_categoria
+    
 class Proveedores(models.Model):
     id_proveedor = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
@@ -45,7 +46,9 @@ class Proveedores(models.Model):
         managed = True
         db_table = 'proveedores'
 
-
+    def __str__(self):
+        return self.nombre
+    
 class Producto(models.Model):
     id_producto = models.AutoField(primary_key=True)
     codigo_producto = models.CharField(max_length=45)
@@ -92,6 +95,8 @@ class Inventario(models.Model):
         managed = True
         db_table = 'inventario'
 
+    def __str__(self):
+        return f"{self.producto.codigo_producto} - {self.bodega.nombre_bodega}"
 
 class ImagenesProducto(models.Model):
     id_imagen = models.AutoField(primary_key=True)

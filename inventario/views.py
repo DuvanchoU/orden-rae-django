@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Producto, Bodegas, Categorias, Proveedores, Inventario
 from django.contrib import messages
+from .forms import InventarioForm, ProductoForm
 
 # PRODUCTOS
 class ProductoListView(ListView):
@@ -35,15 +36,14 @@ class ProductoListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['categorias'] = Categorias.objects.all()
-        context['estados'] = ['ACTIVO', 'INACTIVO', 'AGOTADO']
+        context['estados'] = ['DISPONIBLE', 'AGOTADO']
         return context
 
 
 class ProductoCreateView(CreateView):
     model = Producto
     template_name = 'inventario/producto_create.html'
-    fields = ['codigo_producto', 'referencia_producto', 'categoria', 'tipo_madera', 
-              'color_producto', 'precio_actual', 'estado']
+    form_class = ProductoForm 
     success_url = reverse_lazy('inventario:producto_list')
 
     def get_context_data(self, **kwargs):
@@ -56,8 +56,7 @@ class ProductoCreateView(CreateView):
 class ProductoUpdateView(UpdateView):
     model = Producto
     template_name = 'inventario/producto_create.html'
-    fields = ['codigo_producto', 'referencia_producto', 'categoria', 'tipo_madera', 
-              'color_producto', 'precio_actual', 'estado']
+    form_class = ProductoForm 
     success_url = reverse_lazy('inventario:producto_list')
 
     def get_context_data(self, **kwargs):
@@ -282,9 +281,8 @@ class InventarioListView(ListView):
 
 class InventarioCreateView(CreateView):
     model = Inventario
-    template_name = 'inventario/inventario_form.html'
-    fields = ['producto', 'bodega', 'proveedor', 'cantidad_disponible', 
-              'fecha_llegada', 'estado']
+    template_name = 'inventario/inventario_create.html'
+    form_class = InventarioForm
     success_url = reverse_lazy('inventario:inventario_list')
 
     def get_context_data(self, **kwargs):
@@ -298,9 +296,8 @@ class InventarioCreateView(CreateView):
 
 class InventarioUpdateView(UpdateView):
     model = Inventario
-    template_name = 'inventario/inventario_form.html'
-    fields = ['producto', 'bodega', 'proveedor', 'cantidad_disponible', 
-              'fecha_llegada', 'estado']
+    template_name = 'inventario/inventario_create.html'
+    form_class = InventarioForm
     success_url = reverse_lazy('inventario:inventario_list')
 
     def get_context_data(self, **kwargs):
@@ -316,3 +313,9 @@ class InventarioDeleteView(DeleteView):
     model = Inventario
     template_name = 'inventario/inventario_confirm_delete.html'
     success_url = reverse_lazy('inventario:inventario_list')
+
+class InventarioDetailView(DetailView):
+    model = Inventario
+    template_name = 'inventario/inventario_detail.html'
+    context_object_name = 'item'  # Para coincidir con el template
+    

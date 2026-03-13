@@ -1,24 +1,68 @@
 {% extends 'base.html' %}
 
-{% block title %}Eliminar Registro{% endblock %}
+{% block title %}Eliminar Registro #{{ item.id_inventario }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <div class="card-modern text-center">
+        <div class="card-modern text-center p-5">
+            <!-- Icono -->
             <div class="mb-4">
-                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: rgba(239, 68, 68, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2.5rem;"></i>
+                </div>
             </div>
+            
+            <!-- Título -->
             <h4 class="fw-bold mb-3">¿Estás seguro?</h4>
+            
+            <!-- Información del registro -->
+            <div class="text-start bg-light rounded p-3 mb-4" style="background-color: var(--bg-elevated) !important;">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <small class="text-muted">Producto:</small>
+                        <p class="fw-semibold mb-0">{{ item.producto.codigo_producto }}</p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Bodega:</small>
+                        <p class="fw-semibold mb-0">{{ item.bodega.nombre_bodega }}</p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Cantidad:</small>
+                        <p class="fw-semibold mb-0">{{ item.cantidad_disponible }}</p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Estado:</small>
+                        <p class="fw-semibold mb-0">
+                            {% if item.estado == 'DISPONIBLE' %}
+                                <span class="badge-estado disponible">DISPONIBLE</span>
+                            {% elif item.estado == 'RESERVADO' %}
+                                <span class="badge-estado reservado">RESERVADO</span>
+                            {% else %}
+                                <span class="badge-estado agotado">AGOTADO</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advertencia -->
             <p class="text-muted mb-4">
-                Estás a punto de eliminar este registro de inventario.
-                Esta acción no se puede deshacer.
+                Estás a punto de eliminar el registro <strong>#{{ item.id_inventario }}</strong>.
+                <br>
+                <span class="text-danger fw-semibold">Esta acción no se puede deshacer.</span>
             </p>
+            
+            <!-- Botones -->
             <form method="post">
                 {% csrf_token %}
                 <div class="d-flex justify-content-center gap-3">
-                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash-fill me-2"></i>Sí, Eliminar
+                    </button>
                 </div>
             </form>
         </div>

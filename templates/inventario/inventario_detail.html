@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Registro #{{ item.id_inventario }} - Stock{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Detalle del registro de inventario</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'inventario:inventario_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'inventario:inventario_update' item.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información del Registro -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Código -->
+                <div class="col-md-6">
+                    <label class="info-label">CÓDIGO</label>
+                    <p class="info-value fw-bold">{{ item.producto.codigo_producto }}</p>
+                </div>
+                
+                <!-- Referencia -->
+                <div class="col-md-6">
+                    <label class="info-label">REFERENCIA</label>
+                    <p class="info-value fw-bold">{{ item.producto.referencia_producto|default:"Sin referencia" }}</p>
+                </div>
+                
+                <!-- Bodega -->
+                <div class="col-md-6">
+                    <label class="info-label">BODEGA</label>
+                    <p class="info-value">{{ item.bodega.nombre_bodega }}</p>
+                </div>
+                
+                <!-- Proveedor -->
+                <div class="col-md-6">
+                    <label class="info-label">PROVEEDOR</label>
+                    <p class="info-value">
+                        {% if item.proveedor %}
+                            {{ item.proveedor.nombre }}
+                        {% else %}
+                            No especificado
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Cantidad Disponible -->
+                <div class="col-md-6">
+                    <label class="info-label">CANTIDAD DISPONIBLE</label>
+                    <p class="info-value fw-bold" style="font-size: 1.5rem; color: var(--accent);">
+                        {{ item.cantidad_disponible }}
+                    </p>
+                </div>
+                
+                <!-- Fecha Llegada -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA LLEGADA</label>
+                    <p class="info-value">
+                        {{ item.fecha_llegada|date:"d/m/Y"|default:"No registrada" }}
+                    </p>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if item.estado == 'DISPONIBLE' %}
+                            <span class="badge-estado disponible">
+                                DISPONIBLE
+                            </span>
+                        {% elif item.estado == 'RESERVADO' %}
+                            <span class="badge-estado reservado">
+                                RESERVADO
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                AGOTADO
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral - Acciones e Información -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'inventario:producto_detail' item.producto.pk %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-box-seam me-2"></i>Ver Producto
+                </a>
+            </div>
+            
+            <!-- Información del Sistema -->
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ item.updated_at|date:"d/m/Y H:i" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ item.pk }}</p>
+                </div>
+            </div>
+        </div>
+{% endblock %}

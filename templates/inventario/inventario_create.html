@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Inventario{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Producto *</label>
+                        {{ form.producto }}
+                        {% if form.producto.errors %}
+                            <div class="text-danger small">{{ form.producto.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Bodega *</label>
+                        {{ form.bodega }}
+                        {% if form.bodega.errors %}
+                            <div class="text-danger small">{{ form.bodega.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Proveedor</label>
+                        {{ form.proveedor }}
+                        {% if form.proveedor.errors %}
+                            <div class="text-danger small">{{ form.proveedor.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Cantidad Disponible *</label>
+                        {{ form.cantidad_disponible }}
+                        {% if form.cantidad_disponible.errors %}
+                            <div class="text-danger small">{{ form.cantidad_disponible.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Fecha Llegada</label>
+                        {{ form.fecha_llegada }}
+                        {% if form.fecha_llegada.errors %}
+                            <div class="text-danger small">{{ form.fecha_llegada.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Estado *</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="text-danger small">{{ form.estado.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+                input.classList.add('form-control');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

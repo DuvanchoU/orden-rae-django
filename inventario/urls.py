@@ -4,7 +4,7 @@ from .views import (
     BodegaListView, BodegaCreateView, BodegaUpdateView, BodegaDeleteView,
     CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView,
     ProveedorListView, ProveedorCreateView, ProveedorUpdateView, ProveedorDeleteView,
-    InventarioListView, InventarioCreateView, InventarioUpdateView, InventarioDeleteView,
+    InventarioListView, InventarioCreateView, InventarioUpdateView, InventarioDeleteView, InventarioDetailView
 )
 
 app_name = 'inventario'
@@ -38,6 +38,7 @@ urlpatterns = [
     # Inventario (Stock)
     path('stock/', InventarioListView.as_view(), name='inventario_list'),
     path('stock/nuevo/', InventarioCreateView.as_view(), name='inventario_create'),
+    path('inventario/<int:pk>/', InventarioDetailView.as_view(), name='inventario_detail'),
     path('stock/<int:pk>/editar/', InventarioUpdateView.as_view(), name='inventario_update'),
     path('stock/<int:pk>/eliminar/', InventarioDeleteView.as_view(), name='inventario_delete'),
 ]
