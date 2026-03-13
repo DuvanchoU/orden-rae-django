@@ -3,7 +3,7 @@ from .views import (
     ProductoListView, ProductoCreateView, ProductoUpdateView, ProductoDeleteView, ProductoDetailView,
     BodegaListView, BodegaCreateView, BodegaUpdateView, BodegaDeleteView,
     CategoriaListView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView,
-    ProveedorListView, ProveedorCreateView, ProveedorUpdateView, ProveedorDeleteView,
+    ProveedorListView, ProveedorCreateView, ProveedorUpdateView, ProveedorDeleteView, ProveedorDetailView,
     InventarioListView, InventarioCreateView, InventarioUpdateView, InventarioDeleteView, InventarioDetailView
 )
 
@@ -32,6 +32,7 @@ urlpatterns = [
     # Proveedores
     path('proveedores/', ProveedorListView.as_view(), name='proveedor_list'),
     path('proveedores/nuevo/', ProveedorCreateView.as_view(), name='proveedor_create'),
+    path('proveedores/<int:pk>/', ProveedorDetailView.as_view(), name='proveedor_detail'), 
     path('proveedores/<int:pk>/editar/', ProveedorUpdateView.as_view(), name='proveedor_update'),
     path('proveedores/<int:pk>/eliminar/', ProveedorDeleteView.as_view(), name='proveedor_delete'),
     

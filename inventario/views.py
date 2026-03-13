@@ -4,7 +4,7 @@ from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Producto, Bodegas, Categorias, Proveedores, Inventario
 from django.contrib import messages
-from .forms import InventarioForm, ProductoForm
+from .forms import InventarioForm, ProductoForm, BodegaForm, CategoriaForm, ProveedorForm
 
 # PRODUCTOS
 class ProductoListView(ListView):
@@ -100,14 +100,14 @@ class BodegaListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['estados'] = ['ACTIVO', 'INACTIVO']
+        context['estados'] = ['ACTIVA', 'INACTIVA']
         return context
 
 
 class BodegaCreateView(CreateView):
     model = Bodegas
     template_name = 'inventario/bodega_form.html'
-    fields = ['nombre_bodega', 'direccion', 'estado']
+    form_class = BodegaForm
     success_url = reverse_lazy('inventario:bodega_list')
 
     def get_context_data(self, **kwargs):
@@ -119,7 +119,7 @@ class BodegaCreateView(CreateView):
 class BodegaUpdateView(UpdateView):
     model = Bodegas
     template_name = 'inventario/bodega_form.html'
-    fields = ['nombre_bodega', 'direccion', 'estado']
+    form_class = BodegaForm
     success_url = reverse_lazy('inventario:bodega_list')
 
     def get_context_data(self, **kwargs):
@@ -139,7 +139,7 @@ class CategoriaListView(ListView):
     model = Categorias
     template_name = 'inventario/categoria_list.html'
     context_object_name = 'categorias'
-    paginate_by = 10
+    paginate_by = 15
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -155,14 +155,14 @@ class CategoriaListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['estados'] = ['ACTIVO', 'INACTIVO']
+        context['estados'] = ['activo', 'inactivo']
         return context
 
 
 class CategoriaCreateView(CreateView):
     model = Categorias
     template_name = 'inventario/categoria_form.html'
-    fields = ['nombre_categoria', 'estado_categoria']
+    form_class = CategoriaForm
     success_url = reverse_lazy('inventario:categoria_list')
 
     def get_context_data(self, **kwargs):
@@ -174,7 +174,7 @@ class CategoriaCreateView(CreateView):
 class CategoriaUpdateView(UpdateView):
     model = Categorias
     template_name = 'inventario/categoria_form.html'
-    fields = ['nombre_categoria', 'estado_categoria']
+    form_class = CategoriaForm
     success_url = reverse_lazy('inventario:categoria_list')
 
     def get_context_data(self, **kwargs):
@@ -221,7 +221,7 @@ class ProveedorListView(ListView):
 class ProveedorCreateView(CreateView):
     model = Proveedores
     template_name = 'inventario/proveedor_form.html'
-    fields = ['nombre', 'telefono', 'email', 'direccion', 'estado']
+    form_class = ProveedorForm 
     success_url = reverse_lazy('inventario:proveedor_list')
 
     def get_context_data(self, **kwargs):
@@ -233,7 +233,7 @@ class ProveedorCreateView(CreateView):
 class ProveedorUpdateView(UpdateView):
     model = Proveedores
     template_name = 'inventario/proveedor_form.html'
-    fields = ['nombre', 'telefono', 'email', 'direccion', 'estado']
+    form_class = ProveedorForm 
     success_url = reverse_lazy('inventario:proveedor_list')
 
     def get_context_data(self, **kwargs):
@@ -247,6 +247,10 @@ class ProveedorDeleteView(DeleteView):
     template_name = 'inventario/proveedor_confirm_delete.html'
     success_url = reverse_lazy('inventario:proveedor_list')
 
+class ProveedorDetailView(DetailView):
+    model = Proveedores
+    template_name = 'inventario/proveedor_detail.html'
+    context_object_name = 'proveedor'
 
 # INVENTARIO
 class InventarioListView(ListView):

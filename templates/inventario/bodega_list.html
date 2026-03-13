@@ -3,96 +3,158 @@
 {% block title %}Bodegas - Inventario{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2 class="fw-bold mb-0">Bodegas</h2>
-        <p class="text-muted small">Gestiona las ubicaciones de almacenamiento.</p>
+        <h1 class="page-title">Bodegas</h1>
+        <p class="page-subtitle">Gestiona las ubicaciones de almacenamiento</p>
     </div>
-    <a href="{% url 'inventario:bodega_create' %}" class="btn btn-sand">
-        <i class="bi bi-plus-lg me-1"></i> Nueva Bodega
+    <a href="{% url 'inventario:bodega_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nueva Bodega
     </a>
 </div>
 
 <!-- Filtros -->
-<div class="card-modern mb-4">
-    <form method="get" class="row g-3">
-        <div class="col-md-4">
-            <label class="form-label small text-muted">Buscar</label>
-            <input type="text" name="busqueda" class="form-control form-control-sm" 
-                   placeholder="Nombre o dirección" value="{{ request.GET.busqueda }}">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted">Estado</label>
-            <select name="estado" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for est in estados %}
-                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
-            <a href="{% url 'inventario:bodega_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-x"></i>
-            </a>
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="busqueda" class="form-control" 
+                       placeholder="Nombre o dirección" 
+                       value="{{ request.GET.busqueda }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="ACTIVA" {% if request.GET.estado == 'ACTIVA' %}selected{% endif %}>ACTIVA</option>
+                    <option value="INACTIVA" {% if request.GET.estado == 'INACTIVA' %}selected{% endif %}>INACTIVA</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>Filtrar
+                </button>
+                <a href="{% url 'inventario:bodega_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
 <!-- Tabla -->
-<div class="card-modern p-0 overflow-hidden">
-    <table class="table table-modern table-hover mb-0">
-        <thead>
-            <tr>
-                <th class="ps-4">ID</th>
-                <th>NOMBRE</th>
-                <th>DIRECCIÓN</th>
-                <th>ESTADO</th>
-                <th>ACTUALIZADO</th>
-                <th class="text-end pe-4">ACCIONES</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for bodega in bodegas %}
-            <tr>
-                <td class="ps-4 fw-bold text-muted">{{ bodega.id_bodega }}</td>
-                <td class="fw-bold">{{ bodega.nombre_bodega }}</td>
-                <td>{{ bodega.direccion|default:"-" }}</td>
-                <td>
-                    {% if bodega.estado == 'ACTIVO' %}
-                        <span class="badge badge-estado bg-terminada">ACTIVO</span>
-                    {% else %}
-                        <span class="badge badge-estado bg-pendiente">INACTIVO</span>
-                    {% endif %}
-                </td>
-                <td class="text-muted small">{{ bodega.updated_at|date:"d/m/Y"|default:"-" }}</td>
-                <td class="text-end pe-4">
-                    <a href="{% url 'inventario:bodega_update' bodega.pk %}" class="btn btn-sm btn-light text-secondary">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{% url 'inventario:bodega_delete' bodega.pk %}" class="btn btn-sm btn-light text-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No hay bodegas registradas.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th>Estado</th>
+                    <th>Actualizado</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bodega in bodegas %}
+                <tr>
+                    <td class="ps-4 fw-semibold" data-label="ID">
+                        {{ bodega.id_bodega }}
+                    </td>
+                    <td data-label="Nombre">
+                        <div class="fw-semibold">{{ bodega.nombre_bodega }}</div>
+                    </td>
+                    <td data-label="Dirección">
+                        {{ bodega.direccion|default:"-" }}
+                    </td>
+                    <td data-label="Estado">
+                        {% if bodega.estado == 'ACTIVA' %}
+                            <span class="badge-estado disponible">
+                                ACTIVA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                INACTIVA
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Actualizado">
+                        {{ bodega.updated_at|date:"d/m/Y"|default:"-" }}
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'inventario:bodega_update' bodega.pk %}" 
+                               class="btn-action btn-action-edit" 
+                               title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'inventario:bodega_delete' bodega.pk %}" 
+                               class="btn-action btn-action-delete" 
+                               title="Eliminar"
+                               onclick="return confirm('¿Estás seguro de eliminar esta bodega?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay bodegas registradas</p>
+                            <a href="{% url 'inventario:bodega_create' %}" class="btn btn-nuevo">
+                                <i class="bi bi-plus-lg"></i>Crear primero
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
+    <!-- Paginación -->
     {% if is_paginated %}
-    <div class="p-3 bg-light border-top d-flex justify-content-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination-compact">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                        Siguiente
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>

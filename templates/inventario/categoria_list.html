@@ -3,94 +3,156 @@
 {% block title %}Categorías - Inventario{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2 class="fw-bold mb-0">Categorías</h2>
-        <p class="text-muted small">Clasifica tus productos.</p>
+        <h1 class="page-title">Categorías</h1>
+        <p class="page-subtitle">Clasifica tus productos</p>
     </div>
-    <a href="{% url 'inventario:categoria_create' %}" class="btn btn-sand">
-        <i class="bi bi-plus-lg me-1"></i> Nueva Categoría
+    <a href="{% url 'inventario:categoria_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nueva Categoría
     </a>
 </div>
 
 <!-- Filtros -->
-<div class="card-modern mb-4">
-    <form method="get" class="row g-3">
-        <div class="col-md-4">
-            <label class="form-label small text-muted">Buscar</label>
-            <input type="text" name="busqueda" class="form-control form-control-sm" 
-                   placeholder="Nombre categoría" value="{{ request.GET.busqueda }}">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted">Estado</label>
-            <select name="estado" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for est in estados %}
-                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
-            <a href="{% url 'inventario:categoria_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-x"></i>
-            </a>
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="busqueda" class="form-control" 
+                       placeholder="Nombre de categoría" 
+                       value="{{ request.GET.busqueda }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="activo" {% if request.GET.estado == 'activo' %}selected{% endif %}>ACTIVO</option>
+                    <option value="inactivo" {% if request.GET.estado == 'inactivo' %}selected{% endif %}>INACTIVO</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>Filtrar
+                </button>
+                <a href="{% url 'inventario:categoria_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
 <!-- Tabla -->
-<div class="card-modern p-0 overflow-hidden">
-    <table class="table table-modern table-hover mb-0">
-        <thead>
-            <tr>
-                <th class="ps-4">ID</th>
-                <th>NOMBRE</th>
-                <th>ESTADO</th>
-                <th>PRODUCTOS</th>
-                <th class="text-end pe-4">ACCIONES</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for categoria in categorias %}
-            <tr>
-                <td class="ps-4 fw-bold text-muted">{{ categoria.id_categorias }}</td>
-                <td class="fw-bold">{{ categoria.nombre_categoria }}</td>
-                <td>
-                    {% if categoria.estado_categoria == 'ACTIVO' %}
-                        <span class="badge badge-estado bg-terminada">ACTIVO</span>
-                    {% else %}
-                        <span class="badge badge-estado bg-pendiente">INACTIVO</span>
-                    {% endif %}
-                </td>
-                <td class="text-muted">-</td>
-                <td class="text-end pe-4">
-                    <a href="{% url 'inventario:categoria_update' categoria.pk %}" class="btn btn-sm btn-light text-secondary">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{% url 'inventario:categoria_delete' categoria.pk %}" class="btn btn-sm btn-light text-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center py-4 text-muted">No hay categorías registradas.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th>Productos</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in categorias %}
+                <tr>
+                    <td class="ps-4 fw-semibold" data-label="ID">
+                        {{ categoria.id_categorias }}
+                    </td>
+                    <td data-label="Nombre">
+                        <div class="fw-semibold">{{ categoria.nombre_categoria }}</div>
+                    </td>
+                    <td data-label="Estado">
+                        {% if categoria.estado_categoria == 'activo' %}
+                            <span class="badge-estado disponible">
+                                ACTIVO
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                INACTIVO
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Productos">
+                        <span class="text-muted">
+                            {{ categoria.producto_set.count }} productos
+                        </span>
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'inventario:categoria_update' categoria.pk %}" 
+                               class="btn-action btn-action-edit" 
+                               title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'inventario:categoria_delete' categoria.pk %}" 
+                               class="btn-action btn-action-delete" 
+                               title="Eliminar"
+                               onclick="return confirm('¿Estás seguro de eliminar esta categoría?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay categorías registradas</p>
+                            <a href="{% url 'inventario:categoria_create' %}" class="btn btn-nuevo">
+                                <i class="bi bi-plus-lg"></i>Crear primero
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
+    <!-- Paginación -->
     {% if is_paginated %}
-    <div class="p-3 bg-light border-top d-flex justify-content-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination-compact">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                        Siguiente
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>
