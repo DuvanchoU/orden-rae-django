@@ -5,8 +5,8 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card-modern">
-            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
             <form method="post">
                 {% csrf_token %}
                 
@@ -14,32 +14,49 @@
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Cliente *</label>
                         {{ form.cliente }}
+                        {% if form.cliente.errors %}
+                            <div class="text-danger small">{{ form.cliente.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Fecha Entrega Estimada</label>
                         {{ form.fecha_entrega_estimada }}
+                        {% if form.fecha_entrega_estimada.errors %}
+                            <div class="text-danger small">{{ form.fecha_entrega_estimada.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-12">
-                        <label class="form-label small text-muted">Dirección Entrega</label>
-                        {{ form.direccion_entrega }}
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Total Pedido *</label>
+                        {{ form.total_pedido }}
+                        {% if form.total_pedido.errors %}
+                            <div class="text-danger small">{{ form.total_pedido.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado_pedido }}
+                        {% if form.estado_pedido.errors %}
+                            <div class="text-danger small">{{ form.estado_pedido.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small text-muted">Total Pedido</label>
-                        <input type="text" class="form-control" value="0.00" readonly>
-                    </div>
+
                     <div class="col-12">
-                        <label class="form-label small text-muted">Observaciones</label>
-                        {{ form.observaciones }}
+                        <label class="form-label small text-muted">Dirección Entrega</label>
+                        {{ form.direccion_entrega }}
+                        {% if form.direccion_entrega.errors %}
+                            <div class="text-danger small">{{ form.direccion_entrega.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'ventas:pedido_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-sand">Guardar Pedido</button>
+                    <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Pedido
+                    </button>
                 </div>
             </form>
         </div>
@@ -52,7 +69,10 @@
         inputs.forEach(input => {
             if(input.type !== 'checkbox' && input.type !== 'hidden') {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
             }
         });
     });

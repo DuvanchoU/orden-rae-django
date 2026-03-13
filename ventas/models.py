@@ -35,6 +35,9 @@ class MetodosPago(models.Model):
         managed = True
         db_table = 'metodos_pago'
 
+    def __str__(self):
+            return self.nombre
+
 
 class Carritos(models.Model):
     id_carrito = models.AutoField(primary_key=True)
@@ -48,6 +51,11 @@ class Carritos(models.Model):
         managed = True
         db_table = 'carritos'
 
+    def __str__(self):
+        if self.cliente:
+            return f"Carrito #{self.id_carrito} - {self.cliente}"
+        return f"Carrito #{self.id_carrito} (Sin cliente)"
+    
 
 class ItemsCarrito(models.Model):
     id_item = models.AutoField(primary_key=True)
@@ -61,6 +69,9 @@ class ItemsCarrito(models.Model):
     class Meta:
         managed = True
         db_table = 'items_carrito'
+
+    def __str__(self):
+        return f"{self.producto} x{self.cantidad}"
 
 
 class Cotizaciones(models.Model):
@@ -90,6 +101,9 @@ class Cotizaciones(models.Model):
         managed = True
         db_table = 'cotizaciones'
 
+    def __str__(self):
+        return f"Cotización #{self.numero_cotizacion} - {self.cliente}"
+    
 
 class DetalleCotizacion(models.Model):
     id_detalle = models.AutoField(primary_key=True)
@@ -109,6 +123,9 @@ class DetalleCotizacion(models.Model):
         managed = True
         db_table = 'detalle_cotizacion'
 
+    def __str__(self):
+        return f"{self.producto} x{self.cantidad}"
+    
 
 class Pedido(models.Model):
     id_pedido = models.AutoField(primary_key=True)
@@ -129,6 +146,17 @@ class Pedido(models.Model):
     fecha_facturacion = models.DateTimeField(blank=True, null=True)
     usuario_facturo = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING, related_name='pedido_usuario_facturo_set', blank=True, null=True)
 
+    def precio_formateado(self):
+        """
+        Retorna el precio formateado sin decimales y con separador de miles
+        Ejemplo: 950000 → $950.000
+        """
+        return f"{int(self.total_pedido):,}".replace(",", ".")
+    
+    def __str__(self):
+        numero = self.numero_pedido or f"#{self.id_pedido}"
+        return f"Pedido {numero} - {self.cliente}"
+    
     class Meta:
         managed = True
         db_table = 'pedido'
@@ -149,6 +177,10 @@ class DetallePedido(models.Model):
         managed = True
         db_table = 'detalle_pedido'
 
+    def __str__(self):
+        # Nota: Este modelo usa IDs en lugar de FKs, así que no podemos acceder al nombre del producto directamente
+        return f"Detalle #{self.id_detalle} - Producto ID: {self.producto_id}"
+    
 
 class Ventas(models.Model):
     id_venta = models.AutoField(primary_key=True)
@@ -175,6 +207,10 @@ class Ventas(models.Model):
         managed = True
         db_table = 'ventas'
 
+    def __str__(self):
+        cliente_name = self.cliente.nombre if self.cliente else "Sin cliente"
+        return f"Venta #{self.id_venta} - {cliente_name}"
+    
 
 class DetalleVenta(models.Model):
     id_detalle = models.AutoField(primary_key=True)
@@ -192,3 +228,6 @@ class DetalleVenta(models.Model):
     class Meta:
         managed = True
         db_table = 'detalle_venta'
+
+    def __str__(self):
+        return f"{self.producto} x{self.cantidad}"

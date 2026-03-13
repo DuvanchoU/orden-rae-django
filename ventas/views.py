@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q, Sum
 from .models import Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta, DetalleCotizacion
@@ -7,6 +7,7 @@ from inventario.models import Producto
 from usuarios.models import Usuarios
 from django.contrib import messages
 from django.utils import timezone
+from .forms import ClienteForm, PedidoForm
 
 # CLIENTES
 class ClienteListView(ListView):
@@ -40,7 +41,7 @@ class ClienteListView(ListView):
 class ClienteCreateView(CreateView):
     model = Clientes
     template_name = 'ventas/cliente_form.html'
-    fields = ['nombre', 'apellido', 'telefono', 'email', 'direccion', 'estado']
+    form_class = ClienteForm
     success_url = reverse_lazy('ventas:cliente_list')
 
     def get_context_data(self, **kwargs):
@@ -52,7 +53,7 @@ class ClienteCreateView(CreateView):
 class ClienteUpdateView(UpdateView):
     model = Clientes
     template_name = 'ventas/cliente_form.html'
-    fields = ['nombre', 'apellido', 'telefono', 'email', 'direccion', 'estado']
+    form_class = ClienteForm
     success_url = reverse_lazy('ventas:cliente_list')
 
     def get_context_data(self, **kwargs):
@@ -67,11 +68,16 @@ class ClienteDeleteView(DeleteView):
     success_url = reverse_lazy('ventas:cliente_list')
 
 
+class ClienteDetailView(DetailView):
+    model = Clientes
+    template_name = 'ventas/cliente_detail.html'
+    context_object_name = 'cliente'
+
 # PEDIDOS
 class PedidoListView(ListView):
     model = Pedido
     template_name = 'ventas/pedido_list.html'
-    context_object_name = 'pedido'
+    context_object_name = 'pedidos'
     paginate_by = 10
 
     def get_queryset(self):
@@ -81,6 +87,8 @@ class PedidoListView(ListView):
         fecha_inicio = self.request.GET.get('fecha_inicio')
         fecha_fin = self.request.GET.get('fecha_fin')
         busqueda = self.request.GET.get('busqueda')
+        entrega_desde = self.request.GET.get('entrega_desde')
+        entrega_hasta = self.request.GET.get('entrega_hasta')
 
         if cliente:
             queryset = queryset.filter(cliente_id=cliente)
@@ -90,6 +98,10 @@ class PedidoListView(ListView):
             queryset = queryset.filter(fecha_pedido__gte=fecha_inicio)
         if fecha_fin:
             queryset = queryset.filter(fecha_pedido__lte=fecha_fin)
+        if entrega_desde:
+            queryset = queryset.filter(fecha_entrega_estimada__gte=entrega_desde)
+        if entrega_hasta:
+            queryset = queryset.filter(fecha_entrega_estimada__lte=entrega_hasta)
         if busqueda:
             queryset = queryset.filter(
                 Q(numero_pedido__icontains=busqueda) |
@@ -107,7 +119,7 @@ class PedidoListView(ListView):
 class PedidoCreateView(CreateView):
     model = Pedido
     template_name = 'ventas/pedido_form.html'
-    fields = ['cliente', 'fecha_entrega_estimada', 'direccion_entrega', 'estado_pedido', 'observaciones']
+    form_class = PedidoForm
     success_url = reverse_lazy('ventas:pedido_list')
 
     def get_context_data(self, **kwargs):
@@ -125,7 +137,7 @@ class PedidoCreateView(CreateView):
 class PedidoUpdateView(UpdateView):
     model = Pedido
     template_name = 'ventas/pedido_form.html'
-    fields = ['cliente', 'fecha_entrega_estimada', 'direccion_entrega', 'estado_pedido', 'observaciones']
+    form_class = PedidoForm
     success_url = reverse_lazy('ventas:pedido_list')
 
     def get_context_data(self, **kwargs):
@@ -140,6 +152,11 @@ class PedidoDeleteView(DeleteView):
     template_name = 'ventas/pedido_confirm_delete.html'
     success_url = reverse_lazy('ventas:pedido_list')
 
+
+class PedidoDetailView(DetailView):
+    model = Pedido
+    template_name = 'ventas/pedido_detail.html'
+    context_object_name = 'pedido'
 
 # VENTAS
 class VentaListView(ListView):

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
-    ClienteListView, ClienteCreateView, ClienteUpdateView, ClienteDeleteView,
-    PedidoListView, PedidoCreateView, PedidoUpdateView, PedidoDeleteView,
+    ClienteListView, ClienteCreateView, ClienteUpdateView, ClienteDeleteView, ClienteDetailView,
+    PedidoListView, PedidoCreateView, PedidoUpdateView, PedidoDeleteView,PedidoDetailView,
     VentaListView, VentaCreateView, VentaUpdateView, VentaDeleteView,
     CotizacionListView, CotizacionCreateView, CotizacionUpdateView, CotizacionDeleteView,
 )
@@ -12,12 +12,14 @@ urlpatterns = [
     # Clientes
     path('clientes/', ClienteListView.as_view(), name='cliente_list'),
     path('clientes/nuevo/', ClienteCreateView.as_view(), name='cliente_create'),
+    path('clientes/<int:pk>/', ClienteDetailView.as_view(), name='cliente_detail'),
     path('clientes/<int:pk>/editar/', ClienteUpdateView.as_view(), name='cliente_update'),
     path('clientes/<int:pk>/eliminar/', ClienteDeleteView.as_view(), name='cliente_delete'),
 
     # Pedidos
     path('pedido/', PedidoListView.as_view(), name='pedido_list'),
     path('pedido/nuevo/', PedidoCreateView.as_view(), name='pedido_create'),
+    path('pedido/<int:pk>/', PedidoDetailView.as_view(), name='pedido_detail'),
     path('pedido/<int:pk>/editar/', PedidoUpdateView.as_view(), name='pedido_update'),
     path('pedido/<int:pk>/eliminar/', PedidoDeleteView.as_view(), name='pedido_delete'),
 

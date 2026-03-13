@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Pedido #{{ pedido.numero_pedido|default:pedido.id_pedido }} - Información{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Detalle del pedido</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'ventas:pedido_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'ventas:pedido_update' pedido.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información del Pedido -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Número de Pedido -->
+                <div class="col-md-6">
+                    <label class="info-label">NÚMERO DE PEDIDO</label>
+                    <p class="info-value fw-bold">
+                        #{{ pedido.numero_pedido|default:pedido.id_pedido }}
+                    </p>
+                </div>
+                
+                <!-- Cliente -->
+                <div class="col-md-6">
+                    <label class="info-label">CLIENTE</label>
+                    <p class="info-value fw-bold">
+                        {{ pedido.cliente.nombre }} {{ pedido.cliente.apellido|default:"" }}
+                    </p>
+                    <small class="text-muted" style="font-size: 0.8rem;">
+                        {{ pedido.cliente.email|default:"Sin email" }}
+                    </small>
+                </div>
+                
+                <!-- Fecha Pedido -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA DEL PEDIDO</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                        {{ pedido.fecha_pedido|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+                
+                <!-- Fecha Entrega Estimada -->
+                <div class="col-md-6">
+                    <label class="info-label">ENTREGA ESTIMADA</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-check me-2 text-muted"></i>
+                        {{ pedido.fecha_entrega_estimada|date:"d/m/Y"|default:"No definida" }}
+                    </p>
+                </div>
+                
+                <!-- Total Pedido -->
+                <div class="col-md-6">
+                    <label class="info-label">TOTAL DEL PEDIDO</label>
+                    <p class="info-value fw-bold" style="font-size: 1.5rem; color: var(--accent);">
+                        ${{ pedido.precio_formateado }}
+                    </p>
+                </div>
+                
+                <!-- Dirección Entrega -->
+                <div class="col-md-6">
+                    <label class="info-label">DIRECCIÓN DE ENTREGA</label>
+                    <p class="info-value">
+                        <i class="bi bi-geo-alt me-2 text-muted"></i>
+                        {{ pedido.direccion_entrega|default:"No especificada" }}
+                    </p>
+                </div>
+                
+                <!-- Estado Pedido -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO DEL PEDIDO</label>
+                    <div>
+                        {% if pedido.estado_pedido == 'PENDIENTE' %}
+                            <span class="badge-estado" style="background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                                PENDIENTE
+                            </span>
+                        {% elif pedido.estado_pedido == 'CONFIRMADO' %}
+                            <span class="badge-estado" style="background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3);">
+                                CONFIRMADO
+                            </span>
+                        {% elif pedido.estado_pedido == 'EN PROCESO' %}
+                            <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
+                                EN PROCESO
+                            </span>
+                        {% elif pedido.estado_pedido == 'COMPLETADO' %}
+                            <span class="badge-estado disponible">
+                                COMPLETADO
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                CANCELADO
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Estado Facturación -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO FACTURACIÓN</label>
+                    <div>
+                        {% if pedido.estado_facturacion == 'FACTURADO' %}
+                            <span class="badge-estado disponible">
+                                FACTURADO
+                            </span>
+                        {% else %}
+                            <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b; border-color: rgba(100, 116, 139, 0.3);">
+                                NO FACTURADO
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral - Acciones e Información -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'ventas:cliente_detail' pedido.cliente.pk %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-person me-2"></i>Ver Cliente
+                </a>
+            </div>
+            
+            <!-- Información del Sistema -->
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">CREADO EL</label>
+                    <p class="info-text">{{ pedido.created_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ pedido.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ pedido.pk }}</p>
+                </div>
+            </div>
+        </div>
+{% endblock %}
