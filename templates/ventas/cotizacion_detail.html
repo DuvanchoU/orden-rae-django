@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Cotización #{{ cotizacion.numero_cotizacion }} - Información{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Detalle de la cotización</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'ventas:cotizacion_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'ventas:cotizacion_update' cotizacion.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información de la Cotización -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Número de Cotización -->
+                <div class="col-md-6">
+                    <label class="info-label">NÚMERO COTIZACIÓN</label>
+                    <p class="info-value fw-bold">{{ cotizacion.numero_cotizacion }}</p>
+                </div>
+                
+                <!-- Cliente -->
+                <div class="col-md-6">
+                    <label class="info-label">CLIENTE</label>
+                    <p class="info-value fw-bold">
+                        {{ cotizacion.cliente.nombre }} {{ cotizacion.cliente.apellido|default:"" }}
+                    </p>
+                    <small class="text-muted" style="font-size: 0.8rem;">
+                        {{ cotizacion.cliente.email|default:"Sin email" }}
+                    </small>
+                </div>
+                
+                <!-- Fecha Cotización -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA COTIZACIÓN</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                        {{ cotizacion.fecha_cotizacion|date:"d/m/Y" }}
+                    </p>
+                </div>
+                
+                <!-- Fecha Vencimiento -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA VENCIMIENTO</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-x me-2 text-muted"></i>
+                        {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}
+                    </p>
+                </div>
+                
+                <!-- Validez -->
+                <div class="col-md-6">
+                    <label class="info-label">VALIDEZ (DÍAS)</label>
+                    <p class="info-value">{{ cotizacion.validez_dias|default:"-" }} días</p>
+                </div>
+                
+                <!-- Moneda -->
+                <div class="col-md-6">
+                    <label class="info-label">MONEDA</label>
+                    <p class="info-value">{{ cotizacion.moneda|default:"COP" }}</p>
+                </div>
+                
+                <!-- Subtotal -->
+                <div class="col-md-6">
+                    <label class="info-label">SUBTOTAL</label>
+                    <p class="info-value">${{ cotizacion.subtotal_formateado }}</p>
+                </div>
+                
+                <!-- Impuesto -->
+                <div class="col-md-6">
+                    <label class="info-label">IMPUESTO</label>
+                    <p class="info-value">${{ cotizacion.impuesto_formateado }}</p>
+                </div>
+                
+                <!-- Descuento -->
+                <div class="col-md-6">
+                    <label class="info-label">DESCUENTO</label>
+                    <p class="info-value">${{ cotizacion.descuento_formateado }}</p>
+                </div>
+                
+                <!-- Total -->
+                <div class="col-md-6">
+                    <label class="info-label">TOTAL</label>
+                    <p class="info-value fw-bold" style="font-size: 1.5rem; color: var(--accent);">
+                        ${{ cotizacion.total_formateado }}
+                    </p>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if cotizacion.estado == 'borrador' %}
+                            <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b; border-color: rgba(100, 116, 139, 0.3);">
+                                BORRADOR
+                            </span>
+                        {% elif cotizacion.estado == 'enviada' %}
+                            <span class="badge-estado" style="background-color: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3);">
+                                ENVIADA
+                            </span>
+                        {% elif cotizacion.estado == 'aceptada' %}
+                            <span class="badge-estado disponible">
+                                ACEPTADA
+                            </span>
+                        {% elif cotizacion.estado == 'rechazada' %}
+                            <span class="badge-estado" style="background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                                RECHAZADA
+                            </span>
+                        {% elif cotizacion.estado == 'vencida' %}
+                            <span class="badge-estado agotado">
+                                VENCIDA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                CANCELADA
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Tiempo Entrega -->
+                <div class="col-md-6">
+                    <label class="info-label">TIEMPO ENTREGA</label>
+                    <p class="info-value">{{ cotizacion.tiempo_entrega|default:"No especificado" }}</p>
+                </div>
+                
+                <!-- Requiere Producción -->
+                <div class="col-md-6">
+                    <label class="info-label">REQUIERE PRODUCCIÓN</label>
+                    <p class="info-value">
+                        {% if cotizacion.requiere_produccion %}
+                            <span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>Sí</span>
+                        {% else %}
+                            <span class="text-muted"><i class="bi bi-x-circle me-1"></i>No</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="col-12">
+                    <label class="info-label">OBSERVACIONES</label>
+                    <p class="info-value" style="white-space: pre-wrap;">
+                        {{ cotizacion.observaciones|default:"Sin observaciones" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral - Acciones e Información -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'ventas:cliente_detail' cotizacion.cliente.pk %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-person me-2"></i>Ver Cliente
+                </a>
+                {% if cotizacion.venta_id %}
+                <a href="{% url 'ventas:venta_detail' cotizacion.venta_id %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-receipt me-2"></i>Ver Venta
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Información del Sistema -->
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">CREADO EL</label>
+                    <p class="info-text">{{ cotizacion.created_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ cotizacion.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ cotizacion.pk }}</p>
+                </div>
+            </div>
+        </div>
+{% endblock %}

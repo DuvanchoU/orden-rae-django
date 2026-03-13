@@ -5,57 +5,118 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card-modern">
-            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
             <form method="post">
                 {% csrf_token %}
                 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">N° Cotización *</label>
-                        {{ form.numero_cotizacion }}
-                    </div>
-                    <div class="col-md-6">
                         <label class="form-label small text-muted">Cliente *</label>
                         {{ form.cliente }}
+                        {% if form.cliente.errors %}
+                            <div class="text-danger small">{{ form.cliente.errors }}</div>
+                        {% endif %}
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Fecha Cotización</label>
+                        {{ form.fecha_cotizacion }}
+                        {% if form.fecha_cotizacion.errors %}
+                            <div class="text-danger small">{{ form.fecha_cotizacion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Fecha Vencimiento *</label>
                         {{ form.fecha_vencimiento }}
+                        {% if form.fecha_vencimiento.errors %}
+                            <div class="text-danger small">{{ form.fecha_vencimiento.errors }}</div>
+                        {% endif %}
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Validez (Días)</label>
+                        {{ form.validez_dias }}
+                        {% if form.validez_dias.errors %}
+                            <div class="text-danger small">{{ form.validez_dias.errors }}</div>
+                        {% endif %}
+                    </div>
+
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Tiempo Entrega</label>
                         {{ form.tiempo_entrega }}
+                        {% if form.tiempo_entrega.errors %}
+                            <div class="text-danger small">{{ form.tiempo_entrega.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Subtotal</label>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Moneda</label>
+                        {{ form.moneda }}
+                        {% if form.moneda.errors %}
+                            <div class="text-danger small">{{ form.moneda.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Subtotal *</label>
                         {{ form.subtotal }}
+                        {% if form.subtotal.errors %}
+                            <div class="text-danger small">{{ form.subtotal.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Impuesto</label>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Impuesto *</label>
                         {{ form.impuesto }}
+                        {% if form.impuesto.errors %}
+                            <div class="text-danger small">{{ form.impuesto.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
+
+                    <div class="col-md-6">
                         <label class="form-label small text-muted">Descuento</label>
                         {{ form.descuento }}
+                        {% if form.descuento.errors %}
+                            <div class="text-danger small">{{ form.descuento.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Total *</label>
                         {{ form.total }}
+                        {% if form.total.errors %}
+                            <div class="text-danger small">{{ form.total.errors }}</div>
+                        {% endif %}
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="text-danger small">{{ form.estado.errors }}</div>
+                        {% endif %}
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Requiere Producción</label>
+                        {{ form.requiere_produccion }}
+                        {% if form.requiere_produccion.errors %}
+                            <div class="text-danger small">{{ form.requiere_produccion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
                     <div class="col-12">
                         <label class="form-label small text-muted">Observaciones</label>
                         {{ form.observaciones }}
+                        {% if form.observaciones.errors %}
+                            <div class="text-danger small">{{ form.observaciones.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'ventas:cotizacion_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-sand">Guardar Cotización</button>
+                    <a href="{% url 'ventas:cotizacion_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Cotización
+                    </button>
                 </div>
             </form>
         </div>
@@ -68,7 +129,10 @@
         inputs.forEach(input => {
             if(input.type !== 'checkbox' && input.type !== 'hidden') {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
             }
         });
     });

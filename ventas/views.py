@@ -7,7 +7,7 @@ from inventario.models import Producto
 from usuarios.models import Usuarios
 from django.contrib import messages
 from django.utils import timezone
-from .forms import ClienteForm, PedidoForm
+from .forms import ClienteForm, PedidoForm, VentaForm, CotizacionForm
 
 # CLIENTES
 class ClienteListView(ListView):
@@ -185,15 +185,14 @@ class VentaListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['clientes'] = Clientes.objects.all()
-        context['estados'] = ['PENDIENTE', 'PAGADA', 'FACTURADA', 'CANCELADA']
+        context['estados'] = ['PENDIENTE', 'COMPLETADA', 'CANCELADA']
         return context
 
 
 class VentaCreateView(CreateView):
     model = Ventas
     template_name = 'ventas/venta_form.html'
-    fields = ['cliente', 'pedido', 'tipo_venta', 'subtotal', 'impuesto', 'descuento', 
-              'total', 'estado_venta', 'metodo_pago', 'observaciones']
+    form_class = VentaForm
     success_url = reverse_lazy('ventas:venta_list')
 
     def get_context_data(self, **kwargs):
@@ -207,8 +206,7 @@ class VentaCreateView(CreateView):
 class VentaUpdateView(UpdateView):
     model = Ventas
     template_name = 'ventas/venta_form.html'
-    fields = ['cliente', 'pedido', 'tipo_venta', 'subtotal', 'impuesto', 'descuento', 
-              'total', 'estado_venta', 'metodo_pago', 'observaciones']
+    form_class = VentaForm
     success_url = reverse_lazy('ventas:venta_list')
 
     def get_context_data(self, **kwargs):
@@ -224,6 +222,37 @@ class VentaDeleteView(DeleteView):
     template_name = 'ventas/venta_confirm_delete.html'
     success_url = reverse_lazy('ventas:venta_list')
 
+class VentaDetailView(DetailView):
+    model = Ventas
+    template_name = 'ventas/venta_detail.html'
+    context_object_name = 'venta'
+
+# ventas/views.py
+from .forms import VentaForm  # ← Importar
+
+class VentaCreateView(CreateView):
+    model = Ventas
+    template_name = 'ventas/venta_form.html'
+    form_class = VentaForm  # ← Cambiar fields → form_class
+    success_url = reverse_lazy('ventas:venta_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Nueva Venta'
+        return context
+
+
+class VentaUpdateView(UpdateView):
+    model = Ventas
+    template_name = 'ventas/venta_form.html'
+    form_class = VentaForm  # ← Cambiar fields → form_class
+    success_url = reverse_lazy('ventas:venta_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar Venta'
+        return context
+        
 
 # COTIZACIONES
 class CotizacionListView(ListView):
@@ -236,28 +265,35 @@ class CotizacionListView(ListView):
         queryset = super().get_queryset()
         cliente = self.request.GET.get('cliente')
         estado = self.request.GET.get('estado')
+        fecha_inicio = self.request.GET.get('fecha_inicio')
+        fecha_fin = self.request.GET.get('fecha_fin')
         busqueda = self.request.GET.get('busqueda')
 
         if cliente:
             queryset = queryset.filter(cliente_id=cliente)
         if estado:
             queryset = queryset.filter(estado=estado)
+        if fecha_inicio:
+            queryset = queryset.filter(fecha_cotizacion__gte=fecha_inicio)
+        if fecha_fin:
+            queryset = queryset.filter(fecha_cotizacion__lte=fecha_fin)
         if busqueda:
-            queryset = queryset.filter(numero_cotizacion__icontains=busqueda)
+            queryset = queryset.filter(
+                Q(numero_cotizacion__icontains=busqueda) |
+                Q(cliente__nombre__icontains=busqueda)
+            )
         return queryset.order_by('-fecha_cotizacion')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['clientes'] = Clientes.objects.all()
-        context['estados'] = ['PENDIENTE', 'APROBADA', 'RECHAZADA', 'EXPIRADA']
         return context
 
 
 class CotizacionCreateView(CreateView):
     model = Cotizaciones
     template_name = 'ventas/cotizacion_form.html'
-    fields = ['numero_cotizacion', 'cliente', 'fecha_vencimiento', 'estado', 
-              'tiempo_entrega', 'observaciones', 'subtotal', 'impuesto', 'descuento', 'total']
+    form_class = CotizacionForm
     success_url = reverse_lazy('ventas:cotizacion_list')
 
     def get_context_data(self, **kwargs):
@@ -270,8 +306,7 @@ class CotizacionCreateView(CreateView):
 class CotizacionUpdateView(UpdateView):
     model = Cotizaciones
     template_name = 'ventas/cotizacion_form.html'
-    fields = ['numero_cotizacion', 'cliente', 'fecha_vencimiento', 'estado', 
-              'tiempo_entrega', 'observaciones', 'subtotal', 'impuesto', 'descuento', 'total']
+    form_class = CotizacionForm
     success_url = reverse_lazy('ventas:cotizacion_list')
 
     def get_context_data(self, **kwargs):
@@ -285,3 +320,9 @@ class CotizacionDeleteView(DeleteView):
     model = Cotizaciones
     template_name = 'ventas/cotizacion_confirm_delete.html'
     success_url = reverse_lazy('ventas:cotizacion_list')
+
+class CotizacionDetailView(DetailView):
+    model = Cotizaciones
+    template_name = 'ventas/cotizacion_detail.html'
+    context_object_name = 'cotizacion'
+    pk_url_kwarg = 'pk'

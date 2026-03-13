@@ -5,8 +5,8 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card-modern">
-            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
             <form method="post">
                 {% csrf_token %}
                 
@@ -14,48 +14,87 @@
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Cliente *</label>
                         {{ form.cliente }}
+                        {% if form.cliente.errors %}
+                            <div class="text-danger small">{{ form.cliente.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Pedido Asociado</label>
+                        <label class="form-label small text-muted">Pedido (Opcional)</label>
                         {{ form.pedido }}
+                        {% if form.pedido.errors %}
+                            <div class="text-danger small">{{ form.pedido.errors }}</div>
+                        {% endif %}
                     </div>
+                    
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Tipo Venta *</label>
+                        <label class="form-label small text-muted">Tipo de Venta *</label>
                         {{ form.tipo_venta }}
+                        {% if form.tipo_venta.errors %}
+                            <div class="text-danger small">{{ form.tipo_venta.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Método Pago</label>
+                        <label class="form-label small text-muted">Método de Pago</label>
                         {{ form.metodo_pago }}
+                        {% if form.metodo_pago.errors %}
+                            <div class="text-danger small">{{ form.metodo_pago.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Subtotal</label>
+
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Subtotal *</label>
                         {{ form.subtotal }}
+                        {% if form.subtotal.errors %}
+                            <div class="text-danger small">{{ form.subtotal.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label small text-muted">Impuesto</label>
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted">Impuesto *</label>
                         {{ form.impuesto }}
+                        {% if form.impuesto.errors %}
+                            <div class="text-danger small">{{ form.impuesto.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-md-4">
+
+                    <div class="col-md-6">
                         <label class="form-label small text-muted">Descuento</label>
                         {{ form.descuento }}
+                        {% if form.descuento.errors %}
+                            <div class="text-danger small">{{ form.descuento.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Total *</label>
                         {{ form.total }}
+                        {% if form.total.errors %}
+                            <div class="text-danger small">{{ form.total.errors }}</div>
+                        {% endif %}
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado_venta }}
+                        {% if form.estado_venta.errors %}
+                            <div class="text-danger small">{{ form.estado_venta.errors }}</div>
+                        {% endif %}
                     </div>
+                    
                     <div class="col-12">
                         <label class="form-label small text-muted">Observaciones</label>
                         {{ form.observaciones }}
+                        {% if form.observaciones.errors %}
+                            <div class="text-danger small">{{ form.observaciones.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'ventas:venta_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-sand">Guardar Venta</button>
+                    <a href="{% url 'ventas:venta_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Venta
+                    </button>
                 </div>
             </form>
         </div>
@@ -68,7 +107,10 @@
         inputs.forEach(input => {
             if(input.type !== 'checkbox' && input.type !== 'hidden') {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
             }
         });
     });

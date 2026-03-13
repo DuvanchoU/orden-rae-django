@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Venta #{{ venta.id_venta }} - Información{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Detalle de la venta</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'ventas:venta_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'ventas:venta_update' venta.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información de la Venta -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Número de Venta/Factura -->
+                <div class="col-md-6">
+                    <label class="info-label">NÚMERO FACTURA</label>
+                    <p class="info-value fw-bold">
+                        {{ venta.numero_factura|default:venta.id_venta }}
+                    </p>
+                </div>
+                
+                <!-- Cliente -->
+                <div class="col-md-6">
+                    <label class="info-label">CLIENTE</label>
+                    <p class="info-value fw-bold">
+                        {{ venta.cliente.nombre }} {{ venta.cliente.apellido|default:"" }}
+                    </p>
+                    <small class="text-muted" style="font-size: 0.8rem;">
+                        {{ venta.cliente.email|default:"Sin email" }}
+                    </small>
+                </div>
+                
+                <!-- Tipo de Venta -->
+                <div class="col-md-6">
+                    <label class="info-label">TIPO DE VENTA</label>
+                    <p class="info-value">{{ venta.tipo_venta }}</p>
+                </div>
+                
+                <!-- Fecha Venta -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA DE VENTA</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                        {{ venta.fecha_venta|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+                
+                <!-- Subtotal -->
+                <div class="col-md-6">
+                    <label class="info-label">SUBTOTAL</label>
+                    <p class="info-value">${{ venta.subtotal|floatformat:0 }}</p>
+                </div>
+                
+                <!-- Impuesto -->
+                <div class="col-md-6">
+                    <label class="info-label">IMPUESTO</label>
+                    <p class="info-value">${{ venta.impuesto|floatformat:0 }}</p>
+                </div>
+                
+                <!-- Descuento -->
+                <div class="col-md-6">
+                    <label class="info-label">DESCUENTO</label>
+                    <p class="info-value">${{ venta.descuento|floatformat:0 }}</p>
+                </div>
+                
+                <!-- Total -->
+                <div class="col-md-6">
+                    <label class="info-label">TOTAL</label>
+                    <p class="info-value fw-bold" style="font-size: 1.5rem; color: var(--accent);">
+                        ${{ venta.precio_formateado }}
+                    </p>
+                </div>
+                
+                <!-- Estado Venta -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if venta.estado_venta == 'PENDIENTE' %}
+                            <span class="badge-estado" style="background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                                PENDIENTE
+                            </span>
+                        {% elif venta.estado_venta == 'COMPLETADA' %}
+                            <span class="badge-estado disponible">
+                                COMPLETADA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                CANCELADA
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Método de Pago -->
+                <div class="col-md-6">
+                    <label class="info-label">MÉTODO DE PAGO</label>
+                    <p class="info-value">
+                        {{ venta.metodo_pago.nombre|default:"No especificado" }}
+                    </p>
+                </div>
+                
+                <!-- Observaciones -->
+                <div class="col-12">
+                    <label class="info-label">OBSERVACIONES</label>
+                    <p class="info-value" style="white-space: pre-wrap;">
+                        {{ venta.observaciones|default:"Sin observaciones" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral - Acciones e Información -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'ventas:cliente_detail' venta.cliente.pk %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-person me-2"></i>Ver Cliente
+                </a>
+                {% if venta.pedido %}
+                <a href="{% url 'ventas:pedido_detail' venta.pedido.pk %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-cart me-2"></i>Ver Pedido
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Información del Sistema -->
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">CREADO EL</label>
+                    <p class="info-text">{{ venta.created_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ venta.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ venta.pk }}</p>
+                </div>
+            </div>
+        </div>
+{% endblock %}

@@ -104,7 +104,36 @@ class Cotizaciones(models.Model):
     def __str__(self):
         return f"Cotización #{self.numero_cotizacion} - {self.cliente}"
     
-
+    def subtotal_formateado(self):
+        """
+        Retorna el subtotal formateado sin decimales y con separador de miles
+        Ejemplo: 1199998 → $1.199.998
+        """
+        return f"{int(self.subtotal):,}".replace(",", ".")
+    
+    def impuesto_formateado(self):
+        """
+        Retorna el impuesto formateado sin decimales y con separador de miles
+        Ejemplo: 228000 → $228.000
+        """
+        return f"{int(self.impuesto):,}".replace(",", ".")
+    
+    def descuento_formateado(self):
+        """
+        Retorna el descuento formateado sin decimales y con separador de miles
+        Ejemplo: 50000 → $50.000
+        """
+        if self.descuento:
+            return f"{int(self.descuento):,}".replace(",", ".")
+        return "$0"
+    
+    def total_formateado(self):
+        """
+        Retorna el total formateado sin decimales y con separador de miles
+        Ejemplo: 1427998 → $1.427.998
+        """
+        return f"{int(self.total):,}".replace(",", ".")
+    
 class DetalleCotizacion(models.Model):
     id_detalle = models.AutoField(primary_key=True)
     cotizacion = models.ForeignKey(Cotizaciones, models.DO_NOTHING)
@@ -125,6 +154,26 @@ class DetalleCotizacion(models.Model):
 
     def __str__(self):
         return f"{self.producto} x{self.cantidad}"
+    
+    def precio_unitario_formateado(self):
+        """
+        Retorna el precio unitario formateado sin decimales y con separador de miles
+        """
+        return f"{int(self.precio_unitario):,}".replace(",", ".")
+    
+    def subtotal_formateado(self):
+        """
+        Retorna el subtotal formateado sin decimales y con separador de miles
+        """
+        return f"{int(self.subtotal):,}".replace(",", ".")
+    
+    def descuento_formateado(self):
+        """
+        Retorna el descuento formateado sin decimales y con separador de miles
+        """
+        if self.descuento:
+            return f"{int(self.descuento):,}".replace(",", ".")
+        return "$0"
     
 
 class Pedido(models.Model):
@@ -207,6 +256,13 @@ class Ventas(models.Model):
         managed = True
         db_table = 'ventas'
 
+    def precio_formateado(self):
+        """
+        Retorna el precio formateado sin decimales y con separador de miles
+        Ejemplo: 950000 → $950.000
+        """
+        return f"{int(self.total):,}".replace(",", ".")
+    
     def __str__(self):
         cliente_name = self.cliente.nombre if self.cliente else "Sin cliente"
         return f"Venta #{self.id_venta} - {cliente_name}"

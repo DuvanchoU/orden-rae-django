@@ -1,5 +1,5 @@
 from django import forms
-from .models import Clientes, Pedido
+from .models import Clientes, Pedido, Ventas, Cotizaciones
 
 class ClienteForm(forms.ModelForm):
     # Campo de estado con opciones predefinidas
@@ -56,3 +56,69 @@ class PedidoForm(forms.ModelForm):
         # Personalizar el texto de los selects
         self.fields['cliente'].empty_label = "Seleccione un cliente"
         # No necesitamos empty_label para estado porque ya lo definimos en choices
+
+class VentaForm(forms.ModelForm):
+    estado_venta = forms.ChoiceField(
+        choices=[
+            ('', 'Seleccione el estado'),
+            ('PENDIENTE', 'PENDIENTE'),
+            ('COMPLETADA', 'COMPLETADA'),
+            ('CANCELADA', 'CANCELADA'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    class Meta:
+        model = Ventas
+        fields = ['cliente', 'pedido', 'tipo_venta', 'metodo_pago', 
+                  'subtotal', 'impuesto', 'descuento', 'total', 
+                  'estado_venta', 'observaciones']
+        widgets = {
+            'subtotal': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'impuesto': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'descuento': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Observaciones adicionales'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['cliente'].empty_label = "Seleccione un cliente"
+        self.fields['pedido'].empty_label = "Seleccione un pedido (opcional)"
+        self.fields['metodo_pago'].empty_label = "Seleccione método de pago"
+
+
+class CotizacionForm(forms.ModelForm):
+    estado = forms.ChoiceField(
+        choices=[
+            ('', 'Seleccione el estado'),
+            ('borrador', 'BORRADOR'),
+            ('enviada', 'ENVIADA'),
+            ('aceptada', 'ACEPTADA'),
+            ('rechazada', 'RECHAZADA'),
+            ('vencida', 'VENCIDA'),
+            ('cancelada', 'CANCELADA'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    class Meta:
+        model = Cotizaciones
+        fields = ['cliente', 'fecha_cotizacion', 'fecha_vencimiento', 
+                  'validez_dias', 'tiempo_entrega', 'moneda',
+                  'subtotal', 'impuesto', 'descuento', 'total',
+                  'estado', 'requiere_produccion', 'observaciones']
+        widgets = {
+            'fecha_cotizacion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'fecha_vencimiento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'validez_dias': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '30'}),
+            'subtotal': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'impuesto': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'descuento': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'total': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
+            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Observaciones adicionales'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['cliente'].empty_label = "Seleccione un cliente"

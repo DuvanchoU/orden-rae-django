@@ -2,8 +2,8 @@ from django.urls import path
 from .views import (
     ClienteListView, ClienteCreateView, ClienteUpdateView, ClienteDeleteView, ClienteDetailView,
     PedidoListView, PedidoCreateView, PedidoUpdateView, PedidoDeleteView,PedidoDetailView,
-    VentaListView, VentaCreateView, VentaUpdateView, VentaDeleteView,
-    CotizacionListView, CotizacionCreateView, CotizacionUpdateView, CotizacionDeleteView,
+    VentaListView, VentaCreateView, VentaUpdateView, VentaDeleteView, VentaDetailView,
+    CotizacionListView, CotizacionCreateView, CotizacionUpdateView, CotizacionDeleteView, CotizacionDetailView,
 )
 
 app_name = 'ventas'
@@ -26,12 +26,14 @@ urlpatterns = [
     # Ventas
     path('ventas/', VentaListView.as_view(), name='venta_list'),
     path('ventas/nueva/', VentaCreateView.as_view(), name='venta_create'),
+    path('ventas/<int:pk>/', VentaDetailView.as_view(), name='venta_detail'),
     path('ventas/<int:pk>/editar/', VentaUpdateView.as_view(), name='venta_update'),
     path('ventas/<int:pk>/eliminar/', VentaDeleteView.as_view(), name='venta_delete'),
 
     # Cotizaciones
     path('cotizaciones/', CotizacionListView.as_view(), name='cotizacion_list'),
     path('cotizaciones/nueva/', CotizacionCreateView.as_view(), name='cotizacion_create'),
+    path('cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('cotizaciones/<int:pk>/editar/', CotizacionUpdateView.as_view(), name='cotizacion_update'),
     path('cotizaciones/<int:pk>/eliminar/', CotizacionDeleteView.as_view(), name='cotizacion_delete'),
 ]
