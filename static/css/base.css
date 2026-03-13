@@ -1382,6 +1382,49 @@ body.theme-light .badge-estado.reservado {
   color: #ef4444;
 }
 
+/* ==================================================
+    BADGES DE PRODUCCIÓN
+   ================================================== */
+
+/* PENDIENTE - Rojo */
+.badge-estado.pendiente {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* EN PROCESO - Naranja/Amarillo */
+.badge-estado.en-proceso {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* TERMINADA - Verde */
+.badge-estado.terminada {
+  background-color: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+body.theme-light .badge-estado.pendiente {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+body.theme-light .badge-estado.en-proceso {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+body.theme-light .badge-estado.terminada {
+  background-color: rgba(20, 184, 166, 0.12);
+  color: #14b8a6;
+  border-color: rgba(20, 184, 166, 0.2);
+}
+
 /* Tarjeta Lateral */
 .sidebar-card {
   background-color: var(--bg-card);

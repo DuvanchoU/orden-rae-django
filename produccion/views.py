@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Produccion
 from inventario.models import Producto, Proveedores
 from ventas.models import Pedido
+from .forms import ProduccionForm
 
 class ProduccionListView(ListView):
     model = Produccion
@@ -48,7 +49,7 @@ class ProduccionListView(ListView):
 class ProduccionCreateView(CreateView):
     model = Produccion
     template_name = 'produccion/produccion_form.html'
-    fields = ['producto', 'cantidad_producida', 'fecha_inicio', 'fecha_fin', 'estado_produccion', 'proveedor', 'observaciones']
+    form_class = ProduccionForm
     success_url = reverse_lazy('produccion_list')
 
     def get_context_data(self, **kwargs):
@@ -61,7 +62,7 @@ class ProduccionCreateView(CreateView):
 class ProduccionUpdateView(UpdateView):
     model = Produccion
     template_name = 'produccion/produccion_form.html'
-    fields = ['producto', 'cantidad_producida', 'fecha_inicio', 'fecha_fin', 'estado_produccion', 'proveedor', 'observaciones']
+    form_class = ProduccionForm
     success_url = reverse_lazy('produccion_list')
 
     def get_context_data(self, **kwargs):
@@ -75,3 +76,8 @@ class ProduccionDeleteView(DeleteView):
     model = Produccion
     template_name = 'produccion/produccion_confirm_delete.html'
     success_url = reverse_lazy('produccion_list')
+
+class ProduccionDetailView(DetailView):
+    model = Produccion
+    template_name = 'produccion/produccion_detail.html'
+    context_object_name = 'item'

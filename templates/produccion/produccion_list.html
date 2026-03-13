@@ -1,116 +1,190 @@
 {% extends 'base.html' %}
 
+{% block title %}Producción - Inventario{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2 class="fw-bold mb-0">Producción</h2>
-        <p class="text-muted small">Administra los registros de producción.</p>
+        <h1 class="page-title">Producción</h1>
+        <p class="page-subtitle">Administra los registros de producción</p>
     </div>
-    <a href="{% url 'produccion:produccion_create' %}" class="btn btn-sand">
-        <i class="bi bi-plus-lg me-1"></i> Nueva Producción
+    <a href="{% url 'produccion:produccion_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nueva Producción
     </a>
 </div>
 
-<!-- Filtros Multicriterio -->
-<div class="card-modern mb-4">
-    <form method="get" class="row g-3">
-        <div class="col-md-3">
-            <label class="form-label small text-muted">Producto</label>
-            <select name="producto" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for prod in productos %}
-                <option value="{{ prod.id }}" {% if request.GET.producto == prod.id|stringformat:"s" %}selected{% endif %}>
-                    {{ prod.codigo_producto }} - {{ prod.referencia_producto }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small text-muted">Estado</label>
-            <select name="estado" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for est in estados %}
-                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small text-muted">Desde</label>
-            <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="{{ request.GET.fecha_inicio }}">
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small text-muted">Hasta</label>
-            <input type="date" name="fecha_fin" class="form-control form-control-sm" value="{{ request.GET.fecha_fin }}">
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-dark btn-sm w-100">Filtrar</button>
-        </div>
-        <div class="col-md-1 d-flex align-items-end">
-            <a href="{% url 'produccion:produccion_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
+<!-- Filtros -->
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Producto</label>
+                <select name="producto" class="form-select">
+                    <option value="">Todos</option>
+                    {% for prod in productos %}
+                    <option value="{{ prod.id_producto }}" {% if request.GET.producto == prod.id_producto|stringformat:"s" %}selected{% endif %}>
+                        {{ prod.codigo_producto }} - {{ prod.referencia_producto }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE" {% if request.GET.estado == 'PENDIENTE' %}selected{% endif %}>PENDIENTE</option>
+                    <option value="EN PROCESO" {% if request.GET.estado == 'EN PROCESO' %}selected{% endif %}>EN PROCESO</option>
+                    <option value="TERMINADA" {% if request.GET.estado == 'TERMINADA' %}selected{% endif %}>TERMINADA</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input type="date" name="fecha_inicio" class="form-control" value="{{ request.GET.fecha_inicio }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input type="date" name="fecha_fin" class="form-control" value="{{ request.GET.fecha_fin }}">
+            </div>
+            <div class="col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>
+                </button>
+                <a href="{% url 'produccion:produccion_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
-<!-- Tabla de Resultados -->
-<div class="card-modern p-0 overflow-hidden">
-    <table class="table table-modern table-hover mb-0">
-        <thead>
-            <tr>
-                <th class="ps-4">CÓDIGO</th>
-                <th>PRODUCTO</th>
-                <th>CANTIDAD</th>
-                <th>PROVEEDOR</th>
-                <th>INICIO</th>
-                <th>FIN</th>
-                <th>ESTADO</th>
-                <th class="text-end pe-4">ACCIONES</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in producciones %}
-            <tr>
-                <td class="ps-4 fw-bold text-muted">{{ item.id_produccion }}</td>
-                <td>
-                    <div class="fw-bold">{{ item.producto.codigo_producto }}</div>
-                    <small class="text-muted">{{ item.producto.referencia_producto|truncatechars:20 }}</small>
-                </td>
-                <td>{{ item.cantidad_producida }}</td>
-                <td>{{ item.proveedor.nombre|default:"Interno" }}</td>
-                <td>{{ item.fecha_inicio|date:"d/m/Y" }}</td>
-                <td>{{ item.fecha_fin|date:"d/m/Y" }}</td>
-                <td>
-                    {% if item.estado_produccion == 'PENDIENTE' %}
-                        <span class="badge badge-estado bg-pendiente">PENDIENTE</span>
-                    {% elif item.estado_produccion == 'EN PROCESO' %}
-                        <span class="badge badge-estado bg-proceso">EN PROCESO</span>
-                    {% else %}
-                        <span class="badge badge-estado bg-terminada">TERMINADA</span>
-                    {% endif %}
-                </td>
-                <td class="text-end pe-4">
-                    <a href="{% url 'produccion:produccion_update' item.pk %}" class="btn btn-sm btn-light text-secondary"><i class="bi bi-pencil"></i></a>
-                    <a href="{% url 'produccion:produccion_delete' item.pk %}" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8" class="text-center py-4 text-muted">No hay registros de producción encontrados.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Tabla -->
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Producto</th>
+                    <th>Cantidad</th>
+                    <th>Proveedor</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Estado</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in producciones %}
+                <tr>
+                    <td data-label="Producto">
+                        <div class="fw-semibold">{{ item.producto.codigo_producto }}</div>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            {{ item.producto.referencia_producto|truncatechars:30 }}
+                        </small>
+                    </td>
+                    <td data-label="Cantidad" class="fw-bold">
+                        {{ item.cantidad_producida }}
+                    </td>
+                    <td data-label="Proveedor">
+                        {{ item.proveedor.nombre|default:"Interno" }}
+                    </td>
+                    <td data-label="Inicio">
+                        {{ item.fecha_inicio|date:"d/m/Y" }}
+                    </td>
+                    <td data-label="Fin">
+                        {{ item.fecha_fin|date:"d/m/Y"|default:"-" }}
+                    </td>
+                    <td data-label="Estado">
+                        {% if item.estado_produccion == 'PENDIENTE' %}
+                            <span class="badge-estado" style="background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                                PENDIENTE
+                            </span>
+                        {% elif item.estado_produccion == 'EN PROCESO' %}
+                            <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
+                                EN PROCESO
+                            </span>
+                        {% else %}
+                            <span class="badge-estado disponible">
+                                TERMINADA
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'produccion:produccion_detail' item.pk %}" 
+                            class="btn-action btn-action-view" 
+                            title="Ver">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="{% url 'produccion:produccion_update' item.pk %}" 
+                               class="btn-action btn-action-edit" 
+                               title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'produccion:produccion_delete' item.pk %}" 
+                               class="btn-action btn-action-delete" 
+                               title="Eliminar"
+                               onclick="return confirm('¿Estás seguro de eliminar este registro de producción?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay registros de producción</p>
+                            <a href="{% url 'produccion:produccion_create' %}" class="btn btn-nuevo">
+                                <i class="bi bi-plus-lg"></i>Crear primero
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
     <!-- Paginación -->
     {% if is_paginated %}
-    <div class="p-3 bg-light border-top d-flex justify-content-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination-compact">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                        Siguiente
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>

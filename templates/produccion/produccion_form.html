@@ -1,65 +1,93 @@
 {% extends 'base.html' %}
 
+{% block title %}{{ titulo }} - Producción{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card-modern">
-            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
             <form method="post">
                 {% csrf_token %}
                 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Producto</label>
-                        {{ form.producto }} 
-                        <!-- Nota: Django rendera el select automáticamente, puedes estilizarlo con clases en el forms.py -->
+                        <label class="form-label small text-muted">Producto *</label>
+                        {{ form.producto }}
+                        {% if form.producto.errors %}
+                            <div class="text-danger small">{{ form.producto.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Cantidad</label>
+                        <label class="form-label small text-muted">Cantidad Producida *</label>
                         {{ form.cantidad_producida }}
+                        {% if form.cantidad_producida.errors %}
+                            <div class="text-danger small">{{ form.cantidad_producida.errors }}</div>
+                        {% endif %}
                     </div>
                     
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Fecha Inicio</label>
+                        <label class="form-label small text-muted">Fecha Inicio *</label>
                         {{ form.fecha_inicio }}
+                        {% if form.fecha_inicio.errors %}
+                            <div class="text-danger small">{{ form.fecha_inicio.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Fecha Fin Estimada</label>
                         {{ form.fecha_fin }}
+                        {% if form.fecha_fin.errors %}
+                            <div class="text-danger small">{{ form.fecha_fin.errors }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Estado</label>
+                        <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado_produccion }}
+                        {% if form.estado_produccion.errors %}
+                            <div class="text-danger small">{{ form.estado_produccion.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Proveedor (Opcional)</label>
                         {{ form.proveedor }}
+                        {% if form.proveedor.errors %}
+                            <div class="text-danger small">{{ form.proveedor.errors }}</div>
+                        {% endif %}
                     </div>
 
                     <div class="col-12">
                         <label class="form-label small text-muted">Observaciones</label>
                         {{ form.observaciones }}
+                        {% if form.observaciones.errors %}
+                            <div class="text-danger small">{{ form.observaciones.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'produccion:produccion_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-sand">Guardar Registro</button>
+                    <a href="{% url 'produccion:produccion_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Registro
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Script para estilizar los inputs de Django -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const inputs = document.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
             if(input.type !== 'checkbox' && input.type !== 'hidden') {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
             }
         });
     });
