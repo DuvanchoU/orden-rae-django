@@ -1,35 +1,470 @@
 {% extends 'base.html' %}
 
+{% block title %}Dashboard - Inicio{% endblock %}
+
 {% block content %}
+<!-- Header -->
+<div class="page-header mb-4">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Resumen general del sistema</p>
+</div>
+
+<!-- Tarjetas de Estadísticas Principales -->
 <div class="row g-4 mb-4">
+    <!-- Ventas -->
     <div class="col-md-3">
-        <div class="card-modern p-4">
-            <div class="text-muted small">PRODUCCIÓN TOTAL</div>
-            <div class="fs-2 fw-bold">{{ total_produccion }}</div>
+        <div class="stat-card stat-card-primary">
+            <div class="stat-card-icon">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">VENTAS TOTALES</div>
+                <div class="stat-card-value">${{ total_ventas|floatformat:0 }}</div>
+                <div class="stat-card-change text-success">
+                    <i class="bi bi-arrow-up-short"></i>
+                    <span>{{ ventas_mes }} este mes</span>
+                </div>
+            </div>
         </div>
     </div>
+    
+    <!-- Pedidos -->
     <div class="col-md-3">
-        <div class="card-modern p-4">
-            <div class="text-muted small">PEDIDOS</div>
-            <div class="fs-2 fw-bold">{{ total_pedidos }}</div>
+        <div class="stat-card stat-card-success">
+            <div class="stat-card-icon">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">PEDIDOS</div>
+                <div class="stat-card-value">{{ total_pedidos }}</div>
+                <div class="stat-card-change text-success">
+                    <i class="bi bi-check-circle"></i>
+                    <span>{{ pedidos_completados }} completados</span>
+                </div>
+            </div>
         </div>
     </div>
+    
+    <!-- Producción -->
     <div class="col-md-3">
-        <div class="card-modern p-4">
-            <div class="text-muted small">VENTAS</div>
-            <div class="fs-2 fw-bold">{{ total_ventas }}</div>
+        <div class="stat-card stat-card-warning">
+            <div class="stat-card-icon">
+                <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">PRODUCCIÓN</div>
+                <div class="stat-card-value">{{ total_produccion }}</div>
+                <div class="stat-card-change text-warning">
+                    <i class="bi bi-hourglass-split"></i>
+                    <span>{{ produccion_proceso }} en proceso</span>
+                </div>
+            </div>
         </div>
     </div>
+    
+    <!-- Productos -->
     <div class="col-md-3">
-        <div class="card-modern p-4">
-            <div class="text-muted small">PRODUCTOS</div>
-            <div class="fs-2 fw-bold">{{ total_productos }}</div>
+        <div class="stat-card stat-card-info">
+            <div class="stat-card-icon">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">PRODUCTOS</div>
+                <div class="stat-card-value">{{ total_productos }}</div>
+                <div class="stat-card-change text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>{{ productos_bajo_stock }} bajo stock</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="card-modern p-4">
-    <h4 class="fw-bold mb-3">Bienvenido al Sistema</h4>
-    <p class="text-muted">Selecciona un módulo del menú lateral para comenzar.</p>
+<!-- Segunda Fila de Estadísticas -->
+<div class="row g-4 mb-4">
+    <!-- Cotizaciones -->
+    <div class="col-md-4">
+        <div class="stat-card stat-card-purple">
+            <div class="stat-card-icon">
+                <i class="bi bi-file-earmark-text"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">COTIZACIONES</div>
+                <div class="stat-card-value">{{ total_cotizaciones }}</div>
+                <div class="stat-card-change">
+                    <span class="badge-estado disponible me-2">{{ cotizaciones_aceptadas }} Aceptadas</span>
+                    <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b;">{{ cotizaciones_pendientes }} Pendientes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Compras -->
+    <div class="col-md-4">
+        <div class="stat-card stat-card-danger">
+            <div class="stat-card-icon">
+                <i class="bi bi-truck"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">COMPRAS</div>
+                <div class="stat-card-value">{{ total_compras }}</div>
+                <div class="stat-card-change text-muted">
+                    <i class="bi bi-clock"></i>
+                    <span>Proveedores activos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Usuarios -->
+    <div class="col-md-4">
+        <div class="stat-card stat-card-teal">
+            <div class="stat-card-icon">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="stat-card-content">
+                <div class="stat-card-label">USUARIOS</div>
+                <div class="stat-card-value">{{ total_usuarios }}</div>
+                <div class="stat-card-change text-success">
+                    <i class="bi bi-check-circle"></i>
+                    <span>Equipo activo</span>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Gráficas -->
+<div class="row g-4 mb-4">
+    <!-- Ventas por Mes -->
+    <div class="col-lg-8">
+        <div class="card-modern p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0">Ventas por Mes</h5>
+                <select class="form-select form-select-sm" style="width: auto;">
+                    <option>Últimos 6 meses</option>
+                    <option>Este año</option>
+                </select>
+            </div>
+            <canvas id="ventasChart" height="80"></canvas>
+        </div>
+    </div>
+    
+    <!-- Productos por Categoría -->
+    <div class="col-lg-4">
+        <div class="card-modern p-4">
+            <h5 class="fw-bold mb-4">Productos por Categoría</h5>
+            <canvas id="categoriasChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Pedidos por Estado -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card-modern p-4">
+            <h5 class="fw-bold mb-4">Pedidos por Estado</h5>
+            <canvas id="pedidosChart" height="150"></canvas>
+        </div>
+    </div>
+    
+    <!-- Estado de Producción -->
+    <div class="col-lg-6">
+        <div class="card-modern p-4">
+            <h5 class="fw-bold mb-4">Estado de Producción</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="text-center p-3" style="background-color: rgba(239, 68, 68, 0.1); border-radius: 12px;">
+                        <i class="bi bi-clock-fill" style="font-size: 2rem; color: #ef4444;"></i>
+                        <h3 class="fw-bold mt-2 mb-0" style="color: #ef4444;">{{ produccion_pendiente }}</h3>
+                        <small class="text-muted">Pendientes</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3" style="background-color: rgba(245, 158, 11, 0.1); border-radius: 12px;">
+                        <i class="bi bi-hourglass-split" style="font-size: 2rem; color: #f59e0b;"></i>
+                        <h3 class="fw-bold mt-2 mb-0" style="color: #f59e0b;">{{ produccion_proceso }}</h3>
+                        <small class="text-muted">En Proceso</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3" style="background-color: rgba(20, 184, 166, 0.1); border-radius: 12px;">
+                        <i class="bi bi-check-circle-fill" style="font-size: 2rem; color: var(--accent);"></i>
+                        <h3 class="fw-bold mt-2 mb-0" style="color: var(--accent);">{{ produccion_terminada }}</h3>
+                        <small class="text-muted">Terminadas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tablas de Actividad Reciente -->
+<div class="row g-4">
+    <!-- Últimas Ventas -->
+    <div class="col-lg-6">
+        <div class="card-modern p-0 overflow-hidden">
+            <div class="p-4 border-bottom" style="border-color: var(--border-subtle) !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Últimas Ventas</h5>
+                    <a href="{% url 'ventas:venta_list' %}" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-compact mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Cliente</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venta in ultimas_ventas %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold">{{ venta.cliente.nombre }} {{ venta.cliente.apellido|default:"" }}</div>
+                            </td>
+                            <td>{{ venta.fecha_venta|date:"d/m/Y" }}</td>
+                            <td class="fw-bold">${{ venta.total|floatformat:0 }}</td>
+                            <td>
+                                {% if venta.estado_venta == 'COMPLETADA' %}
+                                    <span class="badge-estado disponible">COMPLETADA</span>
+                                {% else %}
+                                    <span class="badge-estado agotado">PENDIENTE</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No hay ventas recientes</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Últimos Pedidos -->
+    <div class="col-lg-6">
+        <div class="card-modern p-0 overflow-hidden">
+            <div class="p-4 border-bottom" style="border-color: var(--border-subtle) !important;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Últimos Pedidos</h5>
+                    <a href="{% url 'ventas:pedido_list' %}" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-compact mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Cliente</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in ultimos_pedidos %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-semibold">{{ pedido.cliente.nombre }} {{ pedido.cliente.apellido|default:"" }}</div>
+                            </td>
+                            <td>{{ pedido.fecha_pedido|date:"d/m/Y" }}</td>
+                            <td class="fw-bold">${{ pedido.total_pedido|floatformat:0 }}</td>
+                            <td>
+                                {% if pedido.estado_pedido == 'COMPLETADO' %}
+                                    <span class="badge-estado disponible">COMPLETADO</span>
+                                {% elif pedido.estado_pedido == 'EN PROCESO' %}
+                                    <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b;">EN PROCESO</span>
+                                {% else %}
+                                    <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b;">PENDIENTE</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No hay pedidos recientes</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    // Configurar colores del tema
+    const colors = {
+        primary: '#2dd4bf',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        info: '#3b82f6',
+        purple: '#8b5cf6',
+        gray: '#64748b'
+    };
+
+    // Gráfica de Ventas por Mes
+    const ventasCtx = document.getElementById('ventasChart').getContext('2d');
+    new Chart(ventasCtx, {
+        type: 'line',
+        data: {
+            labels: {{ ventas_6_meses.etiquetas|safe }},
+            datasets: [{
+                label: 'Ventas',
+                data: {{ ventas_6_meses.datos|safe }},
+                borderColor: colors.primary,
+                backgroundColor: 'rgba(45, 212, 191, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: colors.primary,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 13 },
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            return '$ ' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(100, 116, 139, 0.1)'
+                    },
+                    ticks: {
+                        color: colors.gray,
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: colors.gray
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfica de Productos por Categoría
+    const categoriasCtx = document.getElementById('categoriasChart').getContext('2d');
+    new Chart(categoriasCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ productos_por_categoria.etiquetas|safe }},
+            datasets: [{
+                data: {{ productos_por_categoria.datos|safe }},
+                backgroundColor: [
+                    colors.primary,
+                    colors.success,
+                    colors.warning,
+                    colors.danger,
+                    colors.info
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        color: colors.gray
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+
+    // Gráfica de Pedidos por Estado
+    const pedidosCtx = document.getElementById('pedidosChart').getContext('2d');
+    new Chart(pedidosCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ pedidos_estado_data.etiquetas|safe }},
+            datasets: [{
+                label: 'Pedidos',
+                data: {{ pedidos_estado_data.datos|safe }},
+                backgroundColor: [
+                    colors.gray,
+                    colors.info,
+                    colors.warning,
+                    colors.success,
+                    colors.danger
+                ],
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(100, 116, 139, 0.1)'
+                    },
+                    ticks: {
+                        color: colors.gray,
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: colors.gray
+                    }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}
