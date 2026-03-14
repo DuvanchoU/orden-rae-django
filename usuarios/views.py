@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q
 from .models import Usuarios, RolesOld
+from .forms import UsuarioForm, UsuarioUpdateForm, RolForm
 from django.contrib import messages
 from django.utils import timezone
 
@@ -33,7 +34,7 @@ class RolListView(ListView):
 class RolCreateView(CreateView):
     model = RolesOld
     template_name = 'usuarios/rol_form.html'
-    fields = ['nombre_rol', 'descripcion']
+    form_class = RolForm
     success_url = reverse_lazy('usuarios:rol_list')
 
     def get_context_data(self, **kwargs):
@@ -45,7 +46,7 @@ class RolCreateView(CreateView):
 class RolUpdateView(UpdateView):
     model = RolesOld
     template_name = 'usuarios/rol_form.html'
-    fields = ['nombre_rol', 'descripcion']
+    form_class = RolForm
     success_url = reverse_lazy('usuarios:rol_list')
 
     def get_context_data(self, **kwargs):
@@ -60,6 +61,19 @@ class RolDeleteView(DeleteView):
     success_url = reverse_lazy('usuarios:rol_list')
 
 
+class RolDetailView(DetailView):
+    model = RolesOld
+    template_name = 'usuarios/rol_detail.html'
+    context_object_name = 'rol'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar usuarios con este rol
+        rol = self.get_object()
+        context['usuarios_con_rol'] = Usuarios.objects.filter(id_rol=rol)[:5]
+        context['total_usuarios'] = Usuarios.objects.filter(id_rol=rol).count()
+        return context
+    
 # USUARIOS
 class UsuarioListView(ListView):
     model = Usuarios
@@ -96,8 +110,7 @@ class UsuarioListView(ListView):
 class UsuarioCreateView(CreateView):
     model = Usuarios
     template_name = 'usuarios/usuario_form.html'
-    fields = ['nombres', 'apellidos', 'documento', 'correo_usuario', 'contrasena_usuario',
-              'genero', 'telefono', 'estado', 'id_rol']
+    form_class = UsuarioForm
     success_url = reverse_lazy('usuarios:usuario_list')
 
     def get_context_data(self, **kwargs):
@@ -114,8 +127,7 @@ class UsuarioCreateView(CreateView):
 class UsuarioUpdateView(UpdateView):
     model = Usuarios
     template_name = 'usuarios/usuario_form.html'
-    fields = ['nombres', 'apellidos', 'documento', 'correo_usuario',
-              'genero', 'telefono', 'estado', 'id_rol']
+    form_class = UsuarioForm
     success_url = reverse_lazy('usuarios:usuario_list')
 
     def get_context_data(self, **kwargs):
@@ -129,3 +141,16 @@ class UsuarioDeleteView(DeleteView):
     model = Usuarios
     template_name = 'usuarios/usuario_confirm_delete.html'
     success_url = reverse_lazy('usuarios:usuario_list')
+
+
+class UsuarioDetailView(DetailView):
+    model = Usuarios
+    template_name = 'usuarios/usuario_detail.html'
+    context_object_name = 'usuario'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar datos adicionales si los necesitas
+        usuario = self.get_object()
+        context['rol_nombre'] = usuario.id_rol.nombre_rol if usuario.id_rol else "Sin rol"
+        return context

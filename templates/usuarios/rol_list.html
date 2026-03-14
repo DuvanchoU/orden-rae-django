@@ -3,81 +3,143 @@
 {% block title %}Roles - Administración{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2 class="fw-bold mb-0">Roles</h2>
-        <p class="text-muted small">Gestiona los roles y permisos.</p>
+        <h1 class="page-title">Roles</h1>
+        <p class="page-subtitle">Gestiona los roles y permisos</p>
     </div>
-    <a href="{% url 'usuarios:rol_create' %}" class="btn btn-sand">
-        <i class="bi bi-plus-lg me-1"></i> Nuevo Rol
+    <a href="{% url 'usuarios:rol_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nuevo Rol
     </a>
 </div>
 
 <!-- Filtros -->
-<div class="card-modern mb-4">
-    <form method="get" class="row g-3">
-        <div class="col-md-4">
-            <label class="form-label small text-muted">Buscar</label>
-            <input type="text" name="busqueda" class="form-control form-control-sm" 
-                   placeholder="Nombre del rol" value="{{ request.GET.busqueda }}">
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <a href="{% url 'usuarios:rol_list' %}" class="btn btn-outline-secondary btn-sm w-100">
-                <i class="bi bi-x"></i>
-            </a>
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="busqueda" class="form-control" 
+                       placeholder="Nombre del rol" 
+                       value="{{ request.GET.busqueda }}">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>Filtrar
+                </button>
+                <a href="{% url 'usuarios:rol_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
 <!-- Tabla -->
-<div class="card-modern p-0 overflow-hidden">
-    <table class="table table-modern table-hover mb-0">
-        <thead>
-            <tr>
-                <th class="ps-4">ID</th>
-                <th>NOMBRE ROL</th>
-                <th>DESCRIPCIÓN</th>
-                <th>CREADO</th>
-                <th class="text-end pe-4">ACCIONES</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for rol in roles %}
-            <tr>
-                <td class="ps-4 fw-bold text-muted">{{ rol.id_rol }}</td>
-                <td class="fw-bold">{{ rol.nombre_rol }}</td>
-                <td class="text-muted">{{ rol.descripcion|truncatechars:50|default:"-" }}</td>
-                <td class="text-muted small">{{ rol.created_at|date:"d/m/Y"|default:"-" }}</td>
-                <td class="text-end pe-4">
-                    <a href="{% url 'usuarios:rol_update' rol.pk %}" class="btn btn-sm btn-light text-secondary">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{% url 'usuarios:rol_delete' rol.pk %}" class="btn btn-sm btn-light text-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center py-4 text-muted">No hay roles registrados.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Nombre del Rol</th>
+                    <th>Descripción</th>
+                    <th>Creado</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rol in roles %}
+                <tr>
+                    <td class="ps-4 fw-semibold" data-label="ID">
+                        {{ rol.id_rol }}
+                    </td>
+                    <td data-label="Nombre del Rol">
+                        <div class="fw-semibold">{{ rol.nombre_rol }}</div>
+                    </td>
+                    <td data-label="Descripción">
+                        <span class="text-muted">{{ rol.descripcion|truncatechars:50|default:"Sin descripción" }}</span>
+                    </td>
+                    <td data-label="Creado">
+                        {{ rol.created_at|date:"d/m/Y"|default:"-" }}
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'usuarios:rol_detail' rol.pk %}" 
+                               class="btn-action btn-action-view" 
+                               title="Ver">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="{% url 'usuarios:rol_update' rol.pk %}" 
+                               class="btn-action btn-action-edit" 
+                               title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'usuarios:rol_delete' rol.pk %}" 
+                               class="btn-action btn-action-delete" 
+                               title="Eliminar"
+                               onclick="return confirm('¿Estás seguro de eliminar este rol?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay roles registrados</p>
+                            <a href="{% url 'usuarios:rol_create' %}" class="btn btn-nuevo">
+                                <i class="bi bi-plus-lg"></i>Crear primero
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
+    <!-- Paginación -->
     {% if is_paginated %}
-    <div class="p-3 bg-light border-top d-flex justify-content-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination-compact">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                        Siguiente
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>

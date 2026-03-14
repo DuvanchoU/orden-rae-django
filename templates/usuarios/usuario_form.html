@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card-modern">
-            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+    <div class="col-lg-8">
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
             <form method="post">
                 {% csrf_token %}
                 
@@ -14,46 +14,80 @@
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Nombres *</label>
                         {{ form.nombres }}
+                        {% if form.nombres.errors %}
+                            <div class="text-danger small">{{ form.nombres.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Apellidos *</label>
                         {{ form.apellidos }}
+                        {% if form.apellidos.errors %}
+                            <div class="text-danger small">{{ form.apellidos.errors }}</div>
+                        {% endif %}
                     </div>
+                    
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Documento *</label>
                         {{ form.documento }}
+                        {% if form.documento.errors %}
+                            <div class="text-danger small">{{ form.documento.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Email *</label>
+                        <label class="form-label small text-muted">Correo Electrónico *</label>
                         {{ form.correo_usuario }}
+                        {% if form.correo_usuario.errors %}
+                            <div class="text-danger small">{{ form.correo_usuario.errors }}</div>
+                        {% endif %}
                     </div>
-                    {% if not object %}
+
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Contraseña *</label>
                         {{ form.contrasena_usuario }}
+                        {% if form.contrasena_usuario.errors %}
+                            <div class="text-danger small">{{ form.contrasena_usuario.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Mínimo 8 caracteres</small>
                     </div>
-                    {% endif %}
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Teléfono</label>
                         {{ form.telefono }}
+                        {% if form.telefono.errors %}
+                            <div class="text-danger small">{{ form.telefono.errors }}</div>
+                        {% endif %}
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Género</label>
                         {{ form.genero }}
+                        {% if form.genero.errors %}
+                            <div class="text-danger small">{{ form.genero.errors }}</div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Rol *</label>
                         {{ form.id_rol }}
+                        {% if form.id_rol.errors %}
+                            <div class="text-danger small">{{ form.id_rol.errors }}</div>
+                        {% endif %}
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="text-danger small">{{ form.estado.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-sand">Guardar Usuario</button>
+                    <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Usuario
+                    </button>
                 </div>
             </form>
         </div>
@@ -66,7 +100,10 @@
         inputs.forEach(input => {
             if(input.type !== 'checkbox' && input.type !== 'hidden') {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
             }
         });
     });

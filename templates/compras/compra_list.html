@@ -1,116 +1,183 @@
 {% extends 'base.html' %}
 
-{% block title %}Compras{% endblock %}
+{% block title %}Compras - Inventario{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h2 class="fw-bold mb-0">Compras</h2>
-        <p class="text-muted small">Gestiona las órdenes de compra a proveedores.</p>
+        <h1 class="page-title">Compras</h1>
+        <p class="page-subtitle">Gestiona las órdenes de compra a proveedores</p>
     </div>
-    <a href="{% url 'compras:compra_create' %}" class="btn btn-sand">
-        <i class="bi bi-plus-lg me-1"></i> Nueva Compra
+    <a href="{% url 'compras:compra_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nueva Compra
     </a>
 </div>
 
 <!-- Filtros -->
-<div class="card-modern mb-4">
-    <form method="get" class="row g-3">
-        <div class="col-md-3">
-            <label class="form-label small text-muted">Proveedor</label>
-            <select name="proveedor" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for prov in proveedores %}
-                <option value="{{ prov.id }}" {% if request.GET.proveedor == prov.id|stringformat:"s" %}selected{% endif %}>
-                    {{ prov.nombre }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small text-muted">Estado</label>
-            <select name="estado" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {% for est in estados %}
-                <option value="{{ est }}" {% if request.GET.estado == est %}selected{% endif %}>{{ est }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small text-muted">Desde</label>
-            <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="{{ request.GET.fecha_inicio }}">
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small text-muted">Hasta</label>
-            <input type="date" name="fecha_fin" class="form-control form-control-sm" value="{{ request.GET.fecha_fin }}">
-        </div>
-        <div class="col-md-3 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-dark btn-sm flex-grow-1">Filtrar</button>
-            <a href="{% url 'compras:compra_list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-x"></i>
-            </a>
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Proveedor</label>
+                <select name="proveedor" class="form-select">
+                    <option value="">Todos</option>
+                    {% for prov in proveedores %}
+                    <option value="{{ prov.id_proveedor }}" {% if request.GET.proveedor == prov.id_proveedor|stringformat:"s" %}selected{% endif %}>
+                        {{ prov.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE" {% if request.GET.estado == 'PENDIENTE' %}selected{% endif %}>PENDIENTE</option>
+                    <option value="RECIBIDA" {% if request.GET.estado == 'RECIBIDA' %}selected{% endif %}>RECIBIDA</option>
+                    <option value="CANCELADA" {% if request.GET.estado == 'CANCELADA' %}selected{% endif %}>CANCELADA</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input type="date" name="fecha_inicio" class="form-control" value="{{ request.GET.fecha_inicio }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input type="date" name="fecha_fin" class="form-control" value="{{ request.GET.fecha_fin }}">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>Filtrar
+                </button>
+                <a href="{% url 'compras:compra_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
         </div>
     </form>
 </div>
 
 <!-- Tabla -->
-<div class="card-modern p-0 overflow-hidden">
-    <table class="table table-modern table-hover mb-0">
-        <thead>
-            <tr>
-                <th class="ps-4">ID</th>
-                <th>PROVEEDOR</th>
-                <th>FECHA</th>
-                <th>TOTAL</th>
-                <th>ESTADO</th>
-                <th class="text-end pe-4">ACCIONES</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for compra in compras %}
-            <tr>
-                <td class="ps-4 fw-bold text-muted">{{ compra.id_compra }}</td>
-                <td class="fw-bold">{{ compra.proveedor.nombre }}</td>
-                <td>{{ compra.fecha_compra|date:"d/m/Y" }}</td>
-                <td class="fw-bold">${{ compra.total_compra }}</td>
-                <td>
-                    {% if compra.estado == 'RECIBIDA' %}
-                        <span class="badge badge-estado bg-terminada">RECIBIDA</span>
-                    {% elif compra.estado == 'APROBADA' %}
-                        <span class="badge badge-estado bg-proceso">APROBADA</span>
-                    {% elif compra.estado == 'CANCELADA' %}
-                        <span class="badge badge-estado bg-pendiente">CANCELADA</span>
-                    {% else %}
-                        <span class="badge badge-estado bg-pendiente">PENDIENTE</span>
-                    {% endif %}
-                </td>
-                <td class="text-end pe-4">
-                    <a href="{% url 'compras:compra_update' compra.pk %}" class="btn btn-sm btn-light text-secondary">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-                    <a href="{% url 'compras:compra_delete' compra.pk %}" class="btn btn-sm btn-light text-danger">
-                        <i class="bi bi-trash"></i>
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No hay compras registradas.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Proveedor</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for compra in compras %}
+                <tr>
+                    <td class="ps-4 fw-semibold" data-label="ID">
+                        {{ compra.id_compra }}
+                    </td>
+                    <td data-label="Proveedor">
+                        <div class="fw-semibold">{{ compra.proveedor.nombre }}</div>
+                    </td>
+                    <td data-label="Fecha">
+                        {{ compra.fecha_compra|date:"d/m/Y" }}
+                    </td>
+                    <td data-label="Total" class="fw-bold">
+                        ${{ compra.total_formateado }}
+                    </td>
+                    <td data-label="Estado">
+                        {% if compra.estado == 'RECIBIDA' %}
+                            <span class="badge-estado disponible">
+                                RECIBIDA
+                            </span>
+                        {% elif compra.estado == 'CANCELADA' %}
+                            <span class="badge-estado agotado">
+                                CANCELADA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b; border-color: rgba(100, 116, 139, 0.3);">
+                                PENDIENTE
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'compras:compra_detail' compra.pk %}" 
+                               class="btn-action btn-action-view" 
+                               title="Ver">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="{% url 'compras:compra_update' compra.pk %}" 
+                               class="btn-action btn-action-edit" 
+                               title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'compras:compra_delete' compra.pk %}" 
+                               class="btn-action btn-action-delete" 
+                               title="Eliminar"
+                               onclick="return confirm('¿Estás seguro de eliminar esta compra?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No hay compras registradas</p>
+                            <a href="{% url 'compras:compra_create' %}" class="btn btn-nuevo">
+                                <i class="bi bi-plus-lg"></i>Crear primero
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     
+    <!-- Paginación -->
     {% if is_paginated %}
-    <div class="p-3 bg-light border-top d-flex justify-content-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
         <nav>
-            <ul class="pagination pagination-sm mb-0">
+            <ul class="pagination-compact">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Anterior</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
-                <li class="page-item active"><span class="page-link bg-dark border-dark">{{ page_obj.number }}</span></li>
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Siguiente</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
+                        Siguiente
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>

@@ -125,7 +125,7 @@ class Cotizaciones(models.Model):
         """
         if self.descuento:
             return f"{int(self.descuento):,}".replace(",", ".")
-        return "$0"
+        return "0"
     
     def total_formateado(self):
         """

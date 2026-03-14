@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Compra #{{ compra.id_compra }} - Información{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Detalle de la compra</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'compras:compra_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'compras:compra_update' compra.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información de la Compra -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                
+                <!-- Proveedor -->
+                <div class="col-md-6">
+                    <label class="info-label">PROVEEDOR</label>
+                    <p class="info-value fw-bold">{{ compra.proveedor.nombre }}</p>
+                    <small class="text-muted" style="font-size: 0.8rem;">
+                        {{ compra.proveedor.email|default:"Sin email" }}
+                    </small>
+                </div>
+                
+                <!-- Fecha Compra -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA DE COMPRA</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                        {{ compra.fecha_compra|date:"d/m/Y" }}
+                    </p>
+                </div>
+                
+                <!-- Total -->
+                <div class="col-md-6">
+                    <label class="info-label">TOTAL</label>
+                    <p class="info-value fw-bold" style="font-size: 1.5rem; color: var(--accent);">
+                        ${{ compra.total_formateado }}
+                    </p>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if compra.estado == 'RECIBIDA' %}
+                            <span class="badge-estado disponible">
+                                RECIBIDA
+                            </span>
+                        {% elif compra.estado == 'CANCELADA' %}
+                            <span class="badge-estado agotado">
+                                CANCELADA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b; border-color: rgba(100, 116, 139, 0.3);">
+                                PENDIENTE
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Foto Orden -->
+                <div class="col-md-6">
+                    <label class="info-label">FOTO ORDEN</label>
+                    <p class="info-value">
+                        {% if compra.foto_orden %}
+                            <a href="{{ compra.foto_orden }}" target="_blank" class="text-decoration-none">
+                                <i class="bi bi-image me-2"></i>Ver imagen
+                            </a>
+                        {% else %}
+                            <span class="text-muted">No disponible</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Detalle de Productos (si existe) -->
+        {% if compra.detallecompra_set.all %}
+        <div class="info-card p-4 mt-4">
+            <h5 class="fw-bold mb-3">Productos Comprados</h5>
+            <div class="table-responsive">
+                <table class="table table-compact mb-0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unit.</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in compra.detallecompra_set.all %}
+                        <tr>
+                            <td class="fw-semibold">{{ detalle.producto.codigo_producto }} - {{ detalle.producto.referencia_producto|truncatechars:30 }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>${{ detalle.precio_unitario|floatformat:0 }}</td>
+                            <td class="fw-bold">${{ detalle.subtotal|floatformat:0 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Tarjeta Lateral - Acciones e Información -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'inventario:proveedor_detail' compra.proveedor.pk %}" 
+                   class="btn-action-secondary">
+                    <i class="bi bi-truck me-2"></i>Ver Proveedor
+                </a>
+                <a href="{% url 'compras:compra_delete' compra.pk %}" 
+                   class="btn-action-secondary text-danger"
+                   style="border-color: rgba(239, 68, 68, 0.3);"
+                   onclick="return confirm('¿Estás seguro de eliminar esta compra?');">
+                    <i class="bi bi-trash-fill me-2"></i>Eliminar Compra
+                </a>
+            </div>
+            
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">CREADO EL</label>
+                    <p class="info-text">{{ compra.created_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ compra.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+            </div>
+        </div>
+{% endblock %}

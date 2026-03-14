@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q, Sum
 from .models import Compras, DetalleCompra
 from inventario.models import Proveedores, Producto
 from usuarios.models import Usuarios
 from django.utils import timezone
+from .forms import CompraForm
 
 
 # COMPRAS
@@ -41,14 +42,14 @@ class CompraListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['proveedores'] = Proveedores.objects.all()
-        context['estados'] = ['PENDIENTE', 'APROBADA', 'RECIBIDA', 'CANCELADA']
+        context['estados'] = ['PENDIENTE', 'RECIBIDA', 'CANCELADA']
         return context
 
 
 class CompraCreateView(CreateView):
     model = Compras
     template_name = 'compras/compra_form.html'
-    fields = ['proveedor', 'fecha_compra', 'total_compra', 'estado', 'foto_orden', 'observaciones']
+    form_class = CompraForm
     success_url = reverse_lazy('compras:compra_list')
 
     def get_context_data(self, **kwargs):
@@ -65,7 +66,7 @@ class CompraCreateView(CreateView):
 class CompraUpdateView(UpdateView):
     model = Compras
     template_name = 'compras/compra_form.html'
-    fields = ['proveedor', 'fecha_compra', 'total_compra', 'estado', 'foto_orden', 'observaciones']
+    form_class = CompraForm
     success_url = reverse_lazy('compras:compra_list')
 
     def get_context_data(self, **kwargs):
@@ -80,6 +81,19 @@ class CompraDeleteView(DeleteView):
     template_name = 'compras/compra_confirm_delete.html'
     success_url = reverse_lazy('compras:compra_list')
 
+
+class CompraDetailView(DetailView):
+    model = Compras
+    template_name = 'compras/compra_detail.html'
+    context_object_name = 'compra'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar productos del detalle de compra si existen
+        compra = self.get_object()
+        context['detalle_productos'] = DetalleCompra.objects.filter(compra=compra)
+        return context
+    
 # DETALLE COMPRA
 class DetalleCompraCreateView(CreateView):
     model = DetalleCompra

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ usuario.nombres }} {{ usuario.apellidos }} - Usuario{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">Información</h1>
+        <p class="detail-subtitle">Detalle del usuario</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'usuarios:usuario_update' usuario.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información del Usuario -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Nombre Completo -->
+                <div class="col-md-6">
+                    <label class="info-label">NOMBRE COMPLETO</label>
+                    <p class="info-value fw-bold">{{ usuario.nombres }} {{ usuario.apellidos }}</p>
+                </div>
+                
+                <!-- Documento -->
+                <div class="col-md-6">
+                    <label class="info-label">DOCUMENTO</label>
+                    <p class="info-value">{{ usuario.documento }}</p>
+                </div>
+                
+                <!-- Correo -->
+                <div class="col-md-6">
+                    <label class="info-label">CORREO ELECTRÓNICO</label>
+                    <p class="info-value">
+                        <i class="bi bi-envelope me-2 text-muted"></i>{{ usuario.correo_usuario }}
+                    </p>
+                </div>
+                
+                <!-- Teléfono -->
+                <div class="col-md-6">
+                    <label class="info-label">TELÉFONO</label>
+                    <p class="info-value">
+                        <i class="bi bi-telephone me-2 text-muted"></i>{{ usuario.telefono|default:"No especificado" }}
+                    </p>
+                </div>
+                
+                <!-- Género -->
+                <div class="col-md-6">
+                    <label class="info-label">GÉNERO</label>
+                    <p class="info-value">
+                        {% if usuario.genero == 'M' %}
+                            Masculino
+                        {% elif usuario.genero == 'F' %}
+                            Femenino
+                        {% else %}
+                            Otro
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Rol -->
+                <div class="col-md-6">
+                    <label class="info-label">ROL</label>
+                    <p class="info-value">{{ usuario.id_rol.nombre_rol }}</p>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if usuario.estado == 'ACTIVO' %}
+                            <span class="badge-estado disponible">
+                                ACTIVO
+                            </span>
+                        {% elif usuario.estado == 'INACTIVO' %}
+                            <span class="badge-estado agotado">
+                                INACTIVO
+                            </span>
+                        {% else %}
+                            <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
+                                SUSPENDIDO
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Fecha Registro -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA DE REGISTRO</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                        {{ usuario.fecha_registro|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral - Acciones e Información -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información Adicional</h5>
+            <hr class="sidebar-divider">
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons">
+                <a href="{% url 'usuarios:usuario_delete' usuario.pk %}" 
+                   class="btn-action-secondary text-danger"
+                   style="border-color: rgba(239, 68, 68, 0.3);"
+                   onclick="return confirm('¿Estás seguro de eliminar este usuario?');">
+                    <i class="bi bi-trash-fill me-2"></i>Eliminar Usuario
+                </a>
+            </div>
+            <div class="mt-4">
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ usuario.pk }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">CREADO EL</label>
+                    <p class="info-text">{{ usuario.created_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text">{{ usuario.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+                </div>
+            </div>
+        </div>
+{% endblock %}

@@ -4,26 +4,43 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card-modern">
-            <h4 class="mb-4 fw-bold">{{ titulo }}</h4>
+    <div class="col-lg-8">
+        <div class="card-modern p-4">
+            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
             <form method="post">
                 {% csrf_token %}
                 
                 <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label small text-muted">Nombre Rol *</label>
+                    <div class="col-md-8">
+                        <label class="form-label small text-muted">Nombre del Rol *</label>
                         {{ form.nombre_rol }}
+                        {% if form.nombre_rol.errors %}
+                            <div class="text-danger small">{{ form.nombre_rol.errors }}</div>
+                        {% endif %}
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label small text-muted">ID Rol</label>
+                        <input type="text" class="form-control" value="{{ form.instance.id_rol|default:'Auto' }}" readonly disabled>
+                        <small class="text-muted">Autogenerado</small>
+                    </div>
+                    
                     <div class="col-12">
                         <label class="form-label small text-muted">Descripción</label>
                         {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                            <div class="text-danger small">{{ form.descripcion.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Describe las funciones y permisos de este rol</small>
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'usuarios:rol_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-sand">Guardar Rol</button>
+                    <a href="{% url 'usuarios:rol_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo">
+                        <i class="bi bi-check-lg"></i>Guardar Rol
+                    </button>
                 </div>
             </form>
         </div>
@@ -34,9 +51,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         const inputs = document.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
-            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+            if(input.type !== 'checkbox' && input.type !== 'hidden' && input.type !== 'file') {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') input.classList.replace('form-control', 'form-select');
+                if(input.tagName === 'SELECT') {
+                    input.classList.remove('form-control');
+                    input.classList.add('form-select');
+                }
             }
         });
     });

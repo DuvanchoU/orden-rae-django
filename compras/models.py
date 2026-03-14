@@ -16,6 +16,16 @@ class Compras(models.Model):
         managed = True
         db_table = 'compras'
 
+    def __str__(self):
+        return f"Compra #{self.id_compra} - {self.proveedor.nombre}"
+    
+    def total_formateado(self):
+        """
+        Retorna el total formateado sin decimales y con separador de miles
+        Ejemplo: 1427998 → $1.427.998
+        """
+        return f"{int(self.total_compra):,}".replace(",", ".")
+    
 
 class DetalleCompra(models.Model):
     id_detalle_compra = models.AutoField(primary_key=True)
