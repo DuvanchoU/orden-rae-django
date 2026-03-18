@@ -1,24 +1,30 @@
-# 📁 pagina/urls.py
-
 from django.urls import path
 from . import views
 
 app_name = 'pagina'
 
 urlpatterns = [
+    # --- Vistas Principales ---
     path('', views.home, name='home'),
     path('producto/', views.lista_productos, name='productos'),
     path('productos/<str:categoria_slug>/', views.productos_por_categoria, name='productos_por_categoria'),
-    path('carrito-compra/', views.carrito_compra, name='carrito_compra'),
     path('promociones/', views.promociones, name='promociones'),
-    path('contacto/', views.contacto, name='contacto'),
-    path('cotiza/', views.cotiza, name='cotiza'),
+    
+    # --- Carrito y Checkout ---
+    path('carrito-compra/', views.carrito_compra, name='carrito_compra'),
+    path('checkout/', views.checkout, name='checkout'),
+    
+    # --- Usuario y Autenticación ---
     path('login/', views.login_view, name='login'),
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
-    path('checkout/', views.checkout, name='checkout'),
+    path('perfil/', views.perfil_view, name='perfil'), 
+
+    # --- Formularios ---
+    path('contacto/', views.contacto, name='contacto'),
+    path('cotiza/', views.cotiza, name='cotiza'), 
     
-    # API
+    # --- API ---
     path('api/carrito/agregar/', views.api_agregar_carrito, name='api_agregar_carrito'),
     path('api/carrito/actualizar/', views.api_carrito_actualizar, name='api_carrito_actualizar'),
     path('api/carrito/eliminar/', views.api_carrito_eliminar, name='api_carrito_eliminar'),

@@ -1009,7 +1009,7 @@
                         <span class="user-tooltip ms-2 text-dark d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
                     </div>
                     <div class="submenu mt-1">
-                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
+                        <!--<a href="{% url 'pagina:perfil' %}">Mi cuenta</a> -->
                         <a href="{% url 'pagina:logout' %}?next={% url 'pagina:home' %}">Cerrar sesión</a>
                         {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
                             <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>

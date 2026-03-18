@@ -97,7 +97,7 @@ class DashboardView(TemplateView):
         """Obtiene productos agrupados por categoría"""
         from inventario.models import Categorias
         categorias = Categorias.objects.annotate(
-            total_productos=Count('producto')
+            total_productos=Count('productos')
         ).order_by('-total_productos')[:5]
         
         return {

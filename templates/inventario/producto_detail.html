@@ -6,8 +6,8 @@
 <!-- Header -->
 <div class="detail-header d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="detail-title">Información</h1>
-        <p class="detail-subtitle">Características del producto</p>
+        <h1 class="detail-title">Información del Producto</h1>
+        <p class="detail-subtitle">Detalles y características</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{% url 'inventario:producto_list' %}" class="btn btn-volver">
@@ -20,59 +20,65 @@
 </div>
 
 <div class="row g-4">
-    <!-- Tarjeta Principal - Información -->
+    <!-- Tarjeta Principal -->
     <div class="col-lg-8">
         <div class="info-card p-4">
             <div class="row g-4">
-                <!-- Código -->
                 <div class="col-md-6">
                     <label class="info-label">CÓDIGO</label>
                     <p class="info-value fw-bold">{{ producto.codigo_producto }}</p>
                 </div>
-                
-                <!-- Referencia -->
                 <div class="col-md-6">
                     <label class="info-label">REFERENCIA</label>
                     <p class="info-value fw-bold">{{ producto.referencia_producto|default:"Sin referencia" }}</p>
                 </div>
-                
-                <!-- Categoría -->
                 <div class="col-md-6">
                     <label class="info-label">CATEGORÍA</label>
                     <p class="info-value">{{ producto.categoria.nombre_categoria }}</p>
                 </div>
-                
-                <!-- Tipo de Madera -->
                 <div class="col-md-6">
                     <label class="info-label">TIPO DE MADERA</label>
                     <p class="info-value">{{ producto.tipo_madera|default:"No especificado" }}</p>
                 </div>
-                
-                <!-- Color -->
                 <div class="col-md-6">
                     <label class="info-label">COLOR</label>
                     <p class="info-value">{{ producto.color_producto|default:"No especificado" }}</p>
                 </div>
                 
-                <!-- Proveedor -->
+                <!-- PROVEEDOR -->
                 <div class="col-md-6">
                     <label class="info-label">PROVEEDOR</label>
                     <p class="info-value">
-                        {% if producto.proveedor %}
-                            {{ producto.proveedor.nombre }}
+                        {% if nombre_proveedor %}
+                            <span class="d-flex align-items-center gap-2">
+                                <i class="bi bi-person-badge-fill text-muted"></i>
+                                <strong>{{ nombre_proveedor }}</strong>
+                            </span>
+                            <!-- Opcional: Mostrar estado del proveedor en pequeño -->
+                            {% if estado_proveedor == 'ACTIVO' %}
+                                <small class="text-success d-block mt-1 ms-4">
+                                    <i class="bi bi-dot"></i>Proveedor Activo
+                                </small>
+                            {% else %}
+                                <small class="text-warning d-block mt-1 ms-4">
+                                    <i class="bi bi-dot"></i>Proveedor Inactivo
+                                </small>
+                            {% endif %}
+                        {% elif producto.proveedor_id %}
+                            <span class="text-danger small">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                ID {{ producto.proveedor_id }} no encontrado en la BD.
+                            </span>
                         {% else %}
-                            No especificado
+                            <span class="text-muted fst-italic">No especificado</span>
                         {% endif %}
                     </p>
                 </div>
-                
-                <!-- Precio -->
+
                 <div class="col-md-6">
                     <label class="info-label">PRECIO ACTUAL</label>
-                    <p class="info-price">${{ producto.precio_formateado }}</p>
+                    <p class="info-price text-success fw-bold fs-4">${{ producto.precio_formateado }}</p>
                 </div>
-                
-                <!-- Estado -->
                 <div class="col-md-6">
                     <label class="info-label">ESTADO</label>
                     <div>
@@ -91,39 +97,38 @@
         </div>
     </div>
     
-    <!-- Tarjeta Lateral - Información Adicional -->
+    <!-- Sidebar -->
     <div class="col-lg-4">
         <div class="sidebar-card p-4">
-            <h5 class="sidebar-title">Información Adicional</h5>
+            <h5 class="sidebar-title">Gestión Rápida</h5>
             <hr class="sidebar-divider">
             
-            <!-- Botones de Acción -->
-            <div class="action-buttons">
+            <div class="action-buttons d-grid gap-2">
                 <a href="{% url 'inventario:inventario_list' %}?producto={{ producto.pk }}" 
-                   class="btn-action-secondary">
-                    <i class="bi bi-box-seam me-2"></i>Ver Stock
+                   class="btn-action-secondary text-start">
+                    <i class="bi bi-box-seam me-2"></i>Ver Stock en Bodegas
                 </a>
+                <!-- Enlace a producción (asegúrate de tener esta URL configurada) -->
+                {% comment %}
                 <a href="{% url 'produccion:produccion_list' %}?producto={{ producto.pk }}" 
-                   class="btn-action-secondary">
+                   class="btn-action-secondary text-start">
                     <i class="bi bi-gear-wide-connected me-2"></i>Ver Producción
                 </a>
+                {% endcomment %}
             </div>
             
-            <!-- Fechas e ID -->
-            <div class="mt-4">
-                <div class="info-row">
-                    <label class="info-label-small">FECHA DE CREACIÓN</label>
-                    <p class="info-text">{{ producto.created_at|date:"d/m/Y H:i" }}</p>
+            <div class="mt-4 pt-3 border-top">
+                <div class="info-row mb-2">
+                    <label class="info-label-small text-muted">CREADO EL</label>
+                    <p class="info-text mb-0 small">{{ producto.created_at|date:"d/m/Y H:i" }}</p>
                 </div>
-                
-                <div class="info-row">
-                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
-                    <p class="info-text">{{ producto.updated_at|date:"d/m/Y H:i" }}</p>
+                <div class="info-row mb-2">
+                    <label class="info-label-small text-muted">ACTUALIZADO EL</label>
+                    <p class="info-text mb-0 small">{{ producto.updated_at|date:"d/m/Y H:i" }}</p>
                 </div>
-                
                 <div class="info-row">
-                    <label class="info-label-small">ID INTERNO</label>
-                    <p class="info-text fw-bold">{{ producto.pk }}</p>
+                    <label class="info-label-small text-muted">ID INTERNO</label>
+                    <p class="info-text mb-0 small fw-monospace">{{ producto.pk }}</p>
                 </div>
             </div>
         </div>

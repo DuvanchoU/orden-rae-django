@@ -29,7 +29,8 @@
                 <select name="categoria" class="form-select">
                     <option value="">Todas</option>
                     {% for cat in categorias %}
-                    <option value="{{ cat.id_categorias }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                    <!-- Aseguramos que el value sea el id_categorias -->
+                    <option value="{{ cat.id_categorias }}" {% if request.GET.categoria == cat.id_categorias|stringformat:"s" %}selected{% endif %}>
                         {{ cat.nombre_categoria }}
                     </option>
                     {% endfor %}
@@ -97,36 +98,36 @@
                     </td>
                     <td data-label="Estado">
                         {% if producto.estado == 'DISPONIBLE' %}
-                            <span class="badge-estado disponible">
-                                DISPONIBLE
-                            </span>
+                            <span class="badge-estado disponible">DISPONIBLE</span>
                         {% else %}
-                            <span class="badge-estado agotado">
-                                AGOTADO
-                            </span>
+                            <span class="badge-estado agotado">AGOTADO</span>
                         {% endif %}
                     </td>
                     <td class="text-end pe-4" data-label="Acciones">
                         <div class="actions-horizontal">
+                            <!-- VER -->
                             <a href="{% url 'inventario:producto_detail' producto.pk %}" 
                                 class="btn-action btn-action-view" 
                                 title="Ver">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
+                            <!-- EDITAR -->
                             <a href="{% url 'inventario:producto_update' producto.pk %}" 
                                 class="btn-action btn-action-edit" 
                                 title="Editar">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
-                            <a href="{% url 'inventario:producto_delete' producto.pk %}" 
-                                class="btn-action btn-action-delete" 
-                                title="Eliminar"
-                                onclick="return confirm('¿Estás seguro de eliminar este producto?');">
-                                <i class="bi bi-trash-fill"></i>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
+                            <!-- ELIMINAR (CON POST PARA SOFT DELETE) -->
+                            <div class="action-wrapper">
+                                <form action="{% url 'inventario:producto_delete' producto.pk %}" method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este producto? Esta acción lo ocultará del listado.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-action btn-action-delete" title="Eliminar">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
                 {% empty %}
                 <tr>
                     <td colspan="7">
@@ -146,39 +147,77 @@
     
     <!-- Paginación -->
     {% if is_paginated %}
-    <div class="pagination-container d-flex justify-content-between align-items-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center mt-4 pt-3">
         <span class="pagination-info">
             Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            {% if page_obj.paginator.count %}
+                ({{ page_obj.paginator.count }} registros)
+            {% endif %}
         </span>
-        <nav>
-            <ul class="pagination-compact">
+        
+        <nav aria-label="Paginación de resultados">
+            <ul class="pagination-compact mb-0">
+                
+                <!-- Botón ANTERIOR -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
-                        Anterior
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                        <i class="bi bi-chevron-left me-1"></i>Anterior
                     </a>
                 </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="bi bi-chevron-left me-1"></i>Anterior</span>
+                </li>
                 {% endif %}
-                
+
+                <!-- Números de Página -->
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
+                        <!-- Página Actual -->
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
-                            {{ num }}
-                        </a>
-                    </li>
+                        <!-- Páginas cercanas -->
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% elif num == 1 %}
+                        <!-- Primera página -->
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                                1
+                            </a>
+                        </li>
+                        {% if num != 2 and num != page_obj.number|add:'-2' %}
+                             <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% elif num == page_obj.paginator.num_pages %}
+                         <!-- Última página -->
+                         {% if num != page_obj.number|add:'2' and num != page_obj.paginator.num_pages|add:'-1' %}
+                             <li class="page-item disabled"><span class="page-link">...</span></li>
+                         {% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
                     {% endif %}
                 {% endfor %}
-                
+
+                <!-- Botón SIGUIENTE -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
-                        Siguiente
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                        Siguiente<i class="bi bi-chevron-right ms-1"></i>
                     </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Siguiente<i class="bi bi-chevron-right ms-1"></i></span>
                 </li>
                 {% endif %}
             </ul>

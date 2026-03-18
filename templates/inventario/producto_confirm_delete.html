@@ -1,68 +1,41 @@
 {% extends 'base.html' %}
 
-{% block title %}Eliminar Producto {{ object.codigo_producto }}{% endblock %}
+{% block title %}Eliminar {{ object.codigo_producto }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <div class="card-modern text-center p-5">
-            <!-- Icono -->
+        <div class="card-modern text-center p-5 shadow-sm">
             <div class="mb-4">
-                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: rgba(239, 68, 68, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2.5rem;"></i>
+                <div class="avatar-xl bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-exclamation-triangle-fill fs-2"></i>
                 </div>
             </div>
             
-            <!-- Título -->
-            <h4 class="fw-bold mb-3">¿Estás seguro?</h4>
+            <h4 class="fw-bold mb-3">¿Confirmar eliminación?</h4>
             
-            <!-- Información del producto -->
-            <div class="text-start bg-light rounded p-3 mb-4" style="background-color: var(--bg-elevated) !important;">
+            <div class="text-start bg-light rounded p-3 mb-4 mx-auto" style="max-width: 400px;">
                 <div class="row g-2">
-                    <div class="col-6">
-                        <small class="text-muted">Código:</small>
-                        <p class="fw-semibold mb-0">{{ object.codigo_producto }}</p>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-muted">Referencia:</small>
-                        <p class="fw-semibold mb-0">{{ object.referencia_producto|default:"Sin referencia" }}</p>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-muted">Categoría:</small>
-                        <p class="fw-semibold mb-0">{{ object.categoria.nombre_categoria }}</p>
-                    </div>
-                    <div class="col-6">
-                        <small class="text-muted">Precio:</small>
-                        <p class="fw-semibold mb-0">${{ object.precio_formateado }}</p>
-                    </div>
-                    <div class="col-12">
-                        <small class="text-muted">Estado:</small>
-                        <p class="fw-semibold mb-0">
-                            {% if object.estado == 'DISPONIBLE' %}
-                                <span class="badge-estado disponible">DISPONIBLE</span>
-                            {% else %}
-                                <span class="badge-estado agotado">AGOTADO</span>
-                            {% endif %}
-                        </p>
-                    </div>
+                    <div class="col-6"><small class="text-muted">Código:</small><p class="fw-semibold mb-0">{{ object.codigo_producto }}</p></div>
+                    <div class="col-6"><small class="text-muted">Referencia:</small><p class="fw-semibold mb-0">{{ object.referencia_producto|truncatechars:20 }}</p></div>
+                    <div class="col-12"><small class="text-muted">Precio:</small><p class="fw-semibold mb-0">${{ object.precio_formateado }}</p></div>
                 </div>
             </div>
             
-            <!-- Advertencia -->
-            <p class="text-muted mb-4">
-                Estás a punto de eliminar el producto <strong>{{ object.codigo_producto }}</strong>.
+            <p class="text-muted mb-4 px-3">
+                Estás a punto de <strong>ocultar</strong> este producto del sistema (Soft Delete).
                 <br>
-                <span class="text-danger fw-semibold">Esta acción no se puede deshacer.</span>
+                <span class="text-warning fw-semibold small">Podrá ser restaurado posteriormente desde el panel de administración si es necesario.</span>
             </p>
             
-            <!-- Botones -->
             <form method="post">
                 {% csrf_token %}
                 <div class="d-flex justify-content-center gap-3">
-                    <a href="{% url 'inventario:producto_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    <a href="{% url 'inventario:producto_list' %}" class="btn btn-outline-secondary px-4">
+                        Cancelar
                     </a>
-                    <button type="submit" class="btn btn-danger">
+                    <button type="submit" class="btn btn-danger px-4">
                         <i class="bi bi-trash-fill me-2"></i>Sí, Eliminar
                     </button>
                 </div>

@@ -254,6 +254,108 @@ body.theme-dark {
   background-color: rgba(0, 0, 0, 0.3);
 }
 
+/* --- TOGGLE DE TEMA MODERNO (Ajustes Finales) --- */
+
+.theme-switch-wrapper {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  width: 100%; /* Asegura que ocupe todo el ancho disponible */
+  box-sizing: border-box;
+}
+
+/* Contenedor del switch */
+.theme-switch {
+  display: inline-block;
+  height: 28px;
+  position: relative;
+  width: 54px;
+  margin: 0;
+  vertical-align: middle; /* Alineación vertical */
+}
+
+/* Input oculto */
+.theme-switch input {
+  display: none;
+}
+
+/* La barra deslizante (Track) */
+.slider {
+  background-color: rgba(255, 255, 255, 0.15); /* Un poco más visible */
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 9px; /* Ajuste para que los iconos no toquen el borde */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Círculo deslizante (Thumb) */
+.slider:before {
+  background-color: #fff;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  position: absolute;
+  transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  /* Centrado vertical automático por el top/bottom del absolute si fuera necesario, 
+     pero aquí lo manejamos con el track */
+  top: 3px; 
+}
+
+/* Iconos dentro del slider */
+.icon-moon, .icon-sun {
+  font-size: 11px; /* Ligeramente más pequeños */
+  color: rgba(255, 255, 255, 0.7);
+  transition: opacity 0.3s ease, color 0.3s ease;
+  z-index: 1;
+  line-height: 1;
+}
+
+.icon-sun {
+  color: #fbbf24; /* Amarillo sol brillante */
+  opacity: 0;
+}
+
+.icon-moon {
+  color: #94a3b8; /* Luna grisáceo suave */
+}
+
+/* ESTADO ACTIVO (Modo Oscuro Checkeado) */
+input:checked + .slider {
+  background-color: var(--accent); /* Tu color Teal */
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(20, 184, 166, 0.4); /* Brillo sutil */
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px); /* Movimiento exacto */
+  background-color: #fff;
+}
+
+input:checked + .slider .icon-moon {
+  opacity: 0;
+}
+
+input:checked + .slider .icon-sun {
+  opacity: 1;
+}
+
+/* Hover effect en el switch */
+.theme-switch:hover .slider {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 /* ==================================================
     4. COMPONENTES GENERALES
    ================================================== */
@@ -914,50 +1016,79 @@ body.theme-dark .filters-compact .form-select {
 }
 
 /* --- PAGINACIÓN --- */
+
 .pagination-container {
-  background-color: var(--bg-elevated);
+  background-color: transparent; /* Integrado con la tabla o lista */
   border-top: 1px solid var(--border-subtle);
-  padding: 16px 20px;
+  padding: 16px 0; /* Sin padding lateral si ya está en un contenedor */
 }
+
 .pagination-info {
   color: var(--text-tertiary);
   font-size: 0.875rem;
+  font-weight: 500;
 }
+
 .pagination-compact {
   display: flex;
-  gap: 4px;
+  gap: 6px; /* Un poco más de espacio entre botones */
   list-style: none;
   margin: 0;
   padding: 0;
+  align-items: center;
 }
+
+/* Estilo base de los enlaces/botones */
 .pagination-compact .page-link {
-  color: var(--text-primary);
+  color: var(--text-secondary); /* Un poco más suave que el primary */
+  background-color: var(--bg-card); /* Usa el fondo de tarjeta (blanco o slate-900) */
   border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
+  border-radius: 8px; /* Bordes ligeramente más redondos */
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
+  min-width: 40px;
+  box-shadow: var(--shadow-xs);
 }
-.pagination-compact .page-link:hover {
-  background-color: var(--accent-light);
+
+/* Hover: Efecto sutil */
+.pagination-compact .page-item:not(.disabled):not(.active) .page-link:hover {
+  background-color: var(--bg-elevated);
   border-color: var(--accent);
   color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
+
+/* Activo: Color principal */
 .pagination-compact .page-item.active .page-link {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   border-color: var(--accent);
-  color: var(--accent-text);
+  color: var(--accent-text); /* Texto oscuro sobre el botón teal */
   font-weight: 600;
+  box-shadow: 0 4px 12px var(--accent-glow);
+  transform: translateY(-2px);
 }
+
+/* Deshabilitado: Opaco y sin interacción */
 .pagination-compact .page-item.disabled .page-link {
+  background-color: var(--bg-elevated);
   color: var(--text-tertiary);
-  opacity: 0.5;
+  border-color: var(--border-subtle);
+  opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Iconos dentro de los enlaces */
+.pagination-compact .page-link i {
+  font-size: 0.85em;
 }
 
 /* --- ESTADO VACÍO --- */
@@ -1230,4 +1361,122 @@ body.theme-dark .filters-compact .form-select {
     font-size: 1.25rem;
   }
   .stat-card-value { font-size: 1.5rem; }
+}
+
+/* ==================================================
+    9. MENSAJES MINIMALISTAS
+   ================================================== */
+
+/* Contenedor para centrar las alertas */
+.alerts-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    width: auto;
+    max-width: 90%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Estilo base de la alerta minimalista */
+.alert-minimal {
+    /* Variables locales que se ajustan solas */
+    --alert-bg: rgba(255, 255, 255, 0.95);
+    --alert-text: #1e293b; /* Slate-800 */
+    --alert-border: rgba(0, 0, 0, 0.05);
+    --alert-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+
+    background-color: var(--alert-bg);
+    color: var(--alert-text);
+    border: 1px solid var(--alert-border);
+    border-radius: 50px;
+    padding: 0.6rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: var(--alert-shadow);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px;
+    justify-content: center;
+    pointer-events: auto;
+    backdrop-filter: blur(10px);
+    animation: slideDownFade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ajuste AUTOMÁTICO para Modo Oscuro */
+/* Si el body tiene la clase .theme-dark o data-theme="dark" */
+body.theme-dark .alert-minimal,
+[data-theme="dark"] .alert-minimal {
+    --alert-bg: rgba(30, 41, 59, 0.95); /* Slate-800 semitransparente */
+    --alert-text: #f1f5f9; /* Slate-100 */
+    --alert-border: rgba(255, 255, 255, 0.08);
+    --alert-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Borde lateral de color indicador (se mantiene igual en ambos modos) */
+.alert-minimal::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-top-left-radius: 50px;
+    border-bottom-left-radius: 50px;
+}
+
+/* Variantes de Color */
+.alert-minimal.alert-success { border-left: 4px solid #10b981; }
+.alert-minimal.alert-success i { color: #10b981; }
+
+.alert-minimal.alert-error,
+.alert-minimal.alert-danger { border-left: 4px solid #ef4444; }
+.alert-minimal.alert-error i,
+.alert-minimal.alert-danger i { color: #ef4444; }
+
+.alert-minimal.alert-warning { border-left: 4px solid #f59e0b; }
+.alert-minimal.alert-warning i { color: #f59e0b; }
+
+.alert-minimal.alert-info { border-left: 4px solid #3b82f6; }
+.alert-minimal.alert-info i { color: #3b82f6; }
+
+/* Botón de cerrar mini - Ajuste de opacidad para modo oscuro */
+.btn-close-xs {
+    width: 0.7em;
+    height: 0.7em;
+    opacity: 0.5;
+    margin-left: 8px;
+    background-size: 0.6em 0.6em;
+    transition: opacity 0.2s;
+    filter: invert(0); /* Por defecto icono oscuro */
+}
+
+/* Invertir el icono de cerrar en modo oscuro para que sea blanco */
+body.theme-dark .btn-close-xs,
+[data-theme="dark"] .btn-close-xs {
+    filter: invert(1); 
+}
+
+.btn-close-xs:hover {
+    opacity: 1;
+}
+
+/* Animación de entrada */
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
