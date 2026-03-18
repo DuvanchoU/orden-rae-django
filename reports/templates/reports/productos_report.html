@@ -1,0 +1,67 @@
+{% extends 'reports/base_report.html' %}
+
+{% block content %}
+
+<!-- RESUMEN EN HORIZONTAL (Compacto) -->
+<table style="width: 60%; margin: 8px auto; border: 1px solid #E7E5E4; border-radius: 4px; border-collapse: collapse;">
+    <tr>
+        <td style="width: 33%; text-align: center; padding: 6px 10px; border-right: 1px solid #E7E5E4;">
+            <div style="font-size: 13px; font-weight: bold; color: #C2A27C; margin-bottom: 2px;">
+                {{ total_records }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Total
+            </div>
+        </td>
+        <td style="width: 33%; text-align: center; padding: 6px 10px; border-right: 1px solid #E7E5E4;">
+            <div style="font-size: 13px; font-weight: bold; color: #166534; margin-bottom: 2px;">
+                {{ productos_disponibles }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Disponibles
+            </div>
+        </td>
+        <td style="width: 33%; text-align: center; padding: 6px 10px;">
+            <div style="font-size: 13px; font-weight: bold; color: #991B1B; margin-bottom: 2px;">
+                {{ productos_agotados }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Agotados
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- TABLA DE PRODUCTOS -->
+<table>
+    <thead>
+        <tr>
+            <th style="width: 12%;">Código</th>
+            <th style="width: 32%;">Producto</th>
+            <th style="width: 18%;">Categoría</th>
+            <th style="width: 10%;">Color</th>
+            <th style="width: 13%;">Precio</th>
+            <th style="width: 15%;">Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.0 }}</td>
+            <td>{{ row.1 }}</td>
+            <td>{{ row.2 }}</td>
+            <td>{{ row.3 }}</td>
+            <td style="font-weight: bold;">{{ row.4 }}</td>
+            <td>
+                {% if 'DISPONIBLE' in row.5 %}
+                    <span class="badge success">Disponible</span>
+                {% else %}
+                    <span class="badge danger">Agotado</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

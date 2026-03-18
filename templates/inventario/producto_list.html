@@ -9,9 +9,43 @@
         <h1 class="page-title">Productos</h1>
         <p class="page-subtitle">Gestiona el catálogo de productos</p>
     </div>
-    <a href="{% url 'inventario:producto_create' %}" class="btn btn-nuevo">
-        <i class="bi bi-plus-lg"></i>Nuevo Producto
-    </a>
+
+    <!-- Botones de Acción -->
+    <div class="d-flex gap-2">
+        <!-- Dropdown de Exportación -->
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" 
+                    type="button" 
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+                <i class="bi bi-download"></i> Exportar
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" 
+                       href="?format=pdf&{{ request.GET.urlencode }}">
+                        <i class="bi bi-file-pdf text-danger me-2"></i>PDF
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" 
+                       href="?format=excel&{{ request.GET.urlencode }}">
+                        <i class="bi bi-file-excel text-success me-2"></i>Excel
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" 
+                       href="?format=csv&{{ request.GET.urlencode }}">
+                        <i class="bi bi-file-text text-secondary me-2"></i>CSV
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <!-- Botón Nuevo Producto -->
+        <a href="{% url 'inventario:producto_create' %}" class="btn btn-nuevo">
+            <i class="bi bi-plus-lg"></i>Nuevo Producto
+        </a>
+    </div>
 </div>
 
 <!-- Filtros -->

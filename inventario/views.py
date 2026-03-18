@@ -2,14 +2,18 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
 from django.urls import reverse_lazy
 from django.db.models import Q
+from django.utils import timezone
 from django.contrib import messages
 from .models import Producto, Bodegas, Categorias, Proveedores, Inventario
 from .forms import InventarioForm, ProductoForm, BodegaForm, CategoriaForm, ProveedorForm
+from reports.generators.mixins import ReportMixin
+from django.conf import settings
+import os
 
 # ------------------------------------------------------------------
 # PRODUCTOS
 # ------------------------------------------------------------------
-class ProductoListView(ListView):
+class ProductoListView(ReportMixin, ListView):
     model = Producto
     template_name = 'inventario/producto_list.html'
     context_object_name = 'productos'
@@ -44,6 +48,84 @@ class ProductoListView(ListView):
         context['titulo'] = 'Listado de Productos'
         return context
 
+    # ============================================
+    # MÉTODOS PARA REPORTES (ReportMixin)
+    # ============================================
+    def get(self, request, *args, **kwargs):
+        # Verificar si se solicita un reporte
+        report_format = request.GET.get('format')
+        if report_format:
+            return self.render_report(report_format)
+        return super().get(request, *args, **kwargs)
+    
+    def get_report_template(self):
+        """Template específico para reporte de productos"""
+        return 'reports/productos_report.html'
+    
+    def get_report_data(self):
+        """Prepara los datos para el reporte"""
+        queryset = self.get_queryset()
+        
+        # Headers y rows para Excel/CSV
+        headers = ['Código', 'Producto', 'Categoría', 'Color', 'Precio', 'Estado']
+        rows = []
+        
+        # Contadores para el resumen
+        disponibles = 0
+        agotados = 0
+
+        for producto in queryset:
+            rows.append([
+                producto.codigo_producto,
+                f"{producto.referencia_producto or 'Sin referencia'}",
+                producto.categoria.nombre_categoria,
+                producto.color_producto or '-',
+                f"${producto.precio_actual:,.0f}".replace(',', '.'),
+                producto.estado
+            ])
+            
+            if producto.estado == 'DISPONIBLE':
+                disponibles += 1
+            else:
+                agotados += 1
+                
+        logo_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'img/Super_Bodega_Logo.PNG')
+        logo_path = f'file:///{logo_path.replace("\\", "/")}'
+
+        # Contexto para PDF (HTML)
+        context = {
+            'report_title': 'Reporte de Productos',
+            'report_subtitle': 'Catálogo de productos del inventario',
+            'headers': headers,
+            'rows': rows,
+            'generated_at': timezone.now(),
+            'logo_path': logo_path,
+            'total_records': queryset.count(),
+            'productos_disponibles': disponibles,
+            'productos_agotados': agotados,
+            'filters_applied': self._get_filters_summary(),
+        }
+        
+        return {
+            'headers': headers,
+            'rows': rows,
+            'context': context,
+            'filename': f"productos_{timezone.now().strftime('%Y%m%d')}"
+        }
+    
+    def _get_filters_summary(self):
+        """Resume los filtros aplicados para el reporte"""
+        filters = []
+        if self.request.GET.get('busqueda'):
+            filters.append(f"Búsqueda: {self.request.GET['busqueda']}")
+        if self.request.GET.get('categoria'):
+            cat = Categorias.objects.filter(id_categorias=self.request.GET['categoria']).first()
+            if cat:
+                filters.append(f"Categoría: {cat.nombre_categoria}")
+        if self.request.GET.get('estado'):
+            filters.append(f"Estado: {self.request.GET['estado']}")
+        return ', '.join(filters) if filters else 'Ninguno'
+    
 class ProductoCreateView(CreateView):
     model = Producto
     template_name = 'inventario/producto_form.html'
