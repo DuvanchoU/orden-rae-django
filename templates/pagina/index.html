@@ -1113,38 +1113,53 @@
                 <p class="section-subtitle">Encuentra exactamente lo que necesitas para tu hogar</p>
             </div>
             
+            {% if categorias %}
             <div class="categories-grid">
-                <div class="category-card" data-category="colechos" onclick="filterByCategory('colechos')">
-                    <div class="category-icon"><i class="fas fa-baby"></i></div>
-                    <div class="category-name">Colechos</div>
-                    <div class="category-count">12 productos</div>
+                {% for categoria in categorias %}
+                <div class="category-card" 
+                    data-category="{{ categoria.slug }}"
+                    onclick="filterByCategory('{{ categoria.slug }}')">
+                    <div class="category-icon">
+                        <!-- Icono basado en la categoría -->
+                        {% if 'sofá' in categoria.nombre|lower or 'sofa' in categoria.nombre|lower %}
+                            <i class="fas fa-couch"></i>
+                        {% elif 'cama' in categoria.nombre|lower %}
+                            <i class="fas fa-bed"></i>
+                        {% elif 'cuna' in categoria.nombre|lower %}
+                            <i class="fas fa-bed"></i>
+                        {% elif 'colech' in categoria.nombre|lower %}
+                            <i class="fas fa-baby"></i>
+                        {% elif 'silla' in categoria.nombre|lower or 'poltrona' in categoria.nombre|lower %}
+                            <i class="fas fa-chair"></i>
+                        {% elif 'escritorio' in categoria.nombre|lower %}
+                            <i class="fas fa-table"></i>
+                        {% elif 'comedor' in categoria.nombre|lower %}
+                            <i class="fas fa-utensils"></i>
+                        {% elif 'mesa' in categoria.nombre|lower %}
+                            <i class="fas fa-table"></i>
+                        {% else %}
+                            <i class="fas fa-box"></i>
+                        {% endif %}
+                    </div>
+                    <div class="category-name">{{ categoria.nombre|upper }}</div>
+                    <div class="category-count">{{ categoria.productos_count }} productos</div>
                 </div>
-                <div class="category-card" data-category="cunas" onclick="filterByCategory('cunas')">
-                    <div class="category-icon"><i class="fas fa-bed"></i></div>
-                    <div class="category-name">Cunas</div>
-                    <div class="category-count">8 productos</div>
-                </div>
-                <div class="category-card" data-category="sofas" onclick="filterByCategory('sofas')">
-                    <div class="category-icon"><i class="fas fa-couch"></i></div>
-                    <div class="category-name">Sofás</div>
-                    <div class="category-count">15 productos</div>
-                </div>
-                <div class="category-card" data-category="sillas" onclick="filterByCategory('sillas')">
-                    <div class="category-icon"><i class="fas fa-chair"></i></div>
-                    <div class="category-name">Sillas</div>
-                    <div class="category-count">10 productos</div>
-                </div>
-                <div class="category-card" data-category="escritorios" onclick="filterByCategory('escritorios')">
-                    <div class="category-icon"><i class="fas fa-table"></i></div>
-                    <div class="category-name">Escritorios</div>
-                    <div class="category-count">7 productos</div>
-                </div>
-                <div class="category-card" data-category="camas" onclick="filterByCategory('camas')">
-                    <div class="category-icon"><i class="fas fa-bed"></i></div>
-                    <div class="category-name">Camas</div>
-                    <div class="category-count">9 productos</div>
-                </div>
+                {% endfor %}
             </div>
+            
+            <!-- Botón para ver todas las categorías -->
+            <div class="text-center mt-4">
+                <a href="{% url 'pagina:productos' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-th-large me-2"></i>Ver todas las categorías
+                </a>
+            </div>
+            {% else %}
+            <!-- Fallback si no hay categorías -->
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                No hay categorías disponibles por el momento.
+            </div>
+            {% endif %}
         </section>
         
         <!-- Productos Nuevos -->
@@ -1154,36 +1169,28 @@
                 <p class="section-subtitle">Descubre nuestras últimas creaciones artesanales</p>
             </div>
             
-            {% if productos_nuevos %}
+            {% if hay_productos_nuevos and productos_nuevos %}
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4" id="products-grid">
                 {% for producto in productos_nuevos %}
                 <div class="col">
-                    <article class="product-card" 
-                             data-category="{{ producto.categoria|default:'general' }}"
-                             data-price="{{ producto.precio }}"
-                             data-id="{{ producto.id }}"
-                             data-nombre="{{ producto.nombre|escapejs }}"
-                             data-imagen="{{ producto.imagen.url|default:'/static/img/placeholder.jpg' }}"
-                             data-precio="{{ producto.precio }}">
+                    <article class="product-card"
+                            data-category="{{ producto.categoria|default:'general' }}"
+                            data-price="{{ producto.precio }}"
+                            data-id="{{ producto.id }}"
+                            data-nombre="{{ producto.nombre|escapejs }}"
+                            data-imagen="{{ producto.imagen_url }}"
+                            data-precio="{{ producto.precio }}">
                         
-                        <!-- Imagen con overlays -->
                         <div class="product-image">
-                            <img src="{{ producto.imagen.url|default:'/static/img/placeholder.jpg' }}" 
-                                 alt="{{ producto.nombre }}"
-                                 loading="lazy"
-                                 onerror="this.src='https://via.placeholder.com/400x300?text=Producto'">
+                            <img src="{{ producto.imagen_url }}"
+                                alt="{{ producto.nombre }}"
+                                loading="lazy"
+                                onerror="this.src='https://via.placeholder.com/400x300?text=Producto'">
                             
-                            <!-- Badges -->
                             <div class="product-badges">
-                                {% if producto.es_nuevo %}
                                 <span class="badge-new">NUEVO</span>
-                                {% endif %}
-                                {% if producto.en_oferta %}
-                                <span class="badge-sale">-{{ producto.descuento }}%</span>
-                                {% endif %}
                             </div>
                             
-                            <!-- Quick actions -->
                             <div class="product-actions">
                                 <button class="action-btn" onclick="quickView({{ producto.id }})" title="Vista rápida">
                                     <i class="fas fa-eye"></i>
@@ -1191,13 +1198,9 @@
                                 <button class="action-btn wishlist" onclick="toggleWishlist({{ producto.id }})" title="Agregar a favoritos">
                                     <i class="far fa-heart"></i>
                                 </button>
-                                <button class="action-btn" onclick="shareProduct({{ producto.id }})" title="Compartir">
-                                    <i class="fas fa-share-alt"></i>
-                                </button>
                             </div>
                         </div>
                         
-                        <!-- Información -->
                         <div class="product-info">
                             <span class="product-category">{{ producto.categoria|title|default:'General' }}</span>
                             
@@ -1207,46 +1210,22 @@
                                 </a>
                             </h5>
                             
-                            <!-- Rating -->
                             <div class="product-rating">
-                                {% for i in "12345"|make_list %}
-                                    {% if forloop.counter <= producto.calificacion|default:4 %}
-                                        <i class="fas fa-star"></i>
-                                    {% else %}
-                                        <i class="far fa-star"></i>
-                                    {% endif %}
-                                {% endfor %}
-                                <span class="count">({{ producto.reviews_count|default:24 }})</span>
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                                <span class="count">(0)</span>
                             </div>
                             
-                            <!-- Precios -->
                             <div class="price-container">
                                 <span class="price-current">${{ producto.precio|floatformat:0|intcomma }}</span>
-                                {% if producto.precio_original and producto.precio_original > producto.precio %}
-                                <span class="price-original">${{ producto.precio_original|floatformat:0|intcomma }}</span>
-                                {% endif %}
                             </div>
                             
-                            <!-- Acciones -->
                             <div class="d-flex gap-2">
-                                {% if producto.tiene_opciones %}
-                                <button class="btn-add-cart" onclick="openOptionsModal('{{ producto.slug }}', '{{ producto.nombre|escapejs }}')">
-                                    <i class="fas fa-cog"></i> Opciones
-                                </button>
-                                {% else %}
-                                <button class="btn-add-cart" 
+                                <button class="btn-add-cart"
                                         onclick="addToCart({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.precio }})"
                                         data-product-id="{{ producto.id }}"
                                         data-product-name="{{ producto.nombre|escapejs }}"
                                         data-product-price="{{ producto.precio }}">
                                     <i class="fas fa-cart-plus"></i> Añadir
-                                </button>
-                                {% endif %}
-                                <button class="btn-quick-view" 
-                                        onclick="quickView({{ producto.id }})"
-                                        title="Vista rápida"
-                                        style="width: 44px; border: 2px solid var(--border-color); background: var(--bg-secondary); border-radius: var(--radius-md);">
-                                    <i class="fas fa-eye"></i>
                                 </button>
                             </div>
                         </div>
@@ -1256,121 +1235,10 @@
             </div>
             {% else %}
             <!-- Fallback estático -->
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-                <!-- Producto 1 -->
-                <div class="col">
-                    <article class="product-card" data-id="1" data-nombre="Sofá Fátima" data-precio="1890000">
-                        <div class="product-image">
-                            <img src="{% static 'img/Sofa2.jpg' %}" alt="Sofá Fátima" loading="lazy">
-                            <div class="product-badges">
-                                <span class="badge-new">NUEVO</span>
-                            </div>
-                            <div class="product-actions">
-                                <button class="action-btn" onclick="quickView(1)"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn wishlist" onclick="toggleWishlist(1)"><i class="far fa-heart"></i></button>
-                            </div>
-                        </div>
-                        <div class="product-info">
-                            <span class="product-category">Sofás</span>
-                            <h5 class="product-title"><a href="#">Sofá Fátima 3 Puestos</a></h5>
-                            <div class="product-rating">
-                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                                <span class="count">(24)</span>
-                            </div>
-                            <div class="price-container">
-                                <span class="price-current">$1.890.000</span>
-                            </div>
-                            <button class="btn-add-cart" onclick="addToCart(1, 'Sofá Fátima', 1890000)">
-                                <i class="fas fa-cart-plus"></i> Añadir
-                            </button>
-                        </div>
-                    </article>
-                </div>
-                <!-- Producto 2 -->
-                <div class="col">
-                    <article class="product-card" data-id="2" data-nombre="Cama Alpes" data-precio="1450000">
-                        <div class="product-image">
-                            <img src="{% static 'img/Cama5.jpg' %}" alt="Cama Alpes" loading="lazy">
-                            <div class="product-badges">
-                                <span class="badge-sale">-15%</span>
-                            </div>
-                            <div class="product-actions">
-                                <button class="action-btn" onclick="quickView(2)"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn wishlist" onclick="toggleWishlist(2)"><i class="far fa-heart"></i></button>
-                            </div>
-                        </div>
-                        <div class="product-info">
-                            <span class="product-category">Camas</span>
-                            <h5 class="product-title"><a href="#">Cama Alpes King Size</a></h5>
-                            <div class="product-rating">
-                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                                <span class="count">(42)</span>
-                            </div>
-                            <div class="price-container">
-                                <span class="price-current">$1.450.000</span>
-                                <span class="price-original">$1.700.000</span>
-                            </div>
-                            <button class="btn-add-cart" onclick="addToCart(2, 'Cama Alpes', 1450000)">
-                                <i class="fas fa-cart-plus"></i> Añadir
-                            </button>
-                        </div>
-                    </article>
-                </div>
-                <!-- Producto 3 -->
-                <div class="col">
-                    <article class="product-card" data-id="3" data-nombre="Escritorio Moderno" data-precio="890000">
-                        <div class="product-image">
-                            <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorio Moderno" loading="lazy">
-                            <div class="product-actions">
-                                <button class="action-btn" onclick="quickView(3)"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn wishlist" onclick="toggleWishlist(3)"><i class="far fa-heart"></i></button>
-                            </div>
-                        </div>
-                        <div class="product-info">
-                            <span class="product-category">Escritorios</span>
-                            <h5 class="product-title"><a href="#">Escritorio Moderno</a></h5>
-                            <div class="product-rating">
-                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
-                                <span class="count">(18)</span>
-                            </div>
-                            <div class="price-container">
-                                <span class="price-current">$890.000</span>
-                            </div>
-                            <button class="btn-add-cart" onclick="addToCart(3, 'Escritorio Moderno', 890000)">
-                                <i class="fas fa-cart-plus"></i> Añadir
-                            </button>
-                        </div>
-                    </article>
-                </div>
-                <!-- Producto 4 -->
-                <div class="col">
-                    <article class="product-card" data-id="4" data-nombre="Silla Ergonómica" data-precio="450000">
-                        <div class="product-image">
-                            <img src="{% static 'img/Silla3.jpg' %}" alt="Silla Ergonómica" loading="lazy">
-                            <div class="product-badges">
-                                <span class="badge-new">NUEVO</span>
-                            </div>
-                            <div class="product-actions">
-                                <button class="action-btn" onclick="quickView(4)"><i class="fas fa-eye"></i></button>
-                                <button class="action-btn wishlist" onclick="toggleWishlist(4)"><i class="far fa-heart"></i></button>
-                            </div>
-                        </div>
-                        <div class="product-info">
-                            <span class="product-category">Sillas</span>
-                            <h5 class="product-title"><a href="#">Silla Ergonómica Pro</a></h5>
-                            <div class="product-rating">
-                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                                <span class="count">(31)</span>
-                            </div>
-                            <div class="price-container">
-                                <span class="price-current">$450.000</span>
-                            </div>
-                            <button class="btn-add-cart" onclick="addToCart(4, 'Silla Ergonómica', 450000)">
-                                <i class="fas fa-cart-plus"></i> Añadir
-                            </button>
-                        </div>
-                    </article>
-                </div>
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                No hay productos nuevos disponibles por el momento. 
+                <a href="{% url 'pagina:productos' %}" class="alert-link">Ver todos los productos</a>
             </div>
             {% endif %}
         </section>
@@ -1387,9 +1255,9 @@
                 <div class="testimonial-card">
                     <div class="testimonial-header">
                         <img src="{{ testimonio.avatar|default:'https://ui-avatars.com/api/?name=Cliente&background=8B5E3C&color=fff&size=100' }}" 
-                             alt="{{ testimonio.nombre_cliente }}" 
-                             class="testimonial-avatar"
-                             onerror="this.src='https://ui-avatars.com/api/?name=Cliente&background=8B5E3C&color=fff&size=100'">
+                            alt="{{ testimonio.nombre_cliente }}" 
+                            class="testimonial-avatar"
+                            onerror="this.src='https://ui-avatars.com/api/?name=Cliente&background=8B5E3C&color=fff&size=100'">
                         <div>
                             <div class="testimonial-name">{{ testimonio.nombre_cliente }}</div>
                             <div class="testimonial-rating">
@@ -1735,12 +1603,18 @@
         
         // === FILTRO POR CATEGORÍA ===
         window.filterByCategory = function(category) {
-            showToast(`🔍 Filtrando: ${category}`, 'info');
-            // En producción: redirigir a página de categoría
-            // window.location.href = `/productos/?categoria=${category}`;
+            console.log('🔍 Filtrando categoría:', category);
             
-            // Demo: animación de scroll
-            document.querySelector('.section-title')?.scrollIntoView({ behavior: 'smooth' });
+            // Mostrar notificación
+            showToast(`🔍 Filtrando: ${category.replace(/-/g, ' ').toUpperCase()}`, 'info');
+            
+            // Redirigir a la página de categoría
+            // En producción: window.location.href = `/productos/${category}/`;
+            
+            // Por ahora, redirigir a página de productos con filtro
+            setTimeout(() => {
+                window.location.href = `{% url 'pagina:productos' %}?categoria=${category}`;
+            }, 800);
         };
         
         // === PRODUCTOS: AÑADIR AL CARRITO ===

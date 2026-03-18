@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>🛍️ Productos - ORDEN RAE</title>
+    <title>Productos - ORDER RAE</title>
     <meta name="description" content="Explora nuestros muebles hechos a mano: sofás, camas, escritorios y más.">
 
     <!-- Fonts -->
@@ -22,10 +22,344 @@
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
     <link rel="stylesheet" href="{% static 'css/productos.css' %}">
     
+    <!-- Estilos específicos para página de productos -->
+    <style>
+        :root {
+            --color-primario: #8B5E3C;
+            --color-secundario: #7A4B32;
+            --color-acento: #ffd166;
+        }
+        body {
+            background: #f8f9fa;
+            font-family: 'Figtree', sans-serif;
+        }
+        
+        /* === FILTROS DE CATEGORÍA === */
+        .filters-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .filters-title {
+            font-weight: 600;
+            color: var(--color-primario);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .filters-scroll {
+            display: flex;
+            gap: 0.75rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-primario) transparent;
+        }
+        
+        .filters-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .filters-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .filters-scroll::-webkit-scrollbar-thumb {
+            background: var(--color-primario);
+            border-radius: 3px;
+        }
+        
+        .filter-btn {
+            flex: 0 0 auto;
+            padding: 0.6rem 1.25rem;
+            border: 2px solid var(--border-color);
+            background: white;
+            color: var(--text-primary);
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--color-primario);
+            border-color: var(--color-primario);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 94, 60, 0.3);
+        }
+        
+        .filter-btn .badge-count {
+            background: var(--color-acento);
+            color: #333;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        /* === TARJETAS DE CATEGORÍA === */
+        .card-producto {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: none;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-producto:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .card-producto .img-container {
+            height: 220px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card-producto .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .card-producto:hover .img-container img {
+            transform: scale(1.1);
+        }
+        
+        .card-producto .card-body {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-producto .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--color-primario);
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-producto .card-text {
+            color: #6c757d;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+        
+        .card-producto .btn-primary {
+            background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .card-producto .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 94, 60, 0.4);
+        }
+        
+        /* === PRODUCTOS DESTACADOS === */
+        .featured-section {
+            margin: 4rem 0;
+        }
+        
+        .featured-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-primario);
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .featured-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--color-primario), var(--color-acento));
+            border-radius: 2px;
+        }
+        
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .featured-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .featured-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        }
+        
+        .featured-card .img-container {
+            height: 180px;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        
+        .featured-card .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .featured-card:hover .img-container img {
+            transform: scale(1.05);
+        }
+        
+        .featured-card .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .featured-card .price {
+            color: var(--color-primario);
+            font-weight: 700;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn-featured {
+            background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-featured:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 94, 60, 0.4);
+            color: white;
+        }
+        
+        /* === TOAST NOTIFICATIONS === */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast-modern {
+            background: white;
+            border-left: 4px solid var(--color-primario);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 320px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
+            pointer-events: auto;
+        }
+        
+        .toast-modern.success { border-left-color: #06d6a0; }
+        .toast-modern.error { border-left-color: #ef476f; }
+        .toast-modern.warning { border-left-color: #ffd166; }
+        .toast-modern.info { border-left-color: #118ab2; }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
+        
+        /* === DARK MODE TOGGLE === */
+        .theme-toggle {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .theme-toggle:hover {
+            transform: rotate(15deg);
+            border-color: var(--color-primario);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filters-scroll {
+                padding: 0.5rem;
+            }
+            .filter-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            .featured-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
 </head>
 <body class="bg-light">
 
-    <!-- Encabezado -->
+    <!-- Encabezado (igual que tu header existente) -->
     <header id="barra_superior" class="bg-white border-bottom">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
             <a href="{% url 'pagina:home' %}">
@@ -84,7 +418,7 @@
                         </span>
                     </div>
                     <div class="submenu mt-1">
-                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
+                        <a href="#">Mi cuenta</a> 
                         <a href="{% url 'logout' %}">Cerrar sesión</a>
                     </div>
                 </div>
@@ -120,137 +454,73 @@
     <main class="container main-with-fixed-header">
         
         <!-- Header de productos -->
-        <section class="products-header">
-            <h1 class="products-title">Nuestros Productos</h1>
-            <p class="products-subtitle">Muebles hechos a mano por artesanos colombianos</p>
-            
-            <!-- Filtros por categoría -->
-            <div class="filters-bar">
-                <button class="filter-btn active" data-filter="all">
-                    <i class="fas fa-th-large"></i> Todos
+        <section class="products-header text-center py-4">
+            <h1 class="products-title mb-2" style="color: var(--color-primario); font-weight: 700;">Nuestros Productos</h1>
+            <p class="products-subtitle text-muted">Muebles hechos a mano por artesanos colombianos</p>
+        </section>
+        
+        <!-- Filtros por categoría -->
+        <section class="filters-container">
+            <div class="filters-title">
+                <i class="fas fa-filter"></i> Filtrar por categoría
+            </div>
+            <div class="filters-scroll" id="filters-scroll">
+                <!-- Categorías principales (fijas) -->
+                {% for categoria in categorias_principales %}
+                <button class="filter-btn {% if forloop.first %}active{% endif %}" 
+                        data-filter="{{ categoria.slug }}"
+                        data-nombre="{{ categoria.nombre }}">
+                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
+                    {% if categoria.productos_count > 0 %}
+                    <span class="badge-count">{{ categoria.productos_count }}</span>
+                    {% endif %}
                 </button>
-                <button class="filter-btn" data-filter="colechos">
-                    <i class="fas fa-baby"></i> Colechos
+                {% endfor %}
+                
+                <!-- Categorías secundarias (slider) -->
+                {% for categoria in categorias_secundarias %}
+                <button class="filter-btn" 
+                        data-filter="{{ categoria.slug }}"
+                        data-nombre="{{ categoria.nombre }}">
+                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
+                    <span class="badge-count">{{ categoria.productos_count }}</span>
                 </button>
-                <button class="filter-btn" data-filter="cunas">
-                    <i class="fas fa-bed"></i> Cunas
-                </button>
-                <button class="filter-btn" data-filter="sofas">
-                    <i class="fas fa-couch"></i> Sofás
-                </button>
-                <button class="filter-btn" data-filter="sillas">
-                    <i class="fas fa-chair"></i> Sillas
-                </button>
-                <button class="filter-btn" data-filter="escritorios">
-                    <i class="fas fa-table"></i> Escritorios
-                </button>
-                <button class="filter-btn" data-filter="camas">
-                    <i class="fas fa-bed"></i> Camas
-                </button>
+                {% endfor %}
             </div>
         </section>
         
-        <!-- Grid de categorías -->
-        {% if categorias %}
-        <div class="categories-grid" id="categories-grid">
-            {% for categoria in categorias %}
-            <div class="category-card" data-category="{{ categoria.slug }}">
-                <div class="img-container">
-                    <img src="{{ categoria.imagen_url|default:'/static/img/placeholder.jpg' }}" 
-                         alt="{{ categoria.nombre }}"
-                         loading="lazy"
-                         onerror="this.src='https://via.placeholder.com/400x300?text=Categoria'">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">{{ categoria.nombre|upper }}</h2>
-                    <p class="card-text">{{ categoria.descripcion_corta }}</p>
-                    <button class="btn-category" 
-                            onclick="verCategoria('{{ categoria.slug }}', '{{ categoria.nombre|escapejs }}')"
-                            data-slug="{{ categoria.slug }}"
-                            data-nombre="{{ categoria.nombre|escapejs }}">
-                        <i class="fas fa-arrow-right"></i> Ver {{ categoria.nombre|lower }}
-                    </button>
-                </div>
+        <!-- Grid de categorías (dinámico desde Django) -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" id="categorias-grid">
+            {% with todas_las_categorias=categorias_principales|add:categorias_secundarias %}
+            {% for categoria in todas_las_categorias %}
+            <div class="col" data-category="{{ categoria.slug }}">
+                <article class="card-producto h-100">
+                    <div class="img-container">
+                        <img src="{{ categoria.imagen_url|default:'/static/img/placeholder.jpg' }}"
+                            class="card-img-top"
+                            alt="{{ categoria.nombre }}"
+                            onerror="this.src='https://via.placeholder.com/400x300?text={{ categoria.nombre }}'">
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h2 class="card-title">{{ categoria.nombre|upper }}</h2>
+                        <p class="text-muted small mb-2">{{ categoria.descripcion_corta }}</p>
+                        <p class="card-text flex-grow-1">{{ categoria.descripcion_larga }}</p>
+                        <a href="{% url 'pagina:productos_por_categoria' categoria.slug %}"
+                            class="btn btn-primary mt-2"
+                            data-nombre="{{ categoria.nombre }}">
+                            Ver {{ categoria.nombre|lower }}
+                        </a>
+                    </div>
+                </article>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-folder-open display-4 text-muted mb-3"></i>
+                <p class="text-muted">No hay categorías disponibles</p>
             </div>
             {% endfor %}
+            {% endwith %}
         </div>
-        {% else %}
-        <!-- Fallback estático -->
-        <div class="categories-grid" id="categories-grid">
-            <div class="category-card" data-category="colechos">
-                <div class="img-container">
-                    <img src="{% static 'img/Colecho-1.jpg' %}" alt="Colechos" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">COLECHOS</h2>
-                    <p class="card-text">Perfectos para compartir con tu bebé</p>
-                    <button class="btn-category" onclick="verCategoria('colechos', 'Colechos')" data-slug="colechos" data-nombre="Colechos">
-                        <i class="fas fa-arrow-right"></i> Ver colechos
-                    </button>
-                </div>
-            </div>
-            <div class="category-card" data-category="cunas">
-                <div class="img-container">
-                    <img src="{% static 'img/CamaCunas1.JPG' %}" alt="Cunas" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">CUNAS</h2>
-                    <p class="card-text">Diseño clásico y funcional</p>
-                    <button class="btn-category" onclick="verCategoria('cunas', 'Cunas')" data-slug="cunas" data-nombre="Cunas">
-                        <i class="fas fa-arrow-right"></i> Ver cunas
-                    </button>
-                </div>
-            </div>
-            <div class="category-card" data-category="sofas">
-                <div class="img-container">
-                    <img src="{% static 'img/Sofá4.JPG' %}" alt="Sofás" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">SOFÁS</h2>
-                    <p class="card-text">Confort y estilo para tu sala</p>
-                    <button class="btn-category" onclick="verCategoria('sofas', 'Sofás')" data-slug="sofas" data-nombre="Sofás">
-                        <i class="fas fa-arrow-right"></i> Ver sofás
-                    </button>
-                </div>
-            </div>
-            <div class="category-card" data-category="sillas">
-                <div class="img-container">
-                    <img src="{% static 'img/Poltronas1.JPG' %}" alt="Sillas" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">SILLAS</h2>
-                    <p class="card-text">Poltronas y sillas modernas</p>
-                    <button class="btn-category" onclick="verCategoria('sillas', 'Sillas')" data-slug="sillas" data-nombre="Sillas">
-                        <i class="fas fa-arrow-right"></i> Ver sillas
-                    </button>
-                </div>
-            </div>
-            <div class="category-card" data-category="escritorios">
-                <div class="img-container">
-                    <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorios" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">ESCRITORIOS</h2>
-                    <p class="card-text">Espacio ideal para trabajar o estudiar</p>
-                    <button class="btn-category" onclick="verCategoria('escritorios', 'Escritorios')" data-slug="escritorios" data-nombre="Escritorios">
-                        <i class="fas fa-arrow-right"></i> Ver escritorios
-                    </button>
-                </div>
-            </div>
-            <div class="category-card" data-category="camas">
-                <div class="img-container">
-                    <img src="{% static 'img/CamaMontessori1.jpg' %}" alt="Camas" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <h2 class="card-title">CAMAS</h2>
-                    <p class="card-text">Camas Montessori y más</p>
-                    <button class="btn-category" onclick="verCategoria('camas', 'Camas')" data-slug="camas" data-nombre="Camas">
-                        <i class="fas fa-arrow-right"></i> Ver camas
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endif %}
         
         <!-- Productos destacados -->
         <section class="featured-section">
@@ -475,7 +745,7 @@
     <!-- Script principal -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('Página de productos cargada');
+        console.log('🛍️ Página de productos cargada');
         
         // === DATOS DESDE DJANGO ===
         const djangoData = JSON.parse(document.getElementById('productos-data')?.textContent || '{}');
@@ -502,18 +772,18 @@
         }
         
         // === FILTROS POR CATEGORÍA ===
-        document.querySelectorAll('[data-filter]').forEach(button => {
+        document.querySelectorAll('.filter-btn').forEach(button => {
             button.addEventListener('click', () => {
                 // Actualizar botones activos
-                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 button.classList.add('active');
                 
                 const filter = button.dataset.filter;
-                const items = document.querySelectorAll('.category-card');
+                const items = document.querySelectorAll('#categorias-grid > .col');
                 
                 items.forEach(item => {
                     const category = item.dataset.category;
-                    const show = (filter === 'all' || category === filter);
+                    const show = (filter === 'all' || filter === 'todas' || category === filter);
                     
                     if (show) {
                         item.style.display = 'block';
@@ -531,7 +801,7 @@
                 });
                 
                 // Notificación
-                const nombreFiltro = filter === 'all' ? 'todos' : button.textContent.trim();
+                const nombreFiltro = button.dataset.nombre || 'todos';
                 showToast(`🔍 Filtrando: ${nombreFiltro}`, 'info', { duration: 2000 });
             });
         });
@@ -539,33 +809,13 @@
         // === VER CATEGORÍA ===
         window.verCategoria = function(slug, nombre) {
             console.log('📂 Ver categoría:', { slug, nombre });
-            
-            // Notificación
             showToast(`📂 Navegando a: ${nombre}`, 'info');
-            
-            // En producción: redirigir a la URL real
-            // window.location.href = `/productos/${slug}/`;
-            
-            // Demo: mostrar mensaje
-            setTimeout(() => {
-                showToast(`✅ Redirigiendo a categoría "${nombre}"...`, 'success');
-            }, 500);
         };
         
         // === VER PRODUCTO ===
         window.verProducto = function(slug, nombre, precio) {
             console.log('👁️ Ver producto:', { slug, nombre, precio });
-            
-            // Notificación
             showToast(`👁️ Viendo: ${nombre}`, 'info');
-            
-            // En producción: redirigir al detalle
-            // window.location.href = `/producto/${slug}/`;
-            
-            // Demo: mostrar mensaje
-            setTimeout(() => {
-                showToast(`✅ Detalles de "${nombre}" - $${precio.toLocaleString('es-CO')}`, 'success');
-            }, 500);
         };
         
         // === SISTEMA DE NOTIFICACIONES ===
@@ -593,17 +843,14 @@
         
         function actualizarNotificaciones() {
             const nuevas = notificaciones.filter(n => !n.leida);
-            
             if (bellBadge) {
                 bellBadge.textContent = nuevas.length || '';
                 bellBadge.style.display = nuevas.length ? 'block' : 'none';
             }
-            
             if (notificaciones.length === 0 && notificationsList) {
                 notificationsList.innerHTML = '<div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>';
                 return;
             }
-            
             if (notificationsList) {
                 notificationsList.innerHTML = notificaciones.map(n => `
                     <div class="notification-item ${n.leida ? '' : 'new'}">
@@ -624,13 +871,11 @@
                 notificaciones.forEach(n => n.leida = true);
                 actualizarNotificaciones();
             });
-            
             document.addEventListener('click', (e) => {
                 if (!notificationsBell.contains(e.target)) {
                     if (notificationsDropdown) notificationsDropdown.classList.remove('show');
                 }
             });
-            
             const clearBtn = document.getElementById('clear-notifications');
             if (clearBtn) {
                 clearBtn.addEventListener('click', (e) => {
@@ -644,17 +889,14 @@
         // === TOAST NOTIFICATIONS ===
         window.showToast = function(message, type = 'info', options = {}) {
             const container = document.getElementById('toast-container') || createToastContainer();
-            
             const toast = document.createElement('div');
             toast.className = `toast-modern ${type}`;
-            
             const icons = {
                 success: 'fa-check-circle',
                 error: 'fa-exclamation-circle',
                 warning: 'fa-exclamation-triangle',
                 info: 'fa-info-circle'
             };
-            
             toast.innerHTML = `
                 <i class="fas ${icons[type] || icons.info}"></i>
                 <div class="toast-content">
@@ -665,9 +907,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             `;
-            
             container.appendChild(toast);
-            
             setTimeout(() => {
                 if (toast.parentNode) {
                     toast.style.animation = 'fadeOut 0.3s ease forwards';
@@ -694,8 +934,6 @@
                 localStorage.setItem('theme', isDark ? 'light' : 'dark');
                 showToast(`🌓 Modo ${isDark ? 'claro' : 'oscuro'} activado`, 'info');
             });
-            
-            // Aplicar tema guardado
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 document.documentElement.setAttribute('data-theme', savedTheme);
@@ -706,20 +944,13 @@
         // === BÚSQUEDA EN TIEMPO REAL ===
         const busquedaInput = document.getElementById('Buscador');
         const sugerenciasBox = document.getElementById('sugerencias-busqueda');
-        
         if (busquedaInput && sugerenciasBox) {
-            const categoriasBusqueda = djangoData.categorias?.map(c => c.nombre) || 
-                ['Colechos', 'Cunas', 'Sofás', 'Sillas', 'Escritorios', 'Camas'];
-            
+            const categoriasBusqueda = djangoData.categorias?.map(c => c.nombre) || [];
             busquedaInput.addEventListener('input', () => {
                 const valor = busquedaInput.value.toLowerCase().trim();
                 sugerenciasBox.innerHTML = '';
-                
                 if (valor.length >= 2) {
-                    const coincidencias = categoriasBusqueda.filter(c => 
-                        c.toLowerCase().includes(valor)
-                    );
-                    
+                    const coincidencias = categoriasBusqueda.filter(c => c.toLowerCase().includes(valor));
                     if (coincidencias.length > 0) {
                         coincidencias.forEach(nombre => {
                             const item = document.createElement('a');
@@ -742,8 +973,6 @@
                     sugerenciasBox.style.display = 'none';
                 }
             });
-            
-            // Cerrar sugerencias al hacer clic fuera
             document.addEventListener('click', (e) => {
                 if (!busquedaInput.contains(e.target) && !sugerenciasBox.contains(e.target)) {
                     sugerenciasBox.style.display = 'none';

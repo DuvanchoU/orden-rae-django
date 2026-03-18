@@ -129,7 +129,7 @@ class Producto(models.Model):
         if self.precio_actual is None:
             return ""
         return f"{int(self.precio_actual):,}".replace(",", ".")
-    
+
     def is_deleted(self):
         return self.deleted_at is not None
 
@@ -143,16 +143,35 @@ class Producto(models.Model):
 
     def __str__(self):
         return f"{self.codigo_producto} - {self.referencia_producto or 'Sin referencia'}"
-    
-    class Meta:
-        managed = False  
-        db_table = 'producto'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['codigo_producto']),
-            models.Index(fields=['estado']),
-            models.Index(fields=['categoria']),
-        ]
+
+    def get_imagen_principal(self):
+        """Retorna la imagen principal del producto"""
+        return ImagenesProducto.objects.filter(
+            producto=self, 
+            es_principal=1
+        ).first()
+
+    def get_stock_total(self):
+        """Retorna el stock total sumando todas las bodegas"""
+        inventarios = Inventario.objects.filter(
+            producto=self,
+            deleted_at__isnull=True
+        )
+        return sum(inv.cantidad_disponible for inv in inventarios)
+
+    def esta_disponible(self):
+        """Verifica si el producto está disponible"""
+        return self.estado == 'DISPONIBLE' and self.get_stock_total() > 0
+        
+        class Meta:
+            managed = False  
+            db_table = 'producto'
+            ordering = ['-created_at']
+            indexes = [
+                models.Index(fields=['codigo_producto']),
+                models.Index(fields=['estado']),
+                models.Index(fields=['categoria']),
+            ]
 
 # ------------------------------------------------------------------
 # MODELOS TRANSACCIONALES (Inventario, Imágenes)

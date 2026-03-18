@@ -6,106 +6,92 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.db.models import Count, Q
+from django.utils import timezone
+from datetime import timedelta
+
+# Importar modelos desde inventario
+from inventario.models import Producto, Categorias, ImagenesProducto, Inventario
+
 import hashlib
 import json
 import re
 import random
 import string
-from datetime import datetime, timedelta
 from django.core.mail import send_mail
 from django.conf import settings
 
 def generar_avatar_url(nombre, tamaño=128):
-    """
-    Genera una URL de avatar consistente basada en el nombre.
-    Usa ui-avatars.com para mantener el mismo avatar para el mismo nombre.
-    """
-    # Colores predefinidos para variedad
+    """Genera una URL de avatar consistente basada en el nombre."""
     colores = [
         '667eea', '764ba2', 'f093fb', '4facfe', '43e972',
         'fa709a', 'fee140', '30cfd0', 'a8edea', 'feaca9'
     ]
-    
-    # Usar hash del nombre para seleccionar color consistente
     hash_nombre = int(hashlib.md5(nombre.encode('utf-8')).hexdigest(), 16)
     color = colores[hash_nombre % len(colores)]
-    
-    # Reemplazar espacios con + para la URL
     nombre_url = nombre.replace(' ', '+')
-    
     return f"https://ui-avatars.com/api/?name={nombre_url}&background={color}&color=fff&size={tamaño}&bold=true"
 
 
+
 def home(request):
-    """
-    Vista principal - Con datos completos para que el JavaScript funcione
-    """
+    """Vista principal - Con productos desde la base de datos"""
     
-    # === DATOS PARA EL SLIDESHOW Y PRODUCTOS (ejemplo estático o desde BD) ===
-    # En producción, reemplaza con: Producto.objects.filter(destacado=True)[:10]
-    productos_destacados = [{
-            'nombre': 'Sofá Moderno',
-            'imagen': type('obj', (object,), {'url': '/static/img/Sofá7.jpg'})
-        },
-        {
-            'nombre': 'Cama Alpes',
-            'imagen': type('obj', (object,), {'url': '/static/img/Cama2.jpg'})
-        },
-        {
-            'nombre': 'Escritorio Ejecutivo',
-            'imagen': type('obj', (object,), {'url': '/static/img/Escritorio0.2.jpg'})
-        },
-        {
-            'nombre': 'Silla Ergonómica',
-            'imagen': type('obj', (object,), {'url': '/static/img/Silla5.jpg'})
-        },
-        {
-            'nombre': 'Comedor Familiar',
-            'imagen': type('obj', (object,), {'url': '/static/img/Comedor6.jpg'})
-        },]
-    class ImagenMock:
-        def __init__(self, url):
-            self.url = url
-    productos_nuevos = [{
-            'id': 1,
-            'nombre': 'Escritorio Moderno',
-            'slug': 'escritorio-moderno',
-            'categoria': 'Nuevos lanzamientos',
-            'precio': 674000,
-            'precio_desde': True,
-            'tiene_opciones': True,
-            'imagen': ImagenMock('/static/img/Escritorio2.jpg')
-        },
-        {
-            'id': 2,
-            'nombre': 'Sofá Fátima',
-            'slug': 'sofa-fatima',
-            'categoria': 'Nuevos lanzamientos',
-            'precio': 2229000,
+    # === PRODUCTOS DESTACADOS (desde BD) ===
+    # Productos con estado DISPONIBLE y que tengan imágenes
+    productos_destacados_qs = Producto.objects.filter(
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).select_related('categoria')[:5]
+    
+    productos_destacados = []
+    for prod in productos_destacados_qs:
+        imagen_principal = ImagenesProducto.objects.filter(
+            producto=prod, 
+            es_principal=1
+        ).first()
+        productos_destacados.append({
+            'id': prod.id_producto,
+            'nombre': prod.referencia_producto or prod.codigo_producto,
+            'slug': prod.codigo_producto.lower().replace(' ', '-'),
+            'precio': int(prod.precio_actual),
+            'imagen_url': imagen_principal.ruta_imagen if imagen_principal else '/static/img/placeholder.jpg',
+        })
+    
+    # === NUEVOS PRODUCTOS (desde BD) ===
+    # Productos creados en los últimos 30 días o con estado DISPONIBLE
+    treinta_dias_atras = timezone.now() - timedelta(days=30)
+    productos_nuevos_qs = Producto.objects.filter(
+        estado='DISPONIBLE',
+        deleted_at__isnull=True,
+        created_at__gte=treinta_dias_atras
+    ).select_related('categoria')[:8]
+    
+    # Si no hay productos recientes, tomar los últimos 8 disponibles
+    if not productos_nuevos_qs:
+        productos_nuevos_qs = Producto.objects.filter(
+            estado='DISPONIBLE',
+            deleted_at__isnull=True
+        ).select_related('categoria').order_by('-created_at')[:4]
+    
+    productos_nuevos = []
+    for prod in productos_nuevos_qs:
+        imagen_principal = ImagenesProducto.objects.filter(
+            producto=prod, 
+            es_principal=1
+        ).first()
+        productos_nuevos.append({
+            'id': prod.id_producto,
+            'nombre': prod.referencia_producto or prod.codigo_producto,
+            'slug': prod.codigo_producto.lower().replace(' ', '-'),
+            'categoria': prod.categoria.nombre_categoria if prod.categoria else 'General',
+            'precio': int(prod.precio_actual),
             'precio_desde': False,
             'tiene_opciones': False,
-            'imagen': ImagenMock('/static/img/Sofá2.jpg')
-        },
-        {
-            'id': 3,
-            'nombre': 'Cama Alpes',
-            'slug': 'cama-alpes',
-            'categoria': 'Nuevos lanzamientos',
-            'precio': 1113000,
-            'precio_desde': True,
-            'tiene_opciones': True,
-            'imagen': ImagenMock('/static/img/Cama5.jpg')
-        },
-        {
-            'id': 4,
-            'nombre': 'Silla Poltrona',
-            'slug': 'silla-poltrona',
-            'categoria': 'Nuevos lanzamientos',
-            'precio': 539000,
-            'precio_desde': False,
-            'tiene_opciones': False,
-            'imagen': ImagenMock('/static/img/Silla3.jpg')
-        },]
+            'imagen_url': imagen_principal.ruta_imagen if imagen_principal else '/static/img/placeholder.jpg',
+        })
+    
+    # === TESTIMONIOS ===
     testimonios = [
         {
             'nombre_cliente': 'María G.',
@@ -127,212 +113,228 @@ def home(request):
         }
     ]
     
-    # === DATOS PARA JAVASCRIPT - ¡ESTO ES LO QUE HACE FUNCIONAR EL SCRIPT! ===
+    # === DATOS PARA JAVASCRIPT ===
+    categorias_qs = Categorias.objects.filter(
+        estado_categoria='activo',
+        deleted_at__isnull=True
+    )
     
-    # 1. Opciones para el modal (escritorios y camas)
     datos_opciones = {
-        'escritorio': [
-            {
-                'nombre': 'Escritorio Minimalista',
-                'img': '/static/img/Escritorio2.jpg',
-                'precio': 674000,
-                'slug': 'escritorio-minimalista',
-                'id': 1
-            },
-            {
-                'nombre': 'Escritorio Ejecutivo',
-                'img': '/static/img/Escritorio0.2.jpg',
-                'precio': 890000,
-                'slug': 'escritorio-ejecutivo',
-                'id': 2
-            },
-            {
-                'nombre': 'Escritorio con Cajones',
-                'img': '/static/img/Escritorio1.jpg',
-                'precio': 750000,
-                'slug': 'escritorio-cajones',
-                'id': 3
-            },
-            {
-                'nombre': 'Escritorio Escolar',
-                'img': '/static/img/Escritorio3.jpg',
-                'precio': 520000,
-                'slug': 'escritorio-escolar',
-                'id': 4
-            }
-        ],
-        'cama': [
-            {
-                'nombre': 'Cama Alpes 140',
-                'img': '/static/img/Cama5.jpg',
-                'precio': 1113000,
-                'slug': 'cama-alpes-140',
-                'id': 5
-            },
-            {
-                'nombre': 'Cama Doble Clásica',
-                'img': '/static/img/Cama2.jpg',
-                'precio': 980000,
-                'slug': 'cama-doble-clasica',
-                'id': 6
-            },
-            {
-                'nombre': 'Cama King Size',
-                'img': '/static/img/Cama3.jpg',
-                'precio': 1450000,
-                'slug': 'cama-king-size',
-                'id': 7
-            },
-            {
-                'nombre': 'Cama Juvenil',
-                'img': '/static/img/CamaCunas6.jpg',
-                'precio': 720000,
-                'slug': 'cama-juvenil',
-                'id': 8
-            }
-        ]
+        'escritorio': [],
+        'cama': []
     }
     
-    # 2. Productos para la búsqueda automática
-    productos_busqueda = [
-        'Sofá', 'Sofá Fátima', 'Sofá Moderno', 'Sofá Ejecutivo',
-        'Cama', 'Cama Alpes', 'Cama King', 'Cama Juvenil', 'Cama Cuna',
-        'Escritorio', 'Escritorio Minimalista', 'Escritorio Ejecutivo', 'Escritorio Escolar',
-        'Silla', 'Silla Poltrona', 'Silla Ergonómica', 'Silla de Oficina',
-        'Comedor', 'Comedor Familiar', 'Comedor Moderno',
-        'Mesa', 'Mesa de Centro', 'Mesa de Comedor',
-        'Muebles', 'Muebles de Sala', 'Muebles de Dormitorio'
-    ]
+    # Productos con opciones (ejemplo: escritorios y camas)
+    for cat in categorias_qs:
+        if 'ESCRITORIO' in cat.nombre_categoria.upper():
+            prods = Producto.objects.filter(
+                categoria=cat,
+                estado='DISPONIBLE',
+                deleted_at__isnull=True
+            )[:4]
+            for p in prods:
+                img = ImagenesProducto.objects.filter(producto=p, es_principal=1).first()
+                datos_opciones['escritorio'].append({
+                    'nombre': p.referencia_producto or p.codigo_producto,
+                    'img': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+                    'precio': int(p.precio_actual),
+                    'slug': p.codigo_producto.lower().replace(' ', '-'),
+                    'id': p.id_producto
+                })
+        
+        if 'CAMA' in cat.nombre_categoria.upper() or 'CUNA' in cat.nombre_categoria.upper():
+            prods = Producto.objects.filter(
+                categoria=cat,
+                estado='DISPONIBLE',
+                deleted_at__isnull=True
+            )[:4]
+            for p in prods:
+                img = ImagenesProducto.objects.filter(producto=p, es_principal=1).first()
+                datos_opciones['cama'].append({
+                    'nombre': p.referencia_producto or p.codigo_producto,
+                    'img': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+                    'precio': int(p.precio_actual),
+                    'slug': p.codigo_producto.lower().replace(' ', '-'),
+                    'id': p.id_producto
+                })
     
-    # 3. Notificaciones (si el usuario está autenticado)
+    # Productos para búsqueda
+    productos_busqueda = list(
+        Producto.objects.filter(
+            estado='DISPONIBLE',
+            deleted_at__isnull=True
+        ).values_list('referencia_producto', flat=True)[:50]
+    )
+
+    # === CATEGORÍAS DESDE LA BASE DE DATOS ===
+    # Obtener categorías activas con conteo de productos
+    categorias_qs = Categorias.objects.filter(
+    estado_categoria='activo',
+    deleted_at__isnull=True
+    ).annotate(
+        productos_count=Count(
+            'producto',
+            filter=Q(
+                producto__estado='DISPONIBLE',
+                producto__deleted_at__isnull=True
+            )
+        )
+    ).order_by('nombre_categoria')[:6]
+
+    # Convertir a lista de diccionarios para el template
+    categorias = []
+    for cat in categorias_qs:
+        # Obtener imagen del primer producto de la categoría
+        primer_producto = Producto.objects.filter(
+            categoria=cat,
+            deleted_at__isnull=True
+        ).first()
+        
+        imagen_url = '/static/img/placeholder.jpg'
+        if primer_producto:
+            img = ImagenesProducto.objects.filter(
+                producto=primer_producto,
+                es_principal=1
+            ).first()
+            if img:
+                imagen_url = img.ruta_imagen
+        
+        categorias.append({
+            'id': cat.id_categorias,
+            'nombre': cat.nombre_categoria,
+            'slug': cat.nombre_categoria.lower().replace(' ', '-').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u'),
+            'descripcion_corta': f'{cat.productos_count} productos disponibles',
+            'descripcion_larga': f'Explora nuestra selección de {cat.nombre_categoria.lower()}',
+            'imagen_url': imagen_url,
+            'productos_count': cat.productos_count
+        })
+    
+    # Notificaciones
     notificaciones = []
     notificaciones_nuevas = 0
     if request.user.is_authenticated:
         # Aquí iría: Notificacion.objects.filter(usuario=request.user, leida=False)
         pass
     
-    # === CONSTRUIR CONTEXTO PARA EL TEMPLATE ===
+    # === CONSTRUIR CONTEXTO ===
     context = {
-        # Contador del carrito (desde sesión)
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
-        
-        # Datos para JavaScript - ¡IMPORTANTE: usar json.dumps()!
         'datos_opciones_json': json.dumps(datos_opciones),
         'productos_busqueda_json': json.dumps(productos_busqueda),
-        
-        # Datos para renderizar en el template
         'productos_destacados': productos_destacados,
         'productos_nuevos': productos_nuevos,
+        'hay_productos_nuevos': bool(productos_nuevos),
         'testimonios': testimonios,
-        
-        # Notificaciones
         'notificaciones': notificaciones,
         'notificaciones_nuevas': notificaciones_nuevas,
+        'categorias': categorias,
+        'categorias_json': json.dumps([
+            {'nombre': c['nombre'], 'slug': c['slug']} for c in categorias
+        ]),
     }
     
     return render(request, 'pagina/index.html', context)
 
 def productos(request):
-    """Vista de página de productos/categorías"""
+    """Vista de página de productos con categorías dinámicas desde BD"""
     
-    # === CATEGORÍAS (en producción: Categoria.objects.filter(activo=True)) ===
-    class ImagenMock:
-        def __init__(self, url):
-            self.url = url
-    
-    categorias = [
-        {
-            'id': 1,
-            'nombre': 'Colechos',
-            'slug': 'colechos',
-            'descripcion_corta': 'Perfectos para compartir con tu bebé',
-            'descripcion_larga': 'Colecho de 1 metro de largo por 50 cm de ancho, diseño ergonómico y seguro.',
-            'imagen_url': '/static/img/Colecho-1.jpg'
-        },
-        {
-            'id': 2,
-            'nombre': 'Cunas',
-            'slug': 'cunas',
-            'descripcion_corta': 'Diseño clásico y funcional',
-            'descripcion_larga': 'Apta para un colchón del corral de 1m x 1.40m. Madera maciza y acolchado suave.',
-            'imagen_url': '/static/img/CamaCunas1.JPG'
-        },
-        {
-            'id': 3,
-            'nombre': 'Sofás',
-            'slug': 'sofas',
-            'descripcion_corta': 'Confort y estilo para tu sala',
-            'descripcion_larga': 'Sofá de 2 puestos (1.40m largo x 80cm ancho), tapizado en tela premium lavable.',
-            'imagen_url': '/static/img/Sofá4.JPG'
-        },
-        {
-            'id': 4,
-            'nombre': 'Sillas',
-            'slug': 'sillas',
-            'descripcion_corta': 'Poltronas y sillas modernas',
-            'descripcion_larga': 'La Poltrona Kaira destaca por su diseño compacto y relleno ergonómico.',
-            'imagen_url': '/static/img/Poltronas1.JPG'
-        },
-        {
-            'id': 5,
-            'nombre': 'Escritorios',
-            'slug': 'escritorios',
-            'descripcion_corta': 'Espacio ideal para trabajar o estudiar',
-            'descripcion_larga': 'Escritorio de 1.30m de ancho x 50cm de fondo. Estilo minimalista con cajones.',
-            'imagen_url': '/static/img/Escritorio1.jpg'
-        },
-        {
-            'id': 6,
-            'nombre': 'Camas',
-            'slug': 'camas',
-            'descripcion_corta': 'Camas Montessori y más',
-            'descripcion_larga': 'Apta para un colchón de 1m x 1.90m. Diseño bajo y seguro para niños.',
-            'imagen_url': '/static/img/CamaMontessori1.jpg'
-        },
+    # === CATEGORÍAS PRINCIPALES (las 6 que quieres mostrar como botones) ===
+    categorias_principales_slugs = [
+        'bases-de-comedor', 'cama-cunas', 'butacos-de-bar', 
+        'camas-adultos', 'camas-infantiles', 'todas'
     ]
     
-    # === PRODUCTOS DESTACADOS ===
-    productos_destacados = [
-        {
-            'id': 201,
-            'nombre': 'Sofá Premium',
-            'slug': 'sofa-premium',
-            'precio': 1200000,
-            'imagen_url': '/static/img/sofapremiun.jpeg'
-        },
-        {
-            'id': 202,
-            'nombre': 'Cuna Lujo',
-            'slug': 'cuna-lujo',
-            'precio': 950000,
-            'imagen_url': '/static/img/cunaLujo.jpg'
-        },
-        {
-            'id': 203,
-            'nombre': 'Escritorio Ejecutivo',
-            'slug': 'escritorio-ejecutivo',
-            'precio': 850000,
-            'imagen_url': '/static/img/escritorioEjecutivo.jpg'
-        },
-        {
-            'id': 204,
-            'nombre': 'Colecho Plus',
-            'slug': 'colecho-plus',
-            'precio': 720000,
-            'imagen_url': '/static/img/ColechoDestacado.jpg'
-        },
-    ]
+    # Obtener todas las categorías activas con conteo de productos
+    todas_categorias = Categorias.objects.filter(
+        estado_categoria='activo',
+        deleted_at__isnull=True
+    ).annotate(
+        productos_count=Count('producto', filter=Q(
+            producto__estado='DISPONIBLE',
+            producto__deleted_at__isnull=True
+        ))
+    ).order_by('nombre_categoria')
     
-    # Datos para JavaScript
-    import json
+    # Separar categorías principales y secundarias
+    categorias_principales = []
+    categorias_secundarias = []
+    
+    for cat in todas_categorias:
+        # Generar slug amigable
+        slug = cat.nombre_categoria.lower().replace(' ', '-').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+        
+        # Obtener imagen del primer producto de la categoría
+        primer_producto = Producto.objects.filter(
+            categoria=cat,
+            deleted_at__isnull=True
+        ).first()
+        imagen_url = '/static/img/placeholder.jpg'
+        if primer_producto:
+            img = ImagenesProducto.objects.filter(
+                producto=primer_producto,
+                es_principal=1
+            ).first()
+            if img:
+                imagen_url = img.ruta_imagen
+        
+        categoria_data = {
+            'id': cat.id_categorias,
+            'nombre': cat.nombre_categoria,
+            'slug': slug,
+            'descripcion_corta': f'{cat.productos_count} productos disponibles',
+            'descripcion_larga': f'Explora nuestra selección de {cat.nombre_categoria.lower()}',
+            'imagen_url': imagen_url,
+            'productos_count': cat.productos_count
+        }
+        
+        if slug in categorias_principales_slugs or cat.nombre_categoria.upper() in ['BASES DE COMEDOR', 'CAMA CUNAS', 'BUTACOS DE BAR', 'CAMAS ADULTOS', 'CAMAS INFANTILES']:
+            categorias_principales.append(categoria_data)
+        elif cat.productos_count > 0:  # Solo categorías con productos
+            categorias_secundarias.append(categoria_data)
+    
+    # Agregar "Todas" como primera categoría principal
+    if not any(c['slug'] == 'todas' for c in categorias_principales):
+        categorias_principales.insert(0, {
+            'id': 0,
+            'nombre': 'Todas',
+            'slug': 'todas',
+            'descripcion_corta': 'Ver todos los productos',
+            'descripcion_larga': 'Explora todo nuestro catálogo de muebles artesanales',
+            'imagen_url': '/static/img/placeholder.jpg',
+            'productos_count': Producto.objects.filter(estado='DISPONIBLE', deleted_at__isnull=True).count()
+        })
+    
+    # === PRODUCTOS DESTACADOS (desde BD) ===
+    productos_destacados_qs = Producto.objects.filter(
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).select_related('categoria')[:4]
+    
+    productos_destacados = []
+    for prod in productos_destacados_qs:
+        img = ImagenesProducto.objects.filter(
+            producto=prod,
+            es_principal=1
+        ).first()
+        productos_destacados.append({
+            'id': prod.id_producto,
+            'nombre': prod.referencia_producto or prod.codigo_producto,
+            'slug': prod.codigo_producto.lower().replace(' ', '-'),
+            'precio': int(prod.precio_actual),
+            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg'
+        })
+    
+    # === DATOS PARA JAVASCRIPT ===
     context = {
-        'categorias': categorias,
+        'categorias_principales': categorias_principales,
+        'categorias_secundarias': categorias_secundarias,
         'productos_destacados': productos_destacados,
         'categorias_json': json.dumps([
-            {'nombre': c['nombre'], 'slug': c['slug']} for c in categorias
+            {'nombre': c['nombre'], 'slug': c['slug'], 'productos_count': c['productos_count']} 
+            for c in categorias_principales + categorias_secundarias
         ]),
         'destacados_json': json.dumps([
-            {'nombre': p['nombre'], 'slug': p['slug'], 'precio': p['precio']} 
+            {'nombre': p['nombre'], 'slug': p['slug'], 'precio': p['precio']}
             for p in productos_destacados
         ]),
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
@@ -342,76 +344,40 @@ def productos(request):
     return render(request, 'pagina/productos.html', context)
 
 def productos_por_categoria(request, categoria_slug):
-    """
-    Vista para mostrar productos de una categoría específica.
-    URL: /productos/colechos/, /productos/camas/, etc.
-    """
+    """Vista para mostrar productos de una categoría específica"""
     
-    # Mapeo de slugs a datos de categoría (en producción: consulta a BD)
-    categorias_data = {
-        'colechos': {
-            'nombre': 'Colechos',
-            'descripcion': 'Colechos ergonómicos y seguros para compartir con tu bebé.',
-            'imagen': '/static/img/Colecho-1.jpg'
-        },
-        'cunas': {
-            'nombre': 'Cunas',
-            'descripcion': 'Cunas de madera maciza con diseño clásico y funcional.',
-            'imagen': '/static/img/CamaCunas1.JPG'
-        },
-        'sofas': {
-            'nombre': 'Sofás',
-            'descripcion': 'Sofás cómodos y elegantes para renovar tu sala.',
-            'imagen': '/static/img/Sofá4.JPG'
-        },
-        'sillas': {
-            'nombre': 'Sillas',
-            'descripcion': 'Poltronas y sillas modernas con diseño ergonómico.',
-            'imagen': '/static/img/Poltronas1.JPG'
-        },
-        'escritorios': {
-            'nombre': 'Escritorios',
-            'descripcion': 'Escritorios funcionales para trabajar o estudiar.',
-            'imagen': '/static/img/Escritorio1.jpg'
-        },
-        'camas': {
-            'nombre': 'Camas',
-            'descripcion': 'Camas Montessori y tradicionales de alta calidad.',
-            'imagen': '/static/img/CamaMontessori1.jpg'
-        },
-    }
+    # Buscar categoría en BD
+    categoria_obj = get_object_or_404(
+        Categorias, 
+        nombre_categoria__icontains=categoria_slug.replace('-', ' '),
+        deleted_at__isnull=True
+    )
     
-    # Obtener datos de la categoría o redirigir si no existe
-    categoria = categorias_data.get(categoria_slug)
+    # Productos de esta categoría
+    productos_qs = Producto.objects.filter(
+        categoria=categoria_obj,
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).select_related('categoria')
     
-    if not categoria:
-        # Redirigir a página principal de productos si la categoría no existe
-        return redirect('pagina:productos')
-    
-    # Productos de ejemplo para esta categoría (en producción: consulta a BD)
-    productos_ejemplo = [
-        {
-            'id': 1,
-            'nombre': f'{categoria["nombre"]} Modelo 1',
-            'slug': f'{categoria_slug}-modelo-1',
-            'precio': 750000,
-            'imagen_url': categoria['imagen'],
-            'descripcion': f'Descripción del producto {categoria["nombre"]}.'
-        },
-        {
-            'id': 2,
-            'nombre': f'{categoria["nombre"]} Modelo 2',
-            'slug': f'{categoria_slug}-modelo-2',
-            'precio': 890000,
-            'imagen_url': categoria['imagen'],
-            'descripcion': f'Otra opción de {categoria["nombre"]}.'
-        },
-    ]
+    productos = []
+    for prod in productos_qs:
+        img = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
+        productos.append({
+            'id': prod.id_producto,
+            'nombre': prod.referencia_producto or prod.codigo_producto,
+            'slug': prod.codigo_producto.lower().replace(' ', '-'),
+            'precio': int(prod.precio_actual),
+            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg'
+        })
     
     context = {
-        'categoria': categoria,
-        'categoria_slug': categoria_slug,
-        'productos': productos_ejemplo,
+        'categoria': {
+            'nombre': categoria_obj.nombre_categoria,
+            'slug': categoria_slug,
+            'descripcion': f'Explora nuestros {categoria_obj.nombre_categoria.lower()}'
+        },
+        'productos': productos,
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
     }
     
@@ -420,7 +386,8 @@ def productos_por_categoria(request, categoria_slug):
 def promociones(request):
     """Vista de página de promociones"""
     
-    # === OFERTA DESTACADA ===
+    # === OFERTA DESTACADA (desde BD o estático) ===
+    # Puedes crear un modelo PromoCombo si lo necesitas
     promo_combo = {
         'id': 999,
         'nombre': 'Combo Sofá + Comedor + Mesa',
@@ -430,36 +397,30 @@ def promociones(request):
         'imagen_url': '/static/img/Sofa5.jpg',
     }
     
-    # === PROMOCIONES REGULARES ===
-    promociones_lista = [
-        {
-            'id': 101,
-            'nombre': 'Sofá Moderno 3 Puestos',
-            'categoria': 'sofas',
-            'precio_original': 1500000,
-            'precio_promo': 1050000,
-            'porcentaje_descuento': 30,
-            'imagen_url': '/static/img/Sofa5.jpg',
-        },
-        {
-            'id': 102,
-            'nombre': 'Comedor 6 Puestos',
-            'categoria': 'comedores',
-            'precio_original': 1800000,
-            'precio_promo': 1390000,
-            'porcentaje_descuento': 23,
-            'imagen_url': '/static/img/Comedor3.jpeg',
-        },
-        {
-            'id': 103,
-            'nombre': 'Cama Doble con Cabecero',
-            'categoria': 'camas',
-            'precio_original': 1100000,
-            'precio_promo': 799000,
-            'porcentaje_descuento': 27,
-            'imagen_url': '/static/img/Cama2.jpg',
-        },
-    ]
+    # === PROMOCIONES REGULARES (desde BD) ===
+    # Productos con descuento o en oferta
+    promociones_qs = Producto.objects.filter(
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).select_related('categoria')[:6]
+    
+    promociones_lista = []
+    for prod in promociones_qs:
+        img = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
+        # Calcular descuento simulado (puedes agregar un campo descuento en el modelo)
+        precio_original = int(prod.precio_actual * 1.2)  # 20% más
+        precio_promo = int(prod.precio_actual)
+        descuento = int(((precio_original - precio_promo) / precio_original) * 100)
+        
+        promociones_lista.append({
+            'id': prod.id_producto,
+            'nombre': prod.referencia_producto or prod.codigo_producto,
+            'categoria': prod.categoria.nombre_categoria if prod.categoria else 'General',
+            'precio_original': precio_original,
+            'precio_promo': precio_promo,
+            'porcentaje_descuento': descuento,
+            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+        })
     
     context = {
         'promo_combo': promo_combo,
@@ -958,11 +919,6 @@ def logout_view(request):
         del request.session['carrito_cantidad']
     return redirect('pagina:home')
 
-
-def lista_productos(request):
-    return render(request, 'pagina/productos.html')
-
-
 def carrito_compra(request):
     return render(request, 'pagina/carrito.html')
 
@@ -995,57 +951,46 @@ def perfil_view(request):
     return render(request, 'pagina/perfil.html', context)
 
 def carrito_compra(request):
-    """Vista de carrito con datos para funcionalidades 2026"""
+    """Vista de carrito de compras"""
     
     carrito_session = request.session.get('carrito', {})
-    wishlist_session = request.session.get('wishlist', [])
-    
-    # Datos de productos (en producción: consulta a BD con select_related)
-    productos_db = {
-        '1': {
-            'nombre': 'SOFÁ FATIMA', 
-            'precio_base': 1872269, 
-            'iva': 356731, 
-            'imagen': '/static/img/Sofá2.JPG',
-            'stock': 12,
-            'variantes': ['Color: Gris', 'Material: Tela Premium'],
-            'sku': 'SOF-FAT-001'
-        },
-        # ... más productos
-    }
     
     carrito_items = []
     total_carrito = 0
     total_iva = 0
     
     for producto_id_str, cantidad in carrito_session.items():
-        producto = productos_db.get(producto_id_str)
-        if producto:
-            precio_base = producto['precio_base']
-            iva = producto['iva']
+        try:
+            prod = Producto.objects.get(id_producto=producto_id_str)
+            img = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
+            
+            precio_base = int(prod.precio_actual)
+            iva = int(precio_base * 0.19)  # 19% IVA
             subtotal = (precio_base + iva) * cantidad
             
             carrito_items.append({
                 'producto_id': producto_id_str,
-                'nombre': producto['nombre'],
+                'nombre': prod.referencia_producto or prod.codigo_producto,
                 'precio_base': precio_base,
                 'iva': iva,
                 'cantidad': cantidad,
                 'subtotal': subtotal,
-                'imagen_url': producto['imagen'],
-                'stock': producto.get('stock', 99),
-                'variantes': producto.get('variantes', []),
-                'sku': producto.get('sku', f'ORD-{producto_id_str}'),
+                'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+                'stock': 99,  # Puedes obtenerlo del inventario
+                'variantes': [],
+                'sku': prod.codigo_producto,
             })
+            
             total_carrito += precio_base * cantidad
             total_iva += iva * cantidad
+            
+        except Producto.DoesNotExist:
+            continue
     
-    # Datos para JavaScript
-    import json
     context = {
         'carrito_items': carrito_items,
         'carrito_items_json': json.dumps(carrito_items),
-        'saved_items_json': json.dumps([]),  # Wishlist
+        'saved_items_json': json.dumps([]),
         'carrito_cantidad': sum(item['cantidad'] for item in carrito_items),
         'total_carrito': total_carrito,
         'total_iva': total_iva,
@@ -1215,7 +1160,6 @@ def api_agregar_carrito(request):
             'cantidad_total': request.session['carrito_cantidad'],
             'message': f'{nombre} añadido al carrito'
         })
-        
     except json.JSONDecodeError:
         return JsonResponse({
             'success': False,
