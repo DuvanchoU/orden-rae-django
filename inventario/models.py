@@ -85,11 +85,10 @@ class Producto(models.Model):
     
     # Relación explícita a la columna categoria_id y llave primaria id_categorias
     categoria = models.ForeignKey(
-        Categorias, 
-        on_delete=models.DO_NOTHING, 
+        Categorias,
+        on_delete=models.DO_NOTHING,
         db_column='categoria_id',
-        to_field='id_categorias',
-        related_name='productos' 
+        related_name='productos',
     )
     
     proveedor_id = models.PositiveIntegerField(blank=True, null=True)
@@ -162,16 +161,16 @@ class Producto(models.Model):
     def esta_disponible(self):
         """Verifica si el producto está disponible"""
         return self.estado == 'DISPONIBLE' and self.get_stock_total() > 0
-        
-        class Meta:
-            managed = False  
-            db_table = 'producto'
-            ordering = ['-created_at']
-            indexes = [
-                models.Index(fields=['codigo_producto']),
-                models.Index(fields=['estado']),
-                models.Index(fields=['categoria']),
-            ]
+
+    class Meta:
+        managed = False
+        db_table = 'producto'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['codigo_producto']),
+            models.Index(fields=['estado']),
+            models.Index(fields=['categoria']),
+        ]
 
 # ------------------------------------------------------------------
 # MODELOS TRANSACCIONALES (Inventario, Imágenes)

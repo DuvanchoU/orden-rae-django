@@ -9,10 +9,7 @@ from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
-
-# Importar modelos desde inventario
 from inventario.models import Producto, Categorias, ImagenesProducto, Inventario
-
 import hashlib
 import json
 import re
@@ -32,13 +29,10 @@ def generar_avatar_url(nombre, tamaño=128):
     nombre_url = nombre.replace(' ', '+')
     return f"https://ui-avatars.com/api/?name={nombre_url}&background={color}&color=fff&size={tamaño}&bold=true"
 
-
-
 def home(request):
     """Vista principal - Con productos desde la base de datos"""
     
     # === PRODUCTOS DESTACADOS (desde BD) ===
-    # Productos con estado DISPONIBLE y que tengan imágenes
     productos_destacados_qs = Producto.objects.filter(
         estado='DISPONIBLE',
         deleted_at__isnull=True
@@ -47,7 +41,7 @@ def home(request):
     productos_destacados = []
     for prod in productos_destacados_qs:
         imagen_principal = ImagenesProducto.objects.filter(
-            producto=prod, 
+            producto=prod,
             es_principal=1
         ).first()
         productos_destacados.append({
@@ -59,7 +53,6 @@ def home(request):
         })
     
     # === NUEVOS PRODUCTOS (desde BD) ===
-    # Productos creados en los últimos 30 días o con estado DISPONIBLE
     treinta_dias_atras = timezone.now() - timedelta(days=30)
     productos_nuevos_qs = Producto.objects.filter(
         estado='DISPONIBLE',
@@ -67,7 +60,6 @@ def home(request):
         created_at__gte=treinta_dias_atras
     ).select_related('categoria')[:8]
     
-    # Si no hay productos recientes, tomar los últimos 8 disponibles
     if not productos_nuevos_qs:
         productos_nuevos_qs = Producto.objects.filter(
             estado='DISPONIBLE',
@@ -77,7 +69,7 @@ def home(request):
     productos_nuevos = []
     for prod in productos_nuevos_qs:
         imagen_principal = ImagenesProducto.objects.filter(
-            producto=prod, 
+            producto=prod,
             es_principal=1
         ).first()
         productos_nuevos.append({
@@ -119,12 +111,8 @@ def home(request):
         deleted_at__isnull=True
     )
     
-    datos_opciones = {
-        'escritorio': [],
-        'cama': []
-    }
+    datos_opciones = {'escritorio': [], 'cama': []}
     
-    # Productos con opciones (ejemplo: escritorios y camas)
     for cat in categorias_qs:
         if 'ESCRITORIO' in cat.nombre_categoria.upper():
             prods = Producto.objects.filter(
@@ -158,33 +146,29 @@ def home(request):
                     'id': p.id_producto
                 })
     
-    # Productos para búsqueda
     productos_busqueda = list(
         Producto.objects.filter(
             estado='DISPONIBLE',
             deleted_at__isnull=True
         ).values_list('referencia_producto', flat=True)[:50]
     )
-
+    
     # === CATEGORÍAS DESDE LA BASE DE DATOS ===
-    # Obtener categorías activas con conteo de productos
     categorias_qs = Categorias.objects.filter(
-    estado_categoria='activo',
-    deleted_at__isnull=True
+        estado_categoria='activo',
+        deleted_at__isnull=True
     ).annotate(
         productos_count=Count(
-            'producto',
+            'productos', 
             filter=Q(
-                producto__estado='DISPONIBLE',
-                producto__deleted_at__isnull=True
+                productos__estado='DISPONIBLE',
+                productos__deleted_at__isnull=True
             )
         )
     ).order_by('nombre_categoria')[:6]
-
-    # Convertir a lista de diccionarios para el template
+    
     categorias = []
     for cat in categorias_qs:
-        # Obtener imagen del primer producto de la categoría
         primer_producto = Producto.objects.filter(
             categoria=cat,
             deleted_at__isnull=True
@@ -209,14 +193,11 @@ def home(request):
             'productos_count': cat.productos_count
         })
     
-    # Notificaciones
     notificaciones = []
     notificaciones_nuevas = 0
     if request.user.is_authenticated:
-        # Aquí iría: Notificacion.objects.filter(usuario=request.user, leida=False)
         pass
     
-    # === CONSTRUIR CONTEXTO ===
     context = {
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
         'datos_opciones_json': json.dumps(datos_opciones),
@@ -235,35 +216,31 @@ def home(request):
     
     return render(request, 'pagina/index.html', context)
 
+
 def productos(request):
     """Vista de página de productos con categorías dinámicas desde BD"""
     
-    # === CATEGORÍAS PRINCIPALES (las 6 que quieres mostrar como botones) ===
     categorias_principales_slugs = [
         'bases-de-comedor', 'cama-cunas', 'butacos-de-bar', 
         'camas-adultos', 'camas-infantiles', 'todas'
     ]
     
-    # Obtener todas las categorías activas con conteo de productos
     todas_categorias = Categorias.objects.filter(
         estado_categoria='activo',
         deleted_at__isnull=True
     ).annotate(
-        productos_count=Count('producto', filter=Q(
-            producto__estado='DISPONIBLE',
-            producto__deleted_at__isnull=True
+        productos_count=Count('productos', filter=Q(
+            productos__estado='DISPONIBLE', 
+            productos__deleted_at__isnull=True 
         ))
     ).order_by('nombre_categoria')
     
-    # Separar categorías principales y secundarias
     categorias_principales = []
     categorias_secundarias = []
     
     for cat in todas_categorias:
-        # Generar slug amigable
         slug = cat.nombre_categoria.lower().replace(' ', '-').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
         
-        # Obtener imagen del primer producto de la categoría
         primer_producto = Producto.objects.filter(
             categoria=cat,
             deleted_at__isnull=True
@@ -289,10 +266,9 @@ def productos(request):
         
         if slug in categorias_principales_slugs or cat.nombre_categoria.upper() in ['BASES DE COMEDOR', 'CAMA CUNAS', 'BUTACOS DE BAR', 'CAMAS ADULTOS', 'CAMAS INFANTILES']:
             categorias_principales.append(categoria_data)
-        elif cat.productos_count > 0:  # Solo categorías con productos
+        elif cat.productos_count > 0:
             categorias_secundarias.append(categoria_data)
     
-    # Agregar "Todas" como primera categoría principal
     if not any(c['slug'] == 'todas' for c in categorias_principales):
         categorias_principales.insert(0, {
             'id': 0,
@@ -304,7 +280,7 @@ def productos(request):
             'productos_count': Producto.objects.filter(estado='DISPONIBLE', deleted_at__isnull=True).count()
         })
     
-    # === PRODUCTOS DESTACADOS (desde BD) ===
+    # === PRODUCTOS DESTACADOS ===
     productos_destacados_qs = Producto.objects.filter(
         estado='DISPONIBLE',
         deleted_at__isnull=True
@@ -324,7 +300,6 @@ def productos(request):
             'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg'
         })
     
-    # === DATOS PARA JAVASCRIPT ===
     context = {
         'categorias_principales': categorias_principales,
         'categorias_secundarias': categorias_secundarias,
