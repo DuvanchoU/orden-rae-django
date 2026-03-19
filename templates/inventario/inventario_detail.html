@@ -6,8 +6,8 @@
 <!-- Header -->
 <div class="detail-header d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="detail-title">Información</h1>
-        <p class="detail-subtitle">Detalle del registro de inventario</p>
+        <h1 class="detail-title">Detalle de Inventario</h1>
+        <p class="detail-subtitle">Información detallada del stock en bodega</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{% url 'inventario:inventario_list' %}" class="btn btn-volver">
@@ -20,104 +20,126 @@
 </div>
 
 <div class="row g-4">
-    <!-- Tarjeta Principal - Información del Registro -->
+    <!-- Tarjeta Principal -->
     <div class="col-lg-8">
         <div class="info-card p-4">
-            <div class="row g-4">
-                <!-- Código -->
+            
+            <!-- Sección 1: Datos Generales -->
+            <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Información del Producto</h6>
+            <div class="row g-4 mb-4">
                 <div class="col-md-6">
                     <label class="info-label">CÓDIGO</label>
                     <p class="info-value fw-bold">{{ item.producto.codigo_producto }}</p>
                 </div>
-                
-                <!-- Referencia -->
                 <div class="col-md-6">
                     <label class="info-label">REFERENCIA</label>
                     <p class="info-value fw-bold">{{ item.producto.referencia_producto|default:"Sin referencia" }}</p>
                 </div>
-                
-                <!-- Bodega -->
                 <div class="col-md-6">
                     <label class="info-label">BODEGA</label>
                     <p class="info-value">{{ item.bodega.nombre_bodega }}</p>
                 </div>
-                
-                <!-- Proveedor -->
                 <div class="col-md-6">
                     <label class="info-label">PROVEEDOR</label>
                     <p class="info-value">
                         {% if item.proveedor %}
                             {{ item.proveedor.nombre }}
                         {% else %}
-                            No especificado
+                            <span class="text-muted fst-italic">No especificado</span>
                         {% endif %}
                     </p>
                 </div>
-                
-                <!-- Cantidad Disponible -->
                 <div class="col-md-6">
-                    <label class="info-label">CANTIDAD DISPONIBLE</label>
-                    <p class="info-value fw-bold" style="font-size: 1.5rem; color: var(--accent);">
-                        {{ item.cantidad_disponible }}
-                    </p>
-                </div>
-                
-                <!-- Fecha Llegada -->
-                <div class="col-md-6">
-                    <label class="info-label">FECHA LLEGADA</label>
-                    <p class="info-value">
-                        {{ item.fecha_llegada|date:"d/m/Y"|default:"No registrada" }}
-                    </p>
-                </div>
-                
-                <!-- Estado -->
-                <div class="col-md-6">
-                    <label class="info-label">ESTADO</label>
+                    <label class="info-label">ESTADO ACTUAL</label>
                     <div>
                         {% if item.estado == 'DISPONIBLE' %}
-                            <span class="badge-estado disponible">
-                                DISPONIBLE
-                            </span>
-                        {% elif item.estado == 'RESERVADO' %}
-                            <span class="badge-estado reservado">
-                                RESERVADO
-                            </span>
+                            <span class="badge-estado disponible">DISPONIBLE</span>
+                        {% elif item.estado == 'COMPROMETIDO' %}
+                            <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">COMPROMETIDO</span>
+                        {% elif item.estado == 'AGOTADO' %}
+                            <span class="badge-estado agotado">AGOTADO</span>
                         {% else %}
-                            <span class="badge-estado agotado">
-                                AGOTADO
-                            </span>
+                            {{ item.estado }}
                         {% endif %}
                     </div>
                 </div>
             </div>
+
+            <hr class="my-4 border-secondary">
+
+            <!-- Sección 2: Desglose de Stock -->
+            <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Desglose de Stock</h6>
+            
+            <div class="row g-3">
+                <!-- 1. Total Físico -->
+                <div class="col-4">
+                    <div class="text-start">
+                        <small class="text-muted d-block mb-1" style="font-size: 0.7rem;">TOTAL FÍSICO</small>
+                        <span class="fs-5 fw-bold text-white">{{ total_fisico }}</span>
+                    </div>
+                </div>
+
+                <!-- 2. Reservado -->
+                <div class="col-4">
+                    <div class="text-start">
+                        <small class="text-warning d-block mb-1" style="font-size: 0.7rem;">RESERVADO</small>
+                        <span class="fs-5 fw-bold text-warning">{{ cantidad_reservada }}</span>
+                    </div>
+                </div>
+
+                <!-- 3. Stock Libre (Usando variable calculada en Vista) -->
+                <div class="col-4">
+                    <div class="text-start">
+                        <small class="text-success d-block mb-1" style="font-size: 0.7rem;">LIBRE PARA VENTA</small>
+                        <span class="fs-5 fw-bold {% if stock_libre <= 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ stock_libre }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alerta pequeña si no hay stock libre -->
+            {% if stock_libre <= 0 %}
+            <div class="alert alert-warning py-1 px-2 mt-2 d-flex align-items-center" role="alert" style="font-size: 0.75rem;">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <span>Stock total comprometido. No hay unidades libres.</span>
+            </div>
+            {% endif %}
         </div>
     </div>
     
-    <!-- Tarjeta Lateral - Acciones e Información -->
+    <!-- Tarjeta Lateral -->
     <div class="col-lg-4">
         <div class="sidebar-card p-4">
-            <h5 class="sidebar-title">Información Adicional</h5>
+            <h5 class="sidebar-title">Gestión Rápida</h5>
             <hr class="sidebar-divider">
             
-            <!-- Botones de Acción -->
-            <div class="action-buttons">
+            <div class="action-buttons d-grid gap-2">
                 <a href="{% url 'inventario:producto_detail' item.producto.pk %}" 
-                   class="btn-action-secondary">
-                    <i class="bi bi-box-seam me-2"></i>Ver Producto
+                   class="btn-action-secondary text-start">
+                    <i class="bi bi-box-seam me-2"></i>Ver Ficha Producto
+                </a>
+                <a href="{% url 'inventario:inventario_update' item.pk %}" 
+                   class="btn-action-secondary text-start">
+                    <i class="bi bi-pencil-square me-2"></i>Ajustar Stock
                 </a>
             </div>
             
-            <!-- Información del Sistema -->
-            <div class="mt-4">
-                <div class="info-row">
-                    <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
-                    <p class="info-text">{{ item.updated_at|date:"d/m/Y H:i" }}</p>
+            <div class="mt-4 pt-3 border-top">
+                <div class="info-row mb-3">
+                    <label class="info-label-small text-muted">REGISTRADO EL</label>
+                    <p class="info-text mb-0 small fw-bold">{{ item.fecha_registro|date:"d/m/Y H:i" }}</p>
                 </div>
-                
+                <div class="info-row mb-3">
+                    <label class="info-label-small text-muted">ÚLTIMA ACTUALIZACIÓN</label>
+                    <p class="info-text mb-0 small">{{ item.updated_at|date:"d/m/Y H:i" }}</p>
+                </div>
                 <div class="info-row">
-                    <label class="info-label-small">ID INTERNO</label>
-                    <p class="info-text fw-bold">{{ item.pk }}</p>
+                    <label class="info-label-small text-muted">ID INTERNO</label>
+                    <p class="info-text mb-0 small fw-monospace">#{{ item.pk }}</p>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 {% endblock %}

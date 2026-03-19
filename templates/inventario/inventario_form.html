@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Inventario{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-modern p-4 shadow-sm">
+            <h4 class="fw-bold mb-4 text-primary">{{ titulo }}</h4>
+            
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row g-3">
+                    <!-- Producto -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Producto *</label>
+                        {{ form.producto }}
+                        {% if form.producto.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.producto.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Bodega -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Bodega *</label>
+                        {{ form.bodega }}
+                        {% if form.bodega.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.bodega.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Proveedor -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Proveedor</label>
+                        {{ form.proveedor }}
+                        {% if form.proveedor.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.proveedor.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted" style="font-size: 0.7rem;">Opcional.</small>
+                    </div>
+
+                    <!-- Cantidad Disponible (Total Físico) -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Cantidad Total (Física) *</label>
+                        {{ form.cantidad_disponible }}
+                        {% if form.cantidad_disponible.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.cantidad_disponible.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted" style="font-size: 0.7rem;">Stock físico real en bodega.</small>
+                    </div>
+
+                    <!-- NUEVO: Cantidad Reservada -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Cantidad Reservada</label>
+                        {{ form.cantidad_reservada }}
+                        {% if form.cantidad_reservada.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.cantidad_reservada.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted" style="font-size: 0.7rem;">Unidades apartadas para pedidos.</small>
+                    </div>
+
+                    <!-- Visualización Dinámica: Stock Real Disponible -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Stock Real Disponible</label>
+                        <input type="text" id="stock_real_display" class="form-control bg-light fw-bold" value="0" readonly>
+                        <small class="text-muted" style="font-size: 0.7rem;">Cálculo automático (Total - Reservado).</small>
+                    </div>
+
+                    <!-- Fecha Llegada -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Fecha Llegada</label>
+                        {{ form.fecha_llegada }}
+                        {% if form.fecha_llegada.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.fecha_llegada.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="col-md-6">
+                        <label class="form-label small text-muted fw-bold">Estado</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle-fill"></i> {{ form.estado.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted" style="font-size: 0.7rem;">Se actualiza automáticamente según las cantidades, pero puedes forzarlo.</small>
+                    </div>
+                </div>
+
+                <div class="mt-5 d-flex justify-content-end gap-2 border-top pt-3">
+                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-x-lg me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-nuevo px-4">
+                        <i class="bi bi-check-lg me-1"></i> Guardar Registro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Script para cálculo en tiempo real -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputTotal = document.querySelector('input[name="cantidad_disponible"]');
+        const inputReservada = document.querySelector('input[name="cantidad_reservada"]');
+        const displayReal = document.getElementById('stock_real_display');
+        const selectEstado = document.querySelector('select[name="estado"]');
+
+        function calcularStock() {
+            const total = parseInt(inputTotal.value) || 0;
+            const reservada = parseInt(inputReservada.value) || 0;
+            const real = total - reservada;
+            
+            // Actualizar display
+            displayReal.value = real;
+            
+            // Cambiar color si es negativo
+            if (real < 0) {
+                displayReal.classList.add('text-danger');
+                displayReal.classList.remove('text-success');
+            } else if (real === 0) {
+                displayReal.classList.remove('text-danger', 'text-success');
+            } else {
+                displayReal.classList.add('text-success');
+                displayReal.classList.remove('text-danger');
+            }
+
+            // Sugerir estado automáticamente (opcional, solo visual)
+            if (total === 0) {
+                selectEstado.value = 'AGOTADO';
+            } else if (reservada > 0 && reservada >= total) {
+                selectEstado.value = 'COMPROMETIDO';
+            } else if (reservada > 0) {
+                selectEstado.value = 'COMPROMETIDO';
+            } else {
+                selectEstado.value = 'DISPONIBLE';
+            }
+        }
+
+        if (inputTotal && inputReservada) {
+            inputTotal.addEventListener('input', calcularStock);
+            inputReservada.addEventListener('input', calcularStock);
+            // Calcular al cargar por si estamos editando
+            calcularStock();
+        }
+    });
+</script>
+{% endblock %}

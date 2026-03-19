@@ -176,7 +176,7 @@ body.theme-dark {
   padding: 24px 20px;
   text-align: center;
   border-bottom: 1px solid var(--border-sidebar);
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: var(--bg-sidebar);
 }
 
 .logo-img {

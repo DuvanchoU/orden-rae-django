@@ -1,6 +1,7 @@
 from django import forms
 from .models import Inventario, Producto, Categorias, Bodegas, Proveedores
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 class ProductoForm(forms.ModelForm):
     # Campo manual para el proveedor (ya que el modelo usa proveedor_id como entero)
@@ -97,18 +98,52 @@ class ProductoForm(forms.ModelForm):
 class InventarioForm(forms.ModelForm):
     class Meta:
         model = Inventario
-        fields = ['producto', 'bodega', 'proveedor', 'cantidad_disponible', 'fecha_llegada', 'estado']
+        fields = ['producto', 'bodega', 'proveedor', 'cantidad_disponible', 'cantidad_reservada', 'fecha_llegada', 'estado']
         widgets = {
-            'producto': forms.Select(attrs={'class': 'form-select', 'required': True}),
-            'bodega': forms.Select(attrs={'class': 'form-select', 'required': True}),
-            'proveedor': forms.Select(attrs={'class': 'form-select'}),
-            'cantidad_disponible': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'required': True}),
-            'fecha_llegada': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'estado': forms.Select(attrs={'class': 'form-select', 'required': True}),
+            'producto': forms.Select(attrs={
+                'class': 'form-select', 
+                'required': True,
+                'data-placeholder': "Seleccione un producto..." 
+            }),
+            'bodega': forms.Select(attrs={
+                'class': 'form-select', 
+                'required': True
+            }),
+            'proveedor': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'cantidad_disponible': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'min': '0', 
+                'step': '1', # Solo enteros
+                'required': True,
+                'placeholder': '0'
+            }),
+            'cantidad_reservada': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'min': '0', 
+                'step': '1',
+                'placeholder': '0',
+                'title': "Cantidad apartada para pedidos pendientes"
+            }),
+            'fecha_llegada': forms.DateInput(attrs={
+                'type': 'date', 
+                'class': 'form-control'
+            }),
+            'estado': forms.Select(attrs={
+                'class': 'form-select', 
+                'required': True
+            }),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # 1. Filtrar solo elementos activos (Soft Delete friendly)
+        self.fields['producto'].queryset = Producto.objects.filter(deleted_at__isnull=True).order_by('codigo_producto')
+        self.fields['bodega'].queryset = Bodegas.objects.filter(deleted_at__isnull=True).order_by('nombre_bodega')
+        self.fields['proveedor'].queryset = Proveedores.objects.filter(deleted_at__isnull=True).order_by('nombre')
+        
         self.fields['producto'].empty_label = "Seleccione un producto"
         self.fields['bodega'].empty_label = "Seleccione una bodega"
         self.fields['proveedor'].empty_label = "Seleccione un proveedor (Opcional)"
@@ -118,9 +153,52 @@ class InventarioForm(forms.ModelForm):
         self.fields['estado'].choices = [
             ('', 'Seleccione el estado'),
             ('DISPONIBLE', 'DISPONIBLE'),
-            ('RESERVADO', 'RESERVADO'),
+            ('COMPROMETIDO', 'COMPROMETIDO'),
             ('AGOTADO', 'AGOTADO'),
         ]
+
+    def clean_cantidad_disponible(self):
+        cantidad = self.cleaned_data.get('cantidad_disponible')
+        if cantidad is not None and cantidad < 0:
+            raise ValidationError("La cantidad total no puede ser negativa.")
+        return cantidad
+    
+    def clean_cantidad_reservada(self):
+        reservada = self.cleaned_data.get('cantidad_reservada')
+        if reservada is not None and reservada < 0:
+            raise ValidationError("La cantidad reservada no puede ser negativa.")
+        return reservada
+
+    def clean(self):
+        cleaned_data = super().clean()
+        disponible = cleaned_data.get('cantidad_disponible')
+        reservada = cleaned_data.get('cantidad_reservada')
+        producto = cleaned_data.get('producto')
+        bodega = cleaned_data.get('bodega')
+
+        # VALIDACIÓN: No reservar más de lo disponible
+        if disponible is not None and reservada is not None:
+            if reservada > disponible:
+                raise ValidationError(
+                    f"No puedes reservar {reservada} unidades si solo tienes {disponible} disponibles."
+                )
+            
+        # Validación de Duplicados (Solo al crear, no al editar)
+        if not self.instance.pk and producto and bodega:
+            existe = Inventario.objects.filter(
+                producto=producto, 
+                bodega=bodega, 
+                deleted_at__isnull=True
+            ).exists()
+            
+            if existe:
+                raise ValidationError(
+                    f"Ya existe un registro de inventario para el producto '{producto.codigo_producto}' "
+                    f"en la bodega '{bodega.nombre_bodega}'. Por favor edite el registro existente."
+                )
+        
+        return cleaned_data
+    
 
 class BodegaForm(forms.ModelForm):
     class Meta:

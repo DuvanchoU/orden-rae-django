@@ -5,7 +5,7 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <div class="card-modern text-center p-5">
+        <div class="card-modern text-center p-5 shadow-sm">
             <!-- Icono -->
             <div class="mb-4">
                 <div style="width: 80px; height: 80px; margin: 0 auto; background-color: rgba(239, 68, 68, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
@@ -14,7 +14,7 @@
             </div>
             
             <!-- Título -->
-            <h4 class="fw-bold mb-3">¿Estás seguro?</h4>
+            <h4 class="fw-bold mb-3">¿Confirmar eliminación?</h4>
             
             <!-- Información del registro -->
             <div class="text-start bg-light rounded p-3 mb-4" style="background-color: var(--bg-elevated) !important;">
@@ -28,40 +28,52 @@
                         <p class="fw-semibold mb-0">{{ item.bodega.nombre_bodega }}</p>
                     </div>
                     <div class="col-6">
-                        <small class="text-muted">Cantidad:</small>
+                        <small class="text-muted">Total Físico:</small>
                         <p class="fw-semibold mb-0">{{ item.cantidad_disponible }}</p>
                     </div>
                     <div class="col-6">
-                        <small class="text-muted">Estado:</small>
-                        <p class="fw-semibold mb-0">
+                        <small class="text-muted">Reservado:</small>
+                        <p class="fw-semibold mb-0 text-warning">{{ item.cantidad_reservada|default:0 }}</p>
+                    </div>
+                    <div class="col-12 mt-2 pt-2 border-top">
+                        <small class="text-muted">Estado Actual:</small>
+                        <div class="mt-1">
                             {% if item.estado == 'DISPONIBLE' %}
                                 <span class="badge-estado disponible">DISPONIBLE</span>
-                            {% elif item.estado == 'RESERVADO' %}
-                                <span class="badge-estado reservado">RESERVADO</span>
-                            {% else %}
+                            {% elif item.estado == 'COMPROMETIDO' %}
+                                <!-- CORRECCIÓN: Usar COMPROMETIDO en lugar de RESERVADO -->
+                                <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
+                                    COMPROMETIDO
+                                </span>
+                            {% elif item.estado == 'AGOTADO' %}
                                 <span class="badge-estado agotado">AGOTADO</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ item.estado }}</span>
                             {% endif %}
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Advertencia -->
-            <p class="text-muted mb-4">
-                Estás a punto de eliminar el registro <strong>#{{ item.id_inventario }}</strong>.
+            <!-- Advertencia Corregida (Soft Delete) -->
+            <p class="text-muted mb-4 px-2">
+                Estás a punto de <strong>ocultar</strong> el registro de inventario <strong>#{{ item.id_inventario }}</strong>.
                 <br>
-                <span class="text-danger fw-semibold">Esta acción no se puede deshacer.</span>
+                <span class="text-info fw-semibold small">
+                    <i class="bi bi-info-circle-fill"></i> 
+                    Esta acción es reversible (Soft Delete). El registro dejará de verse en la lista pero permanecerá en la base de datos.
+                </span>
             </p>
             
             <!-- Botones -->
             <form method="post">
                 {% csrf_token %}
                 <div class="d-flex justify-content-center gap-3">
-                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-x-lg me-1"></i>Cancelar
                     </a>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash-fill me-2"></i>Sí, Eliminar
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash-fill me-1"></i>Sí, Ocultar Registro
                     </button>
                 </div>
             </form>

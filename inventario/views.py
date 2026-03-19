@@ -168,13 +168,23 @@ class ProductoUpdateView(UpdateView):
         messages.error(self.request, 'Error al actualizar. Revise los campos.')
         return super().form_invalid(form)
 
-# Vista personalizada para Soft Delete
+# ------------------------------------------------------------------
+# ELIMINAR PRODUCTO (SOFT DELETE) - CORREGIDO
+# ------------------------------------------------------------------
 class ProductoDeleteView(View):
+    
+    # 1. Método GET: Muestra la página de confirmación
+    def get(self, request, pk):
+        # Obtenemos el producto para mostrar sus datos en la plantilla
+        producto = get_object_or_404(Producto, pk=pk, deleted_at__isnull=True)
+        return render(request, 'inventario/producto_confirm_delete.html', {'object': producto})
+
+    # 2. Método POST: Ejecuta el borrado lógico (Soft Delete)
     def post(self, request, pk):
         try:
             producto = get_object_or_404(Producto, pk=pk, deleted_at__isnull=True)
-            producto.soft_delete() # Usa el método del modelo
-            messages.success(request, f'Producto "{producto.codigo_producto}" eliminado correctamente.')
+            producto.soft_delete() # Usa el método del modelo que ya creamos
+            messages.success(request, f'Producto "{producto.codigo_producto}" eliminado correctamente (Oculto).')
         except Exception as e:
             messages.error(request, f'Error al eliminar: {str(e)}')
         return redirect('inventario:producto_list')
@@ -205,7 +215,7 @@ class ProductoDetailView(DetailView):
         return context
     
 # ------------------------------------------------------------------
-# BODEGAS (Patrón similar aplicado a todos)
+# BODEGAS 
 # ------------------------------------------------------------------
 class BodegaListView(ListView):
     model = Bodegas
@@ -396,72 +406,256 @@ class ProveedorDetailView(DetailView):
     context_object_name = 'proveedor'
 
 # ------------------------------------------------------------------
-# INVENTARIO
+# LISTA DE INVENTARIO (Con Filtros y Soft Delete)
 # ------------------------------------------------------------------
-class InventarioListView(ListView):
+class InventarioListView(ReportMixin, ListView):
     model = Inventario
     template_name = 'inventario/inventario_list.html'
     context_object_name = 'inventarios'
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # 1. Filtrar solo registros activos (Soft Delete)
+        # 2. Usar select_related para optimizar consultas SQL (trae producto, bodega y proveedor de una vez)
+        queryset = Inventario.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('producto', 'bodega', 'proveedor')
+
+        # Obtener parámetros de filtro
         producto = self.request.GET.get('producto')
         bodega = self.request.GET.get('bodega')
         estado = self.request.GET.get('estado')
 
+        # Aplicar filtros dinámicos
         if producto:
             queryset = queryset.filter(producto_id=producto)
         if bodega:
             queryset = queryset.filter(bodega_id=bodega)
         if estado:
             queryset = queryset.filter(estado=estado)
-            
+
+        # Ordenar por fecha de registro (más reciente primero)  
         return queryset.order_by('-fecha_registro')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['productos'] = Producto.objects.filter(deleted_at__isnull=True)
         context['bodegas'] = Bodegas.objects.all()
-        context['estados'] = ['DISPONIBLE', 'RESERVADO', 'AGOTADO']
+        context['estados'] = ['DISPONIBLE', 'COMPROMETIDO', 'AGOTADO']
         context['titulo'] = 'Inventario'
+
+        # --- AGREGA ESTO: Calcular stock libre para cada item ---
+        inventarios_con_calculo = []
+        for inv in context['inventarios']:
+            # Forzamos los valores a entero (si son None, usamos 0)
+            total = inv.cantidad_disponible or 0
+            reservado = inv.cantidad_reservada or 0
+            libre = total - reservado
+
+            # Guardamos el objeto original pero le añadimos un atributo extra 'stock_libre'
+            inv.stock_libre = libre 
+            inventarios_con_calculo.append(inv)
+            
+        # Sobrescribimos la lista de inventarios con la nueva que tiene el cálculo
+        context['inventarios'] = inventarios_con_calculo
+
         return context
 
+    # ============================================
+    # MÉTODOS PARA REPORTES (ReportMixin)
+    # ============================================
+    def get(self, request, *args, **kwargs):
+        # Verificar si se solicita un reporte
+        report_format = request.GET.get('format')
+        if report_format:
+            return self.render_report(report_format)
+        return super().get(request, *args, **kwargs)
+    
+    def get_report_template(self):
+        """Template específico para reporte de inventario"""
+        return 'reports/inventario_report.html'
+    
+    def get_report_data(self):
+        """Prepara los datos para el reporte"""
+        queryset = self.get_queryset()
+
+        # Headers y rows para Excel/CSV
+        headers = ['Producto', 'Código', 'Bodega', 'Stock Total', 'Disponible', 'Reservado', 'Estado']
+        rows = []
+        
+        # Contadores para el resumen
+        total_stock = 0
+        total_disponible = 0
+        total_reservado = 0
+        bodegas_activas = 0
+        
+        # Contar bodegas únicas
+        bodegas_set = set()
+
+        for item in queryset:
+            # Calcular stock reservado (si existe el campo)
+            cantidad_reservada = getattr(item, 'cantidad_reservada', 0) or 0
+            stock_libre = item.cantidad_disponible - cantidad_reservada
+            
+            rows.append([
+                f"{item.producto.codigo_producto} - {item.producto.referencia_producto or ''}",
+                item.producto.codigo_producto,
+                item.bodega.nombre_bodega,
+                item.cantidad_disponible,
+                stock_libre,
+                cantidad_reservada,
+                item.estado
+            ])
+
+            total_stock += item.cantidad_disponible
+            total_disponible += stock_libre
+            total_reservado += cantidad_reservada
+            bodegas_set.add(item.bodega.id_bodega)
+        
+        bodegas_activas = len(bodegas_set)
+        
+        # Contexto para PDF (HTML)
+        context = {
+            'report_title': 'Reporte de Inventario',
+            'report_subtitle': 'Control de stock por bodega',
+            'headers': headers,
+            'rows': rows,
+            'generated_at': timezone.now(),
+            'total_records': queryset.count(),
+            'total_stock': total_stock,
+            'total_disponible': total_disponible,
+            'total_reservado': total_reservado,
+            'bodegas_activas': bodegas_activas,
+            'filters_applied': self._get_filters_summary(),
+        }
+
+        return {
+            'headers': headers,
+            'rows': rows,
+            'context': context,
+            'filename': f"inventario_{timezone.now().strftime('%Y%m%d')}"
+        }
+
+    def _get_filters_summary(self):
+        """Resume los filtros aplicados para el reporte"""
+        filters = []
+        if self.request.GET.get('producto'):
+            prod = Producto.objects.filter(id_producto=self.request.GET['producto']).first()
+            if prod:
+                filters.append(f"Producto: {prod.codigo_producto}")
+        if self.request.GET.get('bodega'):
+            bod = Bodegas.objects.filter(id_bodega=self.request.GET['bodega']).first()
+            if bod:
+                filters.append(f"Bodega: {bod.nombre_bodega}")
+        if self.request.GET.get('estado'):
+            filters.append(f"Estado: {self.request.GET['estado']}")
+        return ', '.join(filters) if filters else 'Ninguno'
+    
+# ------------------------------------------------------------------
+# CREAR REGISTRO
+# ------------------------------------------------------------------
 class InventarioCreateView(CreateView):
     model = Inventario
-    template_name = 'inventario/inventario_create.html'
+    template_name = 'inventario/inventario_form.html'
     form_class = InventarioForm
     success_url = reverse_lazy('inventario:inventario_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Registro de Inventario'
         return context
+    
     def form_valid(self, form):
-        messages.success(self.request, 'Registro de inventario creado.')
+        # Mensaje personalizado con el código del producto
+        messages.success(self.request, 
+                         f"Inventario creado exitosamente para '{form.instance.producto.codigo_producto}' en '{form.instance.bodega.nombre_bodega}'."
+        )
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, "Error al crear. Verifique que no exista un registro duplicado para este producto y bodega.")
+        return super().form_invalid(form)
 
+# ------------------------------------------------------------------
+# EDITAR REGISTRO
+# ------------------------------------------------------------------
 class InventarioUpdateView(UpdateView):
     model = Inventario
-    template_name = 'inventario/inventario_create.html'
+    template_name = 'inventario/inventario_form.html'
     form_class = InventarioForm
     success_url = reverse_lazy('inventario:inventario_list')
+
+    def get_queryset(self):
+        # Solo permitir editar registros que NO estén eliminados
+        return Inventario.objects.filter(deleted_at__isnull=True)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Inventario'
         return context
+    
     def form_valid(self, form):
-        messages.success(self.request, 'Inventario actualizado.')
+        messages.success(self.request, "Registro de inventario actualizado correctamente.")
         return super().form_valid(form)
 
-class InventarioDeleteView(DeleteView):
-    model = Inventario
-    template_name = 'inventario/inventario_confirm_delete.html'
-    success_url = reverse_lazy('inventario:inventario_list')
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Registro eliminado.')
-        return super().delete(request, *args, **kwargs)
+    def form_invalid(self, form):
+        messages.error(self.request, "Error al actualizar. Revise los datos ingresados.")
+        return super().form_invalid(form)
+    
+# ------------------------------------------------------------------
+# ELIMINAR REGISTRO (SOFT DELETE) - SOLUCIÓN RÁPIDA
+# ------------------------------------------------------------------
+class InventarioDeleteView(View):
+    
+    # 1. Método GET: Muestra la página de confirmación
+    def get(self, request, pk):
+        item = get_object_or_404(Inventario, pk=pk, deleted_at__isnull=True)
+        return render(request, 'inventario/inventario_confirm_delete.html', {'item': item})
 
+    # 2. Método POST: Ejecuta el borrado real
+    def post(self, request, pk):
+        try:
+            item = get_object_or_404(Inventario, pk=pk, deleted_at__isnull=True)
+            item.deleted_at = timezone.now()
+            item.save()
+            messages.success(request, "Registro eliminado correctamente (Oculto).")
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            
+        return redirect('inventario:inventario_list')
+
+# ------------------------------------------------------------------
+# DETALLE DEL REGISTRO
+# ------------------------------------------------------------------
 class InventarioDetailView(DetailView):
     model = Inventario
     template_name = 'inventario/inventario_detail.html'
     context_object_name = 'item'
+
+    def get_queryset(self):
+        # Solo mostrar detalles de registros activos
+        # select_related es crucial aquí para no hacer consultas extra al acceder a producto/bodega/proveedor
+        return Inventario.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('producto', 'bodega', 'proveedor')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Obtener el objeto actual
+        item = self.object
+        
+        # --- CÁLCULO DE STOCK SEGURO EN PYTHON ---
+        # Usamos 'or 0' para asegurar que si viene None, se trate como 0
+        total = item.cantidad_disponible or 0
+        reservado = item.cantidad_reservada or 0
+        
+        # Calculamos el libre
+        stock_libre = total - reservado
+        
+        # Inyectamos las variables calculadas al contexto del template
+        context['stock_libre'] = stock_libre
+        context['total_fisico'] = total
+        context['cantidad_reservada'] = reservado
+        
+        return context

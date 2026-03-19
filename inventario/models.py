@@ -181,29 +181,37 @@ class Inventario(models.Model):
 
     producto = models.ForeignKey(
         'Producto', 
-        on_delete=models.DO_NOTHING, 
+        on_delete=models.PROTECT, # CAMBIO IMPORTANTE: No dejar borrar un producto si tiene inventario
         db_column='producto_id', 
-        to_field='id_producto'
+        to_field='id_producto',
+        related_name='inventarios'
     )
     bodega = models.ForeignKey(
         Bodegas, 
-        on_delete=models.DO_NOTHING, 
+        on_delete=models.PROTECT, 
         db_column='bodega_id',
-        to_field='id_bodega'
+        to_field='id_bodega',
+        related_name='inventarios'
     )
     proveedor = models.ForeignKey(
         'Proveedores', 
-        on_delete=models.DO_NOTHING, 
+        on_delete=models.SET_NULL, # Si borran el proveedor, queda null pero no se borra el inventario
         db_column='proveedor_id',
         to_field='id_proveedor',
         blank=True, 
-        null=True
+        null=True,
+        related_name='inventarios'
     )
     
     cantidad_disponible = models.IntegerField(default=0)
+    cantidad_reservada = models.IntegerField(default=0, help_text="Cantidad reservada para pedidos pendientes")
     fecha_llegada = models.DateField(blank=True, null=True)
     fecha_registro = models.DateTimeField(auto_now_add=True) 
-    estado = models.CharField(max_length=12, default='DISPONIBLE')
+    estado = models.CharField(max_length=12, default='DISPONIBLE', choices=[
+        ('DISPONIBLE', 'Disponible'),
+        ('COMPROMETIDO', 'Comprometido'),
+        ('AGOTADO', 'Agotado')
+    ])
     
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
@@ -212,15 +220,86 @@ class Inventario(models.Model):
     class Meta:
         managed = False
         db_table = 'inventario'
+        ordering = ['-fecha_registro']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Forzar 0 si es None inmediatamente al cargar el objeto
+        if self.cantidad_reservada is None:
+            self.cantidad_reservada = 0
+
+    def clean(self):
+        # Validación 1: Stock no negativo
+        if self.cantidad_disponible < 0:
+            raise ValidationError("La cantidad disponible no puede ser negativa.")
+        
+        # Validación 2: Cantidad reservada no puede ser mayor a la disponible
+        if self.cantidad_reservada > self.cantidad_disponible:
+            raise ValidationError("La cantidad reservada no puede ser mayor a la disponible.")
+
+        # Validación 3: Estado coherente con cantidad
+        if self.cantidad_disponible == 0 and self.estado != 'AGOTADO':
+            # Advertencia o forzamos estado (depende de tu política). Aquí solo validamos lógica.
+            pass 
+        
+        # Validación 4: Producto y Bodega no deben estar eliminados
+        if self.producto.deleted_at:
+            raise ValidationError("No se puede asociar inventario a un producto eliminado.")
+        if self.bodega.deleted_at:
+            raise ValidationError("No se puede asociar inventario a una bodega eliminada.")
+        
     def save(self, *args, **kwargs):
+        # Auto-fechas
         if not self.created_at:
             self.created_at = timezone.now()
         self.updated_at = timezone.now()
+
+        # Ejecutar validaciones antes de guardar
+        self.full_clean()
+
+        # Lógica automática de estado considerando lo reservado
+        stock_real = self.cantidad_disponible - self.cantidad_reservada
+        
+        if stock_real <= 0:
+            self.estado = 'AGOTADO' 
+        elif self.cantidad_reservada > 0:
+            self.estado = 'COMPROMETIDO'
+        else:
+            self.estado = 'DISPONIBLE'
+
         super().save(*args, **kwargs)
 
+    def agregar_stock(self, cantidad, proveedor=None, fecha=None):
+        """Método seguro para aumentar stock"""
+        if cantidad <= 0:
+            raise ValidationError("La cantidad a agregar debe ser positiva.")
+        self.cantidad_disponible += cantidad
+        if proveedor:
+            self.proveedor = proveedor
+        if fecha:
+            self.fecha_llegada = fecha
+        self.save()
+
+    def retirar_stock(self, cantidad):
+        """Método seguro para disminuir stock"""
+        if cantidad <= 0:
+            raise ValidationError("La cantidad a retirar debe ser positiva.")
+        if self.cantidad_disponible < cantidad:
+            raise ValidationError(f"Stock insuficiente. Disponible: {self.cantidad_disponible}")
+        
+        self.cantidad_disponible -= cantidad
+        self.save()
+
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def restore(self):
+        self.deleted_at = None
+        self.save()
+
     def __str__(self):
-        return f"{self.producto.codigo_producto} en {self.bodega.nombre_bodega}"
+        return f"{self.producto.codigo_producto} ({self.cantidad_disponible}) en {self.bodega.nombre_bodega}"
 
 class ImagenesProducto(models.Model):
     id_imagen = models.AutoField(primary_key=True)

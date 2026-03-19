@@ -1,0 +1,78 @@
+{% extends 'reports/base_report.html' %}
+
+{% block content %}
+
+<!-- RESUMEN EN HORIZONTAL (Compacto) -->
+<table style="width: 60%; margin: 8px auto; border: 1px solid #E7E5E4; border-radius: 4px; border-collapse: collapse;">
+    <tr>
+        <td style="width: 25%; text-align: center; padding: 6px 10px; border-right: 1px solid #E7E5E4;">
+            <div style="font-size: 13px; font-weight: bold; color: #C2A27C; margin-bottom: 2px;">
+                {{ total_stock }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Stock Total
+            </div>
+        </td>
+        <td style="width: 25%; text-align: center; padding: 6px 10px; border-right: 1px solid #E7E5E4;">
+            <div style="font-size: 13px; font-weight: bold; color: #166534; margin-bottom: 2px;">
+                {{ total_disponible }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Disponible
+            </div>
+        </td>
+        <td style="width: 25%; text-align: center; padding: 6px 10px; border-right: 1px solid #E7E5E4;">
+            <div style="font-size: 13px; font-weight: bold; color: #f59e0b; margin-bottom: 2px;">
+                {{ total_reservado }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Reservado
+            </div>
+        </td>
+        <td style="width: 25%; text-align: center; padding: 6px 10px;">
+            <div style="font-size: 13px; font-weight: bold; color: #3b82f6; margin-bottom: 2px;">
+                {{ bodegas_activas }}
+            </div>
+            <div style="font-size: 6px; color: #6B7280; text-transform: uppercase;">
+                Bodegas
+            </div>
+        </td>
+    </tr>
+</table>
+
+<!-- TABLA DE INVENTARIO -->
+<table>
+    <thead>
+        <tr>
+            <th style="width: 25%;">Producto</th>
+            <th style="width: 12%;">Código</th>
+            <th style="width: 18%;">Bodega</th>
+            <th style="width: 10%;">Total</th>
+            <th style="width: 10%;">Disponible</th>
+            <th style="width: 10%;">Reservado</th>
+            <th style="width: 15%;">Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.0 }}</td>
+            <td>{{ row.1 }}</td>
+            <td>{{ row.2 }}</td>
+            <td style="font-weight: bold;">{{ row.3 }}</td>
+            <td style="color: #166534; font-weight: bold;">{{ row.4 }}</td>
+            <td style="color: #f59e0b;">{{ row.5 }}</td>
+            <td>
+                {% if 'DISPONIBLE' in row.6 %}
+                    <span class="badge success">Disponible</span>
+                {% elif 'COMPROMETIDO' in row.6 %}
+                    <span class="badge" style="background: #FEF3C7; color: #92400E;">Comprometido</span>
+                {% else %}
+                    <span class="badge danger">Agotado</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

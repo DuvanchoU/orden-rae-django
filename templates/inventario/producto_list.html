@@ -151,14 +151,14 @@
                                 title="Editar">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
-                            <!-- ELIMINAR (CON POST PARA SOFT DELETE) -->
+                            <!-- ELIMINAR -->
                             <div class="action-wrapper">
-                                <form action="{% url 'inventario:producto_delete' producto.pk %}" method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este producto? Esta acción lo ocultará del listado.');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-action btn-action-delete" title="Eliminar">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                </form>
+                                <a href="{% url 'inventario:producto_delete' producto.pk %}" 
+                                    class="btn-action btn-action-delete" 
+                                    title="Eliminar"
+                                    onclick="return confirm('¿Estás seguro de eliminar este producto? Esta acción lo ocultará del listado.');">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -166,11 +166,7 @@
                 <tr>
                     <td colspan="7">
                         <div class="empty-state">
-                            <i class="bi bi-inbox"></i>
-                            <p>No hay productos registrados</p>
-                            <a href="{% url 'inventario:producto_create' %}" class="btn btn-nuevo">
-                                <i class="bi bi-plus-lg"></i>Crear primero
-                            </a>
+                            <p>No hay registros de inventario</p>
                         </div>
                     </td>
                 </tr>
