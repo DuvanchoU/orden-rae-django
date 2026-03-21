@@ -5,22 +5,84 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <div class="card-modern text-center">
+        <div class="card-modern text-center p-5">
+            <!-- Icono -->
             <div class="mb-4">
-                <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                <div style="width: 80px; height: 80px; margin: 0 auto; background-color: rgba(239, 68, 68, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2.5rem;"></i>
+                </div>
             </div>
+            
+            <!-- Título -->
             <h4 class="fw-bold mb-3">¿Estás seguro?</h4>
-            <p class="text-muted mb-4">
-                Estás a punto de eliminar el proveedor <strong>{{ object.nombre }}</strong>.
-                Esta acción no se puede deshacer.
+            
+            <!-- Información del Proveedor -->
+            <div class="text-start bg-light rounded p-3 mb-4" style="background-color: var(--bg-elevated) !important;">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <small class="text-muted">Nombre:</small>
+                        <p class="fw-semibold mb-0">{{ object.nombre }}</p>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">Email:</small>
+                        <p class="fw-semibold mb-0">{{ object.email|default:"Sin email" }}</p>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">Teléfono:</small>
+                        <p class="fw-semibold mb-0">{{ object.telefono|default:"Sin teléfono" }}</p>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">Estado:</small>
+                        <p class="fw-semibold mb-0">
+                            {% if object.estado == 'ACTIVO' %}
+                                <span class="badge-estado disponible">ACTIVO</span>
+                            {% else %}
+                                <span class="badge-estado agotado">INACTIVO</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    {% if tiene_pedidos %}
+                    <div class="col-12 mt-3">
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>¡Atención!</strong> Este proveedor tiene {{ cantidad_pedidos }} pedido(s) asociado(s).
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Advertencia -->
+            {% if tiene_pedidos %}
+            <p class="text-danger fw-semibold mb-4">
+                <i class="bi bi-ban"></i> No se puede eliminar este proveedor porque tiene pedidos asociados.
             </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'inventario:proveedor_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+            {% else %}
+            <p class="text-muted mb-4">
+                Estás a punto de desactivar el proveedor <strong>{{ object.nombre }}</strong>.
+                <br>
+                <span class="text-warning fw-semibold">Esta acción no eliminará los pedidos históricos.</span>
+            </p>
+            
+            <!-- Botones -->
             <form method="post">
                 {% csrf_token %}
                 <div class="d-flex justify-content-center gap-3">
-                    <a href="{% url 'inventario:proveedor_list' %}" class="btn btn-light border">Cancelar</a>
-                    <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+                    <a href="{% url 'inventario:proveedor_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash-fill me-2"></i>Sí, Desactivar
+                    </button>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>

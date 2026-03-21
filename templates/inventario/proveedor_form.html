@@ -7,7 +7,7 @@
     <div class="col-lg-8">
         <div class="card-modern p-4">
             <h4 class="fw-bold mb-4">{{ titulo }}</h4>
-            <form method="post">
+            <form method="post" novalidate>
                 {% csrf_token %}
                 
                 <div class="row g-3">
@@ -15,14 +15,18 @@
                         <label class="form-label small text-muted">Nombre *</label>
                         {{ form.nombre }}
                         {% if form.nombre.errors %}
-                            <div class="text-danger small">{{ form.nombre.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.nombre.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Teléfono</label>
                         {{ form.telefono }}
                         {% if form.telefono.errors %}
-                            <div class="text-danger small">{{ form.telefono.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.telefono.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
                     
@@ -30,14 +34,18 @@
                         <label class="form-label small text-muted">Email</label>
                         {{ form.email }}
                         {% if form.email.errors %}
-                            <div class="text-danger small">{{ form.email.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.email.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small text-muted">Dirección</label>
                         {{ form.direccion }}
                         {% if form.direccion.errors %}
-                            <div class="text-danger small">{{ form.direccion.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.direccion.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
 
@@ -45,7 +53,9 @@
                         <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado }}
                         {% if form.estado.errors %}
-                            <div class="text-danger small">{{ form.estado.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.estado.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
                 </div>

@@ -37,7 +37,7 @@
                         {% if proveedor.telefono %}
                             <i class="bi bi-telephone me-2 text-muted"></i>{{ proveedor.telefono }}
                         {% else %}
-                            No especificado
+                            <span class="text-muted">No especificado</span>
                         {% endif %}
                     </p>
                 </div>
@@ -47,9 +47,10 @@
                     <label class="info-label">EMAIL</label>
                     <p class="info-value">
                         {% if proveedor.email %}
-                            <i class="bi bi-envelope me-2 text-muted"></i>{{ proveedor.email }}
+                            <i class="bi bi-envelope me-2 text-muted"></i>
+                            <a href="mailto:{{ proveedor.email }}" class="text-decoration-none">{{ proveedor.email }}</a>
                         {% else %}
-                            No especificado
+                            <span class="text-muted">No especificado</span>
                         {% endif %}
                     </p>
                 </div>
@@ -61,7 +62,7 @@
                         {% if proveedor.direccion %}
                             <i class="bi bi-geo-alt me-2 text-muted"></i>{{ proveedor.direccion }}
                         {% else %}
-                            No especificado
+                            <span class="text-muted">No especificado</span>
                         {% endif %}
                     </p>
                 </div>
@@ -83,12 +84,52 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Compras Asociadas (si existen) -->
+        {% if proveedor.compras_set.all %}
+        <div class="info-card p-4 mt-4">
+            <h5 class="fw-bold mb-3">Compras Asociadas</h5>
+            <div class="table-responsive">
+                <table class="table table-compact mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compra in proveedor.compras_set.all|slice:":5" %}
+                        <tr>
+                            <td>{{ compra.fecha_compra|date:"d/m/Y" }}</td>
+                            <td class="fw-bold">${{ compra.total_compra|floatformat:0 }}</td>
+                            <td>
+                                {% if compra.estado == 'RECIBIDA' %}
+                                    <span class="badge-estado disponible">RECIBIDA</span>
+                                {% elif compra.estado == 'APROBADA' %}
+                                    <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b;">APROBADA</span>
+                                {% else %}
+                                    <span class="badge-estado agotado">PENDIENTE</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if proveedor.compras_set.count > 5 %}
+                <p class="text-muted small mt-2 mb-0">
+                    * Mostrando 5 de {{ proveedor.compras_set.count }} compras
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
     
     <!-- Tarjeta Lateral - Acciones e Información -->
     <div class="col-lg-4">
         <div class="sidebar-card p-4">
-            <h5 class="sidebar-title">Información Adicional</h5>
+            <h5 class="sidebar-title">Acciones Rápidas</h5>
             <hr class="sidebar-divider">
             
             <!-- Botones de Acción -->
@@ -103,10 +144,22 @@
                    {% if not proveedor.email %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
                     <i class="bi bi-envelope me-2"></i>Enviar Email
                 </a>
+                <a href="{% url 'inventario:proveedor_delete' proveedor.pk %}" 
+                   class="btn-action-secondary text-danger"
+                   style="border-color: rgba(239, 68, 68, 0.3);"
+                   onclick="return confirm('¿Estás seguro de desactivar este proveedor?');">
+                    <i class="bi bi-trash-fill me-2"></i>Desactivar
+                </a>
             </div>
             
-            <div class="mt-4">
+            <!-- Información del Sistema -->
+            <div class="mt-4 pt-3" style="border-top: 1px solid var(--border-subtle);">
                 <h6 class="fw-bold mb-3" style="font-size: 0.9rem;">Información del Sistema</h6>
+                
+                <div class="info-row">
+                    <label class="info-label-small">ID INTERNO</label>
+                    <p class="info-text fw-bold">{{ proveedor.pk }}</p>
+                </div>
                 
                 <div class="info-row">
                     <label class="info-label-small">CREADO EL</label>
@@ -117,11 +170,24 @@
                     <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
                     <p class="info-text">{{ proveedor.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
                 </div>
-                
-                <div class="info-row">
-                    <label class="info-label-small">ID INTERNO</label>
-                    <p class="info-text fw-bold">{{ proveedor.pk }}</p>
-                </div>
             </div>
         </div>
+        
+        <!-- Estadísticas -->
+        {% if total_compras > 0 %}
+        <div class="sidebar-card p-4 mt-4">
+            <h5 class="sidebar-title mb-3">Estadísticas</h5>
+            <div class="text-center">
+                <div class="mb-3">
+                    <i class="bi bi-cart-fill" style="font-size: 2rem; color: var(--accent);"></i>
+                </div>
+                <p class="fw-bold fs-4 mb-1" style="color: var(--accent);">
+                    {{ total_compras }}
+                </p>
+                <p class="text-muted small mb-0">Compras realizadas</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

@@ -130,39 +130,77 @@
     
     <!-- Paginación -->
     {% if is_paginated %}
-    <div class="pagination-container d-flex justify-content-between align-items-center">
+    <div class="pagination-container d-flex justify-content-between align-items-center mt-4 pt-3">
         <span class="pagination-info">
             Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            {% if page_obj.paginator.count %}
+                ({{ page_obj.paginator.count }} registros)
+            {% endif %}
         </span>
-        <nav>
-            <ul class="pagination-compact">
+        
+        <nav aria-label="Paginación de resultados">
+            <ul class="pagination-compact mb-0">
+                
+                <!-- Botón ANTERIOR -->
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">
-                        Anterior
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                        <i class="bi bi-chevron-left me-1"></i>Anterior
                     </a>
                 </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="bi bi-chevron-left me-1"></i>Anterior</span>
+                </li>
                 {% endif %}
-                
+
+                <!-- Números de Página -->
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
+                        <!-- Página Actual -->
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">
-                            {{ num }}
-                        </a>
-                    </li>
+                        <!-- Páginas cercanas -->
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% elif num == 1 %}
+                        <!-- Primera página -->
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                                1
+                            </a>
+                        </li>
+                        {% if num != 2 and num != page_obj.number|add:'-2' %}
+                             <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% elif num == page_obj.paginator.num_pages %}
+                         <!-- Última página -->
+                         {% if num != page_obj.number|add:'2' and num != page_obj.paginator.num_pages|add:'-1' %}
+                             <li class="page-item disabled"><span class="page-link">...</span></li>
+                         {% endif %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
                     {% endif %}
                 {% endfor %}
-                
+
+                <!-- Botón SIGUIENTE -->
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">
-                        Siguiente
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}">
+                        Siguiente<i class="bi bi-chevron-right ms-1"></i>
                     </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Siguiente<i class="bi bi-chevron-right ms-1"></i></span>
                 </li>
                 {% endif %}
             </ul>

@@ -6,9 +6,12 @@ from django.utils import timezone
 from django.contrib import messages
 from .models import Producto, Bodegas, Categorias, Proveedores, Inventario
 from .forms import InventarioForm, ProductoForm, BodegaForm, CategoriaForm, ProveedorForm
+from .report_services import (
+    get_productos_report_data, 
+    get_inventario_report_data, 
+    get_proveedores_report_data
+)
 from reports.generators.mixins import ReportMixin
-from django.conf import settings
-import os
 
 # ------------------------------------------------------------------
 # PRODUCTOS
@@ -20,24 +23,20 @@ class ProductoListView(ReportMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        # FILTRO CRÍTICO: Solo mostrar productos no eliminados (Soft Delete)
+        # Solo mostrar productos no eliminados (Soft Delete)
         queryset = Producto.objects.filter(deleted_at__isnull=True)
-        
         categoria = self.request.GET.get('categoria')
         estado = self.request.GET.get('estado')
         busqueda = self.request.GET.get('busqueda')
 
-        if categoria:
-            queryset = queryset.filter(categoria_id=categoria)
-        if estado:
-            queryset = queryset.filter(estado=estado)
+        if categoria: queryset = queryset.filter(categoria_id=categoria)
+        if estado: queryset = queryset.filter(estado=estado)
         if busqueda:
             queryset = queryset.filter(
                 Q(codigo_producto__icontains=busqueda) |
                 Q(referencia_producto__icontains=busqueda) |
                 Q(color_producto__icontains=busqueda)
             )
-
         # ORDENAMIENTO: Primero por Código (A-Z)
         return queryset.order_by('codigo_producto','-created_at')
 
@@ -47,84 +46,14 @@ class ProductoListView(ReportMixin, ListView):
         context['estados'] = ['DISPONIBLE', 'AGOTADO']
         context['titulo'] = 'Listado de Productos'
         return context
-
-    # ============================================
-    # MÉTODOS PARA REPORTES (ReportMixin)
-    # ============================================
-    def get(self, request, *args, **kwargs):
-        # Verificar si se solicita un reporte
-        report_format = request.GET.get('format')
-        if report_format:
-            return self.render_report(report_format)
-        return super().get(request, *args, **kwargs)
     
+    # Métodos de Reporte (Delegados al servicio)
     def get_report_template(self):
-        """Template específico para reporte de productos"""
         return 'reports/productos_report.html'
     
     def get_report_data(self):
-        """Prepara los datos para el reporte"""
-        queryset = self.get_queryset()
-        
-        # Headers y rows para Excel/CSV
-        headers = ['Código', 'Producto', 'Categoría', 'Color', 'Precio', 'Estado']
-        rows = []
-        
-        # Contadores para el resumen
-        disponibles = 0
-        agotados = 0
+        return get_productos_report_data(self.get_queryset(), self.request)
 
-        for producto in queryset:
-            rows.append([
-                producto.codigo_producto,
-                f"{producto.referencia_producto or 'Sin referencia'}",
-                producto.categoria.nombre_categoria,
-                producto.color_producto or '-',
-                f"${producto.precio_actual:,.0f}".replace(',', '.'),
-                producto.estado
-            ])
-            
-            if producto.estado == 'DISPONIBLE':
-                disponibles += 1
-            else:
-                agotados += 1
-                
-        logo_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'img/Super_Bodega_Logo.PNG')
-        logo_path = f'file:///{logo_path.replace("\\", "/")}'
-
-        # Contexto para PDF (HTML)
-        context = {
-            'report_title': 'Reporte de Productos',
-            'report_subtitle': 'Catálogo de productos del inventario',
-            'headers': headers,
-            'rows': rows,
-            'generated_at': timezone.now(),
-            'logo_path': logo_path,
-            'total_records': queryset.count(),
-            'productos_disponibles': disponibles,
-            'productos_agotados': agotados,
-            'filters_applied': self._get_filters_summary(),
-        }
-        
-        return {
-            'headers': headers,
-            'rows': rows,
-            'context': context,
-            'filename': f"productos_{timezone.now().strftime('%Y%m%d')}"
-        }
-    
-    def _get_filters_summary(self):
-        """Resume los filtros aplicados para el reporte"""
-        filters = []
-        if self.request.GET.get('busqueda'):
-            filters.append(f"Búsqueda: {self.request.GET['busqueda']}")
-        if self.request.GET.get('categoria'):
-            cat = Categorias.objects.filter(id_categorias=self.request.GET['categoria']).first()
-            if cat:
-                filters.append(f"Categoría: {cat.nombre_categoria}")
-        if self.request.GET.get('estado'):
-            filters.append(f"Estado: {self.request.GET['estado']}")
-        return ', '.join(filters) if filters else 'Ninguno'
     
 class ProductoCreateView(CreateView):
     model = Producto
@@ -144,6 +73,7 @@ class ProductoCreateView(CreateView):
     def form_invalid(self, form):
         messages.error(self.request, 'Error al crear el producto. Verifique los datos.')
         return super().form_invalid(form)
+    
 
 class ProductoUpdateView(UpdateView):
     model = Producto
@@ -169,7 +99,7 @@ class ProductoUpdateView(UpdateView):
         return super().form_invalid(form)
 
 # ------------------------------------------------------------------
-# ELIMINAR PRODUCTO (SOFT DELETE) - CORREGIDO
+# ELIMINAR PRODUCTO (SOFT DELETE) 
 # ------------------------------------------------------------------
 class ProductoDeleteView(View):
     
@@ -188,6 +118,7 @@ class ProductoDeleteView(View):
         except Exception as e:
             messages.error(request, f'Error al eliminar: {str(e)}')
         return redirect('inventario:producto_list')
+    
 
 class ProductoDetailView(DetailView):
     model = Producto
@@ -222,10 +153,10 @@ class BodegaListView(ListView):
     template_name = 'inventario/bodega_list.html'
     context_object_name = 'bodegas'
     paginate_by = 10
-    # Nota: Si usas soft delete en Bodegas, agrega .filter(deleted_at__isnull=True) aquí
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # Solo mostrar bodegas no eliminadas (Soft Delete)
+        queryset = Bodegas.objects.filter(deleted_at__isnull=True)
         estado = self.request.GET.get('estado')
         busqueda = self.request.GET.get('busqueda')
 
@@ -243,40 +174,65 @@ class BodegaListView(ListView):
         context['estados'] = ['ACTIVA', 'INACTIVA']
         context['titulo'] = 'Bodegas'
         return context
+    
 
 class BodegaCreateView(CreateView):
     model = Bodegas
     template_name = 'inventario/bodega_form.html'
     form_class = BodegaForm
     success_url = reverse_lazy('inventario:bodega_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nueva Bodega'
         return context
+    
     def form_valid(self, form):
+        # Guardar timestamps automáticamente
+        form.instance.created_at = timezone.now()
+        form.instance.updated_at = timezone.now()
         messages.success(self.request, 'Bodega creada exitosamente.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error al crear la bodega. Verifica los datos.')
+        return super().form_invalid(form)
+    
 
 class BodegaUpdateView(UpdateView):
     model = Bodegas
     template_name = 'inventario/bodega_form.html'
     form_class = BodegaForm
     success_url = reverse_lazy('inventario:bodega_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Bodega'
         return context
+    
     def form_valid(self, form):
+        # Actualizar timestamp
+        form.instance.updated_at = timezone.now()
         messages.success(self.request, 'Bodega actualizada correctamente.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error al actualizar la bodega. Verifica los datos.')
+        return super().form_invalid(form)
+    
 
 class BodegaDeleteView(DeleteView):
     model = Bodegas
     template_name = 'inventario/bodega_confirm_delete.html'
     success_url = reverse_lazy('inventario:bodega_list')
+
     def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Bodega eliminada correctamente.')
-        return super().delete(request, *args, **kwargs)
+        # SOFT DELETE: En lugar de eliminar, marcar deleted_at
+        obj = self.get_object()
+        obj.deleted_at = timezone.now()
+        obj.save()
+        messages.success(self.request, 'Bodega desactivada correctamente.')
+        return redirect(self.success_url)
 
 # ------------------------------------------------------------------
 # CATEGORÍAS
@@ -288,7 +244,8 @@ class CategoriaListView(ListView):
     paginate_by = 15
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # Solo mostrar categorías, no eliminadas (Soft Delete)
+        queryset = Categorias.objects.filter(deleted_at__isnull=True)
         estado = self.request.GET.get('estado')
         busqueda = self.request.GET.get('busqueda')
         if estado:
@@ -302,56 +259,84 @@ class CategoriaListView(ListView):
         context['estados'] = ['activo', 'inactivo']
         context['titulo'] = 'Categorías'
         return context
+    
 
 class CategoriaCreateView(CreateView):
     model = Categorias
     template_name = 'inventario/categoria_form.html'
     form_class = CategoriaForm
     success_url = reverse_lazy('inventario:categoria_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nueva Categoría'
         return context
+    
     def form_valid(self, form):
+        # Guardar timestamps automáticamente
+        form.instance.created_at = timezone.now()
+        form.instance.updated_at = timezone.now()
         messages.success(self.request, 'Categoría creada exitosamente.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error al crear la categoría. Verifica los datos.')
+        return super().form_invalid(form)
+
 
 class CategoriaUpdateView(UpdateView):
     model = Categorias
     template_name = 'inventario/categoria_form.html'
     form_class = CategoriaForm
     success_url = reverse_lazy('inventario:categoria_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Categoría'
         return context
+    
     def form_valid(self, form):
+        # Actualizar timestamp
+        form.instance.updated_at = timezone.now()
         messages.success(self.request, 'Categoría actualizada correctamente.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error al actualizar la categoría. Verifica los datos.')
+        return super().form_invalid(form)
+    
 
 class CategoriaDeleteView(DeleteView):
     model = Categorias
     template_name = 'inventario/categoria_confirm_delete.html'
     success_url = reverse_lazy('inventario:categoria_list')
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Categoría eliminada correctamente.')
-        return super().delete(request, *args, **kwargs)
 
+    def delete(self, request, *args, **kwargs):
+        # SOFT DELETE: En lugar de eliminar, marcar deleted_at
+        obj = self.get_object()
+        obj.deleted_at = timezone.now()
+        obj.save()
+        messages.success(self.request, 'Categoría desactivada correctamente.')
+        return redirect(self.success_url)
+
+    def post(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
+    
 # ------------------------------------------------------------------
 # PROVEEDORES
 # ------------------------------------------------------------------
-class ProveedorListView(ListView):
+class ProveedorListView(ReportMixin, ListView):
     model = Proveedores
     template_name = 'inventario/proveedor_list.html'
     context_object_name = 'proveedores'
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # Solo mostrar proveedores no eliminados (Soft Delete)
+        queryset = Proveedores.objects.filter(deleted_at__isnull=True)
         estado = self.request.GET.get('estado')
         busqueda = self.request.GET.get('busqueda')
-        if estado:
-            queryset = queryset.filter(estado=estado)
+        if estado: queryset = queryset.filter(estado=estado)
         if busqueda:
             queryset = queryset.filter(
                 Q(nombre__icontains=busqueda) |
@@ -365,48 +350,117 @@ class ProveedorListView(ListView):
         context['estados'] = ['ACTIVO', 'INACTIVO']
         context['titulo'] = 'Proveedores'
         return context
+    
+    # Métodos de Reporte (Delegados al servicio)
+    def get_report_template(self):
+        return 'reports/proveedores_report.html'
+    
+    def get_report_data(self):
+        return get_proveedores_report_data(self.get_queryset(), self.request)
 
 class ProveedorCreateView(CreateView):
     model = Proveedores
     template_name = 'inventario/proveedor_form.html'
     form_class = ProveedorForm 
     success_url = reverse_lazy('inventario:proveedor_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Proveedor'
         return context
+    
     def form_valid(self, form):
-        messages.success(self.request, 'Proveedor registrado exitosamente.')
+        # Guardar timestamps automáticamente
+        form.instance.created_at = timezone.now()
+        form.instance.updated_at = timezone.now()
+        messages.success(self.request, f'Proveedor "{form.instance.nombre}" registrado exitosamente.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error al registrar el proveedor. Verifica los datos.')
+        return super().form_invalid(form)
+    
 
 class ProveedorUpdateView(UpdateView):
     model = Proveedores
     template_name = 'inventario/proveedor_form.html'
     form_class = ProveedorForm 
     success_url = reverse_lazy('inventario:proveedor_list')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Proveedor'
         return context
+    
     def form_valid(self, form):
-        messages.success(self.request, 'Proveedor actualizado correctamente.')
+        # Actualizar timestamp
+        form.instance.updated_at = timezone.now()
+        messages.success(self.request, f'Proveedor "{form.instance.nombre}" actualizado correctamente.')
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, 'Error al actualizar el proveedor. Verifica los datos.')
+        return super().form_invalid(form)
+    
 
 class ProveedorDeleteView(DeleteView):
     model = Proveedores
     template_name = 'inventario/proveedor_confirm_delete.html'
     success_url = reverse_lazy('inventario:proveedor_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Verificar si tiene pedidos/compras asociados
+        context['tiene_pedidos'] = self.object.tiene_pedidos_asociados()
+        context['cantidad_pedidos'] = self.object.compras_set.filter(deleted_at__isnull=True).count() if hasattr(self.object, 'compras_set') else 0
+        return context
+    
     def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Proveedor eliminado correctamente.')
-        return super().delete(request, *args, **kwargs)
+        obj = self.get_object()
+        
+        # VALIDACIÓN: No eliminar si tiene pedidos asociados
+        if obj.tiene_pedidos_asociados():
+            messages.error(
+                self.request, 
+                f'No se puede eliminar el proveedor "{obj.nombre}" porque tiene pedidos asociados.'
+            )
+            return redirect(self.success_url)
+        
+        # SOFT DELETE: Marcar deleted_at
+        obj.deleted_at = timezone.now()
+        obj.save()
+        
+        messages.success(self.request, f'Proveedor "{obj.nombre}" desactivado correctamente.')
+        return redirect(self.success_url)
+    
+    def post(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
+    
 
 class ProveedorDetailView(DetailView):
     model = Proveedores
     template_name = 'inventario/proveedor_detail.html'
     context_object_name = 'proveedor'
 
+    def get_queryset(self):
+        # Solo mostrar proveedores no eliminados
+        return Proveedores.objects.filter(deleted_at__isnull=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar información adicional
+        proveedor = self.get_object()
+        
+        # Contar pedidos/compras asociadas
+        if hasattr(proveedor, 'compras_set'):
+            context['total_compras'] = proveedor.compras_set.filter(deleted_at__isnull=True).count()
+        else:
+            context['total_compras'] = 0
+        
+        return context
+
 # ------------------------------------------------------------------
-# LISTA DE INVENTARIO (Con Filtros y Soft Delete)
+# LISTA DE INVENTARIO
 # ------------------------------------------------------------------
 class InventarioListView(ReportMixin, ListView):
     model = Inventario
@@ -427,12 +481,9 @@ class InventarioListView(ReportMixin, ListView):
         estado = self.request.GET.get('estado')
 
         # Aplicar filtros dinámicos
-        if producto:
-            queryset = queryset.filter(producto_id=producto)
-        if bodega:
-            queryset = queryset.filter(bodega_id=bodega)
-        if estado:
-            queryset = queryset.filter(estado=estado)
+        if producto: queryset = queryset.filter(producto_id=producto)
+        if bodega: queryset = queryset.filter(bodega_id=bodega)
+        if estado: queryset = queryset.filter(estado=estado)
 
         # Ordenar por fecha de registro (más reciente primero)  
         return queryset.order_by('-fecha_registro')
@@ -444,7 +495,7 @@ class InventarioListView(ReportMixin, ListView):
         context['estados'] = ['DISPONIBLE', 'COMPROMETIDO', 'AGOTADO']
         context['titulo'] = 'Inventario'
 
-        # --- AGREGA ESTO: Calcular stock libre para cada item ---
+        # Calcular stock libre para cada item
         inventarios_con_calculo = []
         for inv in context['inventarios']:
             # Forzamos los valores a entero (si son None, usamos 0)
@@ -461,95 +512,12 @@ class InventarioListView(ReportMixin, ListView):
 
         return context
 
-    # ============================================
-    # MÉTODOS PARA REPORTES (ReportMixin)
-    # ============================================
-    def get(self, request, *args, **kwargs):
-        # Verificar si se solicita un reporte
-        report_format = request.GET.get('format')
-        if report_format:
-            return self.render_report(report_format)
-        return super().get(request, *args, **kwargs)
-    
+    # Métodos de Reporte (Delegados al servicio)
     def get_report_template(self):
-        """Template específico para reporte de inventario"""
         return 'reports/inventario_report.html'
     
     def get_report_data(self):
-        """Prepara los datos para el reporte"""
-        queryset = self.get_queryset()
-
-        # Headers y rows para Excel/CSV
-        headers = ['Producto', 'Código', 'Bodega', 'Stock Total', 'Disponible', 'Reservado', 'Estado']
-        rows = []
-        
-        # Contadores para el resumen
-        total_stock = 0
-        total_disponible = 0
-        total_reservado = 0
-        bodegas_activas = 0
-        
-        # Contar bodegas únicas
-        bodegas_set = set()
-
-        for item in queryset:
-            # Calcular stock reservado (si existe el campo)
-            cantidad_reservada = getattr(item, 'cantidad_reservada', 0) or 0
-            stock_libre = item.cantidad_disponible - cantidad_reservada
-            
-            rows.append([
-                f"{item.producto.codigo_producto} - {item.producto.referencia_producto or ''}",
-                item.producto.codigo_producto,
-                item.bodega.nombre_bodega,
-                item.cantidad_disponible,
-                stock_libre,
-                cantidad_reservada,
-                item.estado
-            ])
-
-            total_stock += item.cantidad_disponible
-            total_disponible += stock_libre
-            total_reservado += cantidad_reservada
-            bodegas_set.add(item.bodega.id_bodega)
-        
-        bodegas_activas = len(bodegas_set)
-        
-        # Contexto para PDF (HTML)
-        context = {
-            'report_title': 'Reporte de Inventario',
-            'report_subtitle': 'Control de stock por bodega',
-            'headers': headers,
-            'rows': rows,
-            'generated_at': timezone.now(),
-            'total_records': queryset.count(),
-            'total_stock': total_stock,
-            'total_disponible': total_disponible,
-            'total_reservado': total_reservado,
-            'bodegas_activas': bodegas_activas,
-            'filters_applied': self._get_filters_summary(),
-        }
-
-        return {
-            'headers': headers,
-            'rows': rows,
-            'context': context,
-            'filename': f"inventario_{timezone.now().strftime('%Y%m%d')}"
-        }
-
-    def _get_filters_summary(self):
-        """Resume los filtros aplicados para el reporte"""
-        filters = []
-        if self.request.GET.get('producto'):
-            prod = Producto.objects.filter(id_producto=self.request.GET['producto']).first()
-            if prod:
-                filters.append(f"Producto: {prod.codigo_producto}")
-        if self.request.GET.get('bodega'):
-            bod = Bodegas.objects.filter(id_bodega=self.request.GET['bodega']).first()
-            if bod:
-                filters.append(f"Bodega: {bod.nombre_bodega}")
-        if self.request.GET.get('estado'):
-            filters.append(f"Estado: {self.request.GET['estado']}")
-        return ', '.join(filters) if filters else 'Ninguno'
+        return get_inventario_report_data(self.get_queryset(), self.request)
     
 # ------------------------------------------------------------------
 # CREAR REGISTRO
@@ -603,7 +571,7 @@ class InventarioUpdateView(UpdateView):
         return super().form_invalid(form)
     
 # ------------------------------------------------------------------
-# ELIMINAR REGISTRO (SOFT DELETE) - SOLUCIÓN RÁPIDA
+# ELIMINAR REGISTRO (SOFT DELETE) 
 # ------------------------------------------------------------------
 class InventarioDeleteView(View):
     

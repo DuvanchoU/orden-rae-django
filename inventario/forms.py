@@ -201,41 +201,64 @@ class InventarioForm(forms.ModelForm):
     
 
 class BodegaForm(forms.ModelForm):
+    # Campo de estado con opciones
+    estado = forms.ChoiceField(
+        choices=[
+            ('', 'Seleccione el estado'),
+            ('ACTIVA', 'ACTIVA'),
+            ('INACTIVA', 'INACTIVA'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        required=True
+    )
+
     class Meta:
         model = Bodegas
         fields = ['nombre_bodega', 'direccion', 'estado']
         widgets = {
             'nombre_bodega': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: PRINCIPAL', 'required': True}),
             'direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección de la bodega'}),
-            'estado': forms.Select(attrs={'class': 'form-select', 'required': True}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['estado'].choices = [
-            ('', 'Seleccione el estado'),
-            ('ACTIVA', 'ACTIVA'),
-            ('INACTIVA', 'INACTIVA'),
-        ]
+
 
 class CategoriaForm(forms.ModelForm):
+    # Campo de estado con opciones predefinidas
+    estado_categoria = forms.ChoiceField(
+        choices=[
+            ('', 'Seleccione el estado'),
+            ('activo', 'ACTIVO'),
+            ('inactivo', 'INACTIVO'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        required=True
+    )
+
     class Meta:
         model = Categorias
         fields = ['nombre_categoria', 'estado_categoria']
         widgets = {
             'nombre_categoria': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: CUNAS', 'required': True}),
-            'estado_categoria': forms.Select(attrs={'class': 'form-select', 'required': True}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['estado_categoria'].choices = [
-            ('', 'Seleccione el estado'),
-            ('activo', 'ACTIVO'),
-            ('inactivo', 'INACTIVO'),
-        ]
+
 
 class ProveedorForm(forms.ModelForm):
+    # Campo de estado con opciones predefinidas
+    estado = forms.ChoiceField(
+        choices=[
+            ('', 'Seleccione el estado'),
+            ('ACTIVO', 'ACTIVO'),
+            ('INACTIVO', 'INACTIVO'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        required=True
+    )
+
     class Meta:
         model = Proveedores
         fields = ['nombre', 'telefono', 'email', 'direccion', 'estado']
@@ -244,13 +267,45 @@ class ProveedorForm(forms.ModelForm):
             'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+57 300 123 4567'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'contacto@empresa.com'}),
             'direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección completa'}),
-            'estado': forms.Select(attrs={'class': 'form-select', 'required': True}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['estado'].choices = [
-            ('', 'Seleccione el estado'),
-            ('ACTIVO', 'ACTIVO'),
-            ('INACTIVO', 'INACTIVO'),
-        ]
+    
+    # ← VALIDACIONES PERSONALIZADAS →
+    def clean_email(self):
+        """Valida que el email sea único (si no está eliminado)"""
+        email = self.cleaned_data.get('email')
+        if email:
+            # Verificar si ya existe (excluyendo el objeto actual si es edición)
+            queryset = Proveedores.objects.filter(email=email)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            queryset = queryset.filter(deleted_at__isnull=True)
+            
+            if queryset.exists():
+                raise forms.ValidationError('Ya existe un proveedor con este correo electrónico.')
+        return email
+    
+    def clean_telefono(self):
+        """Limpia y valida el teléfono"""
+        telefono = self.cleaned_data.get('telefono')
+        if telefono:
+            # Eliminar espacios y caracteres especiales
+            telefono = ''.join(filter(str.isdigit, telefono))
+            if len(telefono) < 7:
+                raise forms.ValidationError('El teléfono debe tener al menos 7 dígitos.')
+        return telefono
+    
+    def clean_nombre(self):
+        """Valida que el nombre no esté duplicado"""
+        nombre = self.cleaned_data.get('nombre')
+        if nombre:
+            queryset = Proveedores.objects.filter(nombre__iexact=nombre)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            queryset = queryset.filter(deleted_at__isnull=True)
+            
+            if queryset.exists():
+                raise forms.ValidationError('Ya existe un proveedor con este nombre.')
+        return nombre.title()

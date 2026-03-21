@@ -7,7 +7,7 @@
     <div class="col-lg-8">
         <div class="card-modern p-4">
             <h4 class="fw-bold mb-4">{{ titulo }}</h4>
-            <form method="post">
+            <form method="post" novalidate>
                 {% csrf_token %}
                 
                 <div class="row g-3">
@@ -15,14 +15,18 @@
                         <label class="form-label small text-muted">Nombre Categoría *</label>
                         {{ form.nombre_categoria }}
                         {% if form.nombre_categoria.errors %}
-                            <div class="text-danger small">{{ form.nombre_categoria.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.nombre_categoria.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small text-muted">Estado *</label>
                         {{ form.estado_categoria }}
                         {% if form.estado_categoria.errors %}
-                            <div class="text-danger small">{{ form.estado_categoria.errors }}</div>
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle"></i> {{ form.estado_categoria.errors.0 }}
+                            </div>
                         {% endif %}
                     </div>
                 </div>

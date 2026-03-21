@@ -10,7 +10,7 @@ class Bodegas(models.Model):
     id_bodega = models.AutoField(primary_key=True)
     nombre_bodega = models.CharField(max_length=100)
     direccion = models.CharField(max_length=255, blank=True, null=True)
-    estado = models.CharField(max_length=8, blank=True, null=True) 
+    estado = models.CharField(max_length=8, blank=True, default='ACTIVA') 
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted_at = models.DateTimeField(blank=True, null=True)
@@ -31,7 +31,7 @@ class Bodegas(models.Model):
 class Categorias(models.Model):
     id_categorias = models.AutoField(primary_key=True)
     nombre_categoria = models.CharField(max_length=300)
-    estado_categoria = models.CharField(max_length=45, blank=True, null=True)
+    estado_categoria = models.CharField(max_length=45, blank=True, default='activo')
     deleted_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
@@ -47,6 +47,19 @@ class Categorias(models.Model):
         self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
+    def delete(self, using=None, keep_parents=False):
+        """
+        SOFT DELETE: En lugar de eliminar, marca deleted_at
+        """
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    def hard_delete(self):
+        """
+        Eliminación real (solo si realmente se necesita borrar)
+        """
+        super().delete()
+
     def __str__(self):
         return self.nombre_categoria
     
@@ -56,7 +69,7 @@ class Proveedores(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True)
     email = models.CharField(max_length=100, blank=True, null=True)
     direccion = models.CharField(max_length=255, blank=True, null=True)
-    estado = models.CharField(max_length=8, blank=True, null=True)
+    estado = models.CharField(max_length=8, blank=True, default='ACTIVO')
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted_at = models.DateTimeField(blank=True, null=True)
@@ -64,6 +77,7 @@ class Proveedores(models.Model):
     class Meta:
         managed = False
         db_table = 'proveedores'
+        ordering = ['nombre']
 
     def save(self, *args, **kwargs):
         if not self.created_at:
@@ -71,8 +85,45 @@ class Proveedores(models.Model):
         self.updated_at = timezone.now()
         super().save(*args, **kwargs)
 
+    # AGREGAR SOFT DELETE 
+    def delete(self, using=None, keep_parents=False):
+        """
+        SOFT DELETE: En lugar de eliminar, marca deleted_at
+        """
+        self.deleted_at = timezone.now()
+        self.save()
+    
+    def hard_delete(self):
+        """
+        Eliminación real (solo si es necesario)
+        """
+        super().delete()
+    
+    # MÉTODOS DE NEGOCIO 
+    def esta_activo(self):
+        """Verifica si el proveedor está activo"""
+        return self.estado == 'ACTIVO' and self.deleted_at is None
+    
+    def get_contacto_completo(self):
+        """Retorna información completa de contacto"""
+        contacto = f"{self.nombre}"
+        if self.telefono:
+            contacto += f" | Tel: {self.telefono}"
+        if self.email:
+            contacto += f" | {self.email}"
+        return contacto
+
+    def tiene_pedidos_asociados(self):
+        """
+        Verifica si el proveedor tiene pedidos asociados
+        (Ajusta según tu modelo de Pedidos/Compras)
+        """
+        from compras.models import Compras
+        return Compras.objects.filter(proveedor=self, deleted_at__isnull=True).exists()
+
     def __str__(self):
-        return self.nombre
+        estado = "✓" if self.esta_activo() else "✗"
+        return f"{estado} {self.nombre}"
 
 # ------------------
 # MODELO PRODUCTO

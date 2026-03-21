@@ -168,28 +168,33 @@
     <!-- HEADER CON LOGO CENTRADO -->
     <div class="header">
         <div class="logo">
-            <img src="{% static 'img/Super_Bodega_Logo.PNG' %}">
+            <!-- USAR logo_path DIRECTAMENTE (Ruta absoluta file://) -->
+            {% if logo_path %}
+                <img src="{{ logo_path }}" alt="Logo">
+            {% else %}
+                <!-- Fallback si no hay logo -->
+                <h2 style="color:#C2A27C; margin:0;">LA SUPER BODEGA DEL MUEBLE</h2>
+            {% endif %}
         </div>
         <div class="title">
             <h1>{{ report_title }}</h1>
-            <p>La Súper Bodega del Mueble</p>
+            <p style="margin:2px 0 0; font-size:8px; color:#666;">{{ report_subtitle }}</p>
         </div>
     </div>
 
     <!-- META INFO -->
-    <div class="meta">
+    <div style="margin-bottom: 10px; font-size: 8px; color: #666; display: flex; justify-content: space-between;">
         <span><strong>Fecha:</strong> {{ generated_at|date:"d/m/Y H:i" }}</span>
-        <span><strong>Usuario:</strong> {{ request.user.username|default:"Sistema" }}</span>
         <span><strong>Filtros:</strong> {{ filters_applied|default:"Ninguno" }}</span>
+        <span><strong>Total:</strong> {{ total_records }} registros</span>
     </div>
 
     <!-- CONTENIDO -->
     {% block content %}{% endblock %}
 
     <!-- FOOTER -->
-    <div class="footer">
-        Página <pdf:pagenumber> de <pdf:pagecount> | 
-        Total: {{ total_records|default:0 }} registros
+    <div style="margin-top: 20px; text-align: center; font-size: 7px; color: #999; border-top: 1px solid #eee; padding-top: 5px;">
+        Generado por ORDEN R.A.E ERP | Página <pdf:pagenumber> de <pdf:pagecount>
     </div>
 </body>
 </html>
