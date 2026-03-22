@@ -58,7 +58,7 @@ def home(request):
         estado='DISPONIBLE',
         deleted_at__isnull=True,
         created_at__gte=treinta_dias_atras
-    ).select_related('categoria')[:8]
+    ).select_related('categoria')[:4]
     
     if not productos_nuevos_qs:
         productos_nuevos_qs = Producto.objects.filter(
@@ -1309,3 +1309,149 @@ def api_marcar_leidas(request):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+# paginas sobre la empresa   
+def quienes_somos(request):
+    """Vista de página Quiénes Somos - Versión simplificada"""
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+        'equipo': [
+            {'nombre': 'Carlos Ramírez', 'rol': 'Fundador & Maestro Artesano', 'avatar': generar_avatar_url('Carlos Ramírez')},
+            {'nombre': 'Ana Martínez', 'rol': 'Directora de Diseño', 'avatar': generar_avatar_url('Ana Martínez')},
+            {'nombre': 'Luis Hernández', 'rol': 'Jefe de Producción', 'avatar': generar_avatar_url('Luis Hernández')},
+            {'nombre': 'María González', 'rol': 'Atención al Cliente', 'avatar': generar_avatar_url('María González')},
+        ],
+        'valores': [
+            {'icono': 'fa-hand-holding-heart', 'titulo': 'Pasión Artesanal', 'texto': 'Cada mueble es creado con dedicación y amor por el detalle.'},
+            {'icono': 'fa-leaf', 'titulo': 'Sostenibilidad', 'texto': 'Usamos madera de fuentes certificadas y procesos respetuosos.'},
+            {'icono': 'fa-medal', 'titulo': 'Calidad Premium', 'texto': 'Cada mueble está diseñado para durar generaciones.'},
+            {'icono': 'fa-users', 'titulo': 'Compromiso Social', 'texto': 'Apoyamos a comunidades locales de artesanos.'},
+        ]
+    }
+    return render(request, 'pagina/quienes_somos.html', context)
+
+
+def nuestra_historia(request):
+    """Vista de página Nuestra Historia - Timeline interactivo"""
+    timeline = [
+        {'año': '2015', 'titulo': 'El Comienzo', 'texto': 'Iniciamos en un pequeño taller de 50m² con 3 artesanos y un sueño.', 'imagen': '/static/img/taller-2015.jpg'},
+        {'año': '2017', 'titulo': 'Primera Expansión', 'texto': 'Abrimos nuestro primer showroom en Bogotá y alcanzamos las 100 ventas.', 'imagen': '/static/img/showroom-2017.jpg'},
+        {'año': '2019', 'titulo': 'Digitalización', 'texto': 'Lanzamos nuestra tienda online y comenzamos a enviar a todo el país.', 'imagen': '/static/img/online-2019.jpg'},
+        {'año': '2021', 'titulo': 'Reconocimiento Nacional', 'texto': 'Ganamos el premio "Mejor Artesano Colombiano" y expandimos nuestro equipo.', 'imagen': '/static/img/premio-2021.jpg'},
+        {'año': '2024', 'titulo': 'Innovación 2026', 'texto': 'Implementamos realidad aumentada para visualización de muebles.', 'imagen': '/static/img/ar-2024.jpg'},
+        {'año': '2026', 'titulo': 'El Futuro', 'texto': 'Seguimos innovando con diseños personalizados y materiales sostenibles.', 'imagen': '/static/img/futuro-2026.jpg'},
+    ]
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+        'timeline': timeline,
+    }
+    return render(request, 'pagina/nuestra_historia.html', context)
+
+
+def sostenibilidad(request):
+    """Vista de página Sostenibilidad - Impacto ambiental"""
+    metrics = [
+        {'icono': '🌳', 'numero': '5,000+', 'label': 'Árboles Plantados'},
+        {'icono': '♻️', 'numero': '95%', 'label': 'Materiales Reciclables'},
+        {'icono': '🤝', 'numero': '50+', 'label': 'Comunidades Apoyadas'},
+        {'icono': '⚡', 'numero': '100%', 'label': 'Energía Renovable en Taller'},
+    ]
+    practicas = [
+        {'titulo': 'Madera Certificada', 'descripcion': 'Trabajamos exclusivamente con madera de bosques gestionados de forma sostenible.', 'icono': 'fa-tree'},
+        {'titulo': 'Cero Residuos', 'descripcion': 'Reutilizamos el 98% de los residuos de madera para crear productos secundarios.', 'icono': 'fa-recycle'},
+        {'titulo': 'Energía Solar', 'descripcion': 'Nuestro taller funciona con paneles solares que cubren el 100% de nuestras necesidades.', 'icono': 'fa-solar-panel'},
+        {'titulo': 'Embalaje Ecológico', 'descripcion': 'Usamos materiales biodegradables y reciclables para todos nuestros envíos.', 'icono': 'fa-box-open'},
+    ]
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+        'metrics': metrics,
+        'practicas': practicas,
+    }
+    return render(request, 'pagina/sostenibilidad.html', context)
+
+
+def trabaja_con_nosotros(request):
+    """Vista de página Trabaja con Nosotros - Vacantes y cultura"""
+    vacantes = [
+        {'titulo': 'Artesano en Madera', 'ubicacion': 'Bogotá', 'tipo': 'Tiempo completo', 'descripcion': 'Buscamos artesanos con experiencia en tallado y acabados en madera.'},
+        {'titulo': 'Diseñador de Producto', 'ubicacion': 'Remoto/Híbrido', 'tipo': 'Tiempo completo', 'descripcion': 'Profesional creativo para desarrollar nuevas líneas de muebles.'},
+        {'titulo': 'Asesor Comercial', 'ubicacion': 'Bogotá', 'tipo': 'Medio tiempo', 'descripcion': 'Atención al cliente y gestión de pedidos en showroom.'},
+        {'titulo': 'Prácticas Producción', 'ubicacion': 'Bogotá', 'tipo': 'Prácticas', 'descripcion': 'Oportunidad para estudiantes de diseño o ingeniería.'},
+    ]
+    beneficios = [
+        {'icono': 'fa-heart', 'titulo': 'Ambiente Familiar', 'texto': 'Trabajamos como una familia, con respeto y apoyo mutuo.'},
+        {'icono': 'fa-graduation-cap', 'titulo': 'Capacitación Continua', 'texto': 'Programas de formación en técnicas artesanales y nuevas tecnologías.'},
+        {'icono': 'fa-hand-holding-usd', 'titulo': 'Salario Competitivo', 'texto': 'Remuneración justa más bonos por desempeño y antigüedad.'},
+        {'icono': 'fa-calendar-check', 'titulo': 'Flexibilidad', 'texto': 'Horarios flexibles y posibilidad de trabajo remoto para algunos roles.'},
+    ]
+    default_vacantes = [
+        {'titulo': 'Artesano en Madera', 'ubicacion': 'Bogotá', 'tipo': 'Tiempo completo', 'descripcion': 'Buscamos artesanos con experiencia en tallado y acabados en madera.'},
+        {'titulo': 'Diseñador de Producto', 'ubicacion': 'Remoto/Híbrido', 'tipo': 'Tiempo completo', 'descripcion': 'Profesional creativo para desarrollar nuevas líneas de muebles.'},
+        {'titulo': 'Asesor Comercial', 'ubicacion': 'Bogotá', 'tipo': 'Medio tiempo', 'descripcion': 'Atención al cliente y gestión de pedidos en showroom.'},
+        {'titulo': 'Prácticas Producción', 'ubicacion': 'Bogotá', 'tipo': 'Prácticas', 'descripcion': 'Oportunidad para estudiantes de diseño o ingeniería.'},
+    ]    
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+        'vacantes': vacantes,
+        'default_vacantes': default_vacantes,  # ← AGREGAR ESTA LÍNEA
+        'beneficios': beneficios,
+    }
+    return render(request, 'pagina/trabaja_con_nosotros.html', context)
+
+
+def blog_decoracion(request):
+    """Vista de página Blog de Decoración - Artículos y consejos"""
+    articulos = [
+        {
+            'titulo': '5 Tendencias de Decoración para 2026',
+            'excerpt': 'Descubre los estilos que dominarán este año: minimalismo cálido, texturas naturales y colores tierra.',
+            'imagen': '/static/img/blog-tendencias-2026.jpg',
+            'fecha': '15 Mar 2026',
+            'autor': 'Ana Martínez',
+            'categoria': 'Tendencias',
+            'slug': 'tendencias-decoracion-2026',
+            'leer_mas': '#'
+        },
+        {
+            'titulo': 'Cómo Elegir el Sofá Perfecto para tu Sala',
+            'excerpt': 'Guía práctica para seleccionar el sofá ideal según el espacio, estilo de vida y presupuesto.',
+            'imagen': '/static/img/blog-sofa-perfecto.jpg',
+            'fecha': '10 Mar 2026',
+            'autor': 'Carlos Ramírez',
+            'categoria': 'Guías',
+            'slug': 'elegir-sofa-perfecto',
+            'leer_mas': '#'
+        },
+        {
+            'titulo': 'Madera Sostenible: Por Qué Importa',
+            'excerpt': 'Entiende el impacto de elegir muebles de madera certificada y cómo contribuyes al planeta.',
+            'imagen': '/static/img/blog-madera-sostenible.jpg',
+            'fecha': '5 Mar 2026',
+            'autor': 'Luis Hernández',
+            'categoria': 'Sostenibilidad',
+            'slug': 'madera-sostenible-importa',
+            'leer_mas': '#'
+        },
+        {
+            'titulo': 'Organiza tu Espacio de Trabajo en Casa',
+            'excerpt': 'Consejos de diseño para crear un home office funcional, ergonómico y estéticamente agradable.',
+            'imagen': '/static/img/blog-home-office.jpg',
+            'fecha': '1 Mar 2026',
+            'autor': 'María González',
+            'categoria': 'Productividad',
+            'slug': 'organizar-home-office',
+            'leer_mas': '#'
+        },
+    ]
+    categorias_blog = ['Todos', 'Tendencias', 'Guías', 'Sostenibilidad', 'Productividad', 'DIY']
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+        'articulos': articulos,
+        'categorias_blog': categorias_blog,
+    }
+    return render(request, 'pagina/blog_decoracion.html', context)

@@ -1372,11 +1372,11 @@
                 <div class="col-6 col-lg-2">
                     <h6 class="footer-column-title">EMPRESA</h6>
                     <ul class="footer-links list-unstyled">
-                        <li><a href="#">Quiénes somos</a></li>
-                        <li><a href="#">Nuestra historia</a></li>
-                        <li><a href="#">Sostenibilidad</a></li>
-                        <li><a href="#">Trabaja con nosotros</a></li>
-                        <li><a href="#">Blog de decoración</a></li>
+                        <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
+                        <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
+                        <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
+                        <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
+                        <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
                     </ul>
                 </div>
                 
@@ -1528,17 +1528,17 @@
     <!-- Script principal -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('🏠 Home Page Profesional 2026 cargada');
-        
+        console.log('🏠 Home Page Profesional 2026 - Carrito REAL activado');
+
         // === DATOS DESDE DJANGO ===
         const djangoData = JSON.parse(document.getElementById('home-data')?.textContent || '{}');
         let contadorCarrito = djangoData.carrito_cantidad || 0;
         let notificaciones = [];
         let wishlist = djangoData.user_wishlist || JSON.parse(localStorage.getItem('wishlist') || '[]');
-        
+
         const contadorEl = document.getElementById('contador-carrito');
         if (contadorEl) contadorEl.textContent = contadorCarrito;
-        
+
         // === FUNCIÓN CSRF TOKEN ===
         function getCookie(name) {
             let cookieValue = null;
@@ -1619,54 +1619,65 @@
         
         // === PRODUCTOS: AÑADIR AL CARRITO ===
         window.addToCart = async function(productId, nombre, precio) {
-            console.log('🛒 Añadiendo:', { productId, nombre, precio });
-            
-            // Optimistic UI
+            console.log(' Intentando añadir al carrito real:', { productId, nombre, precio });
+
             const btn = event?.target?.closest('.btn-add-cart');
+            let originalHtml = '';
             if (btn) {
-                const original = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> ¡Añadido!';
-                btn.classList.add('added');
-                setTimeout(() => {
-                    btn.innerHTML = original;
-                    btn.classList.remove('added');
-                }, 2000);
+                originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Añadiendo...';
+                btn.disabled = true;
             }
-            
-            // Actualizar estado local
-            const carrito = JSON.parse(localStorage.getItem('carrito') || '{}');
-            carrito[productId] = (carrito[productId] || 0) + 1;
-            localStorage.setItem('carrito', JSON.stringify(carrito));
-            
-            // Actualizar contador
-            contadorCarrito = Object.values(carrito).reduce((a, b) => a + b, 0);
-            if (contadorEl) {
-                contadorEl.textContent = contadorCarrito;
-                // Animación
-                contadorEl.style.transform = 'scale(1.3)';
-                setTimeout(() => contadorEl.style.transform = 'scale(1)', 200);
-            }
-            
-            showToast(`🛒 ${nombre} añadido al carrito`, 'success');
-            
-            // Sync con backend
+
             try {
                 const csrfToken = getCookie('csrftoken');
-                await fetch('/pagina/api/carrito/agregar/', {
+                const response = await fetch("{% url 'ventas:api_carrito_agregar' %}", { 
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
                         'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({
-                        producto_id: productId,
-                        cantidad: 1,
-                        precio: precio,
-                        nombre: nombre
+                    body: new URLSearchParams({
+                        'producto_id': productId,
+                        'cantidad': '1',
+                        'precio': precio,
+                        'nombre': nombre
                     })
                 });
-            } catch (e) {
-                console.warn('⚠️ No se pudo sync con backend:', e);
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Actualizar contador con valor REAL del servidor
+                    contadorCarrito = data.cantidad_total;
+                    if (contadorEl) {
+                        contadorEl.textContent = contadorCarrito;
+                        // Animación
+                        contadorEl.style.transform = 'scale(1.4)';
+                        setTimeout(() => contadorEl.style.transform = 'scale(1)', 200);
+                    }
+
+                    // Feedback visual
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-check"></i> ¡Añadido!';
+                        btn.classList.add('added');
+                        setTimeout(() => {
+                            btn.innerHTML = originalHtml;
+                            btn.classList.remove('added');
+                        }, 1800);
+                    }
+
+                    showToast(`🛒 ${nombre} añadido al carrito (${contadorCarrito} items)`, 'success');
+                } else {
+                    showToast('❌ ' + (data.error || 'No se pudo agregar al carrito'), 'error');
+                    if (btn) btn.innerHTML = originalHtml;
+                }
+            } catch (err) {
+                console.error('Error al añadir al carrito:', err);
+                showToast('❌ Error de conexión. Intenta de nuevo.', 'error');
+                if (btn) btn.innerHTML = originalHtml;
+            } finally {
+                if (btn) btn.disabled = false;
             }
         };
         

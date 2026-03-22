@@ -59,7 +59,7 @@ class Carritos(models.Model):
 
 class ItemsCarrito(models.Model):
     id_item = models.AutoField(primary_key=True)
-    carrito = models.ForeignKey(Carritos, models.DO_NOTHING)
+    carrito = models.ForeignKey(Carritos, models.DO_NOTHING, related_name='items')
     producto = models.ForeignKey('inventario.Producto', models.DO_NOTHING) 
     cantidad = models.IntegerField()
     precio_unitario = models.DecimalField(max_digits=15, decimal_places=2)

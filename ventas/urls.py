@@ -1,4 +1,5 @@
 from django.urls import path
+from . import views
 from .views import (
     ClienteListView, ClienteCreateView, ClienteUpdateView, ClienteDeleteView, ClienteDetailView,
     PedidoListView, PedidoCreateView, PedidoUpdateView, PedidoDeleteView,PedidoDetailView,
@@ -36,4 +37,10 @@ urlpatterns = [
     path('cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('cotizaciones/<int:pk>/editar/', CotizacionUpdateView.as_view(), name='cotizacion_update'),
     path('cotizaciones/<int:pk>/eliminar/', CotizacionDeleteView.as_view(), name='cotizacion_delete'),
+
+    # Carrito
+    path('carrito/', views.carrito_compra, name='carrito_compra'),
+    path('api/carrito/agregar/', views.api_carrito_agregar, name='api_carrito_agregar'),
+    path('api/carrito/eliminar/<int:item_id>/', views.api_carrito_eliminar, name='api_carrito_eliminar'),
+    path('api/carrito/actualizar/<int:item_id>/', views.api_carrito_actualizar, name='api_carrito_actualizar'),
 ]

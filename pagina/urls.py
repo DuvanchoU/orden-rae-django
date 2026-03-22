@@ -11,6 +11,13 @@ urlpatterns = [
 
     path('promociones/', views.promociones, name='promociones'),
     
+    # === Sobre el la empresa ===
+    path('quienes-somos/', views.quienes_somos, name='quienes_somos'),
+    path('nuestra-historia/', views.nuestra_historia, name='nuestra_historia'),
+    path('sostenibilidad/', views.sostenibilidad, name='sostenibilidad'),
+    path('trabaja-con-nosotros/', views.trabaja_con_nosotros, name='trabaja_con_nosotros'),
+    path('blog-decoracion/', views.blog_decoracion, name='blog_decoracion'),   
+    
     # --- Carrito y Checkout ---
     path('carrito-compra/', views.carrito_compra, name='carrito_compra'),
     path('checkout/', views.checkout, name='checkout'),

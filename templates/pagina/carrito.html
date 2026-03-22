@@ -1102,8 +1102,7 @@
                                                     title="Guardar para después" aria-label="Guardar {{ item.nombre }}">
                                                 <i class="fas fa-bookmark"></i>
                                             </button>
-                                            <button class="action-btn" onclick="eliminarProducto(this)" 
-                                                    title="Eliminar" aria-label="Eliminar {{ item.nombre }}">
+                                            <button class="action-btn" onclick="eliminarProducto(this, {{ item.item_id }})">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
                                         </div>
@@ -1524,7 +1523,7 @@
                 
                 // Sync con backend
                 await syncCartItem(productoId, cantidad);
-                showToast('✅ Cantidad actualizada', 'success');
+                showToast('Cantidad actualizada', 'success');
             }
         };
         
@@ -1536,54 +1535,24 @@
         };
         
         // Eliminar producto con animación y undo
-        window.eliminarProducto = async function(btn) {
-            const row = btn.closest('tr');
-            if (!row) return;
+        window.eliminarProducto = async function(btn, itemId) {
+            if (!confirm('¿Eliminar este producto?')) return;
             
-            const productoId = row.dataset.id;
-            const nombre = row.dataset.nombre || 'Producto';
-            const itemData = state.items.find(i => i.producto_id === productoId);
-            
-            // Animación de salida
-            row.classList.add('removing');
-            
-            // Guardar para undo
-            const undoData = { itemData, index: state.items.findIndex(i => i.producto_id === productoId) };
-            
-            setTimeout(async () => {
-                try {
-                    // Eliminar del estado
-                    state.items = state.items.filter(i => i.producto_id !== productoId);
-                    
-                    // Eliminar del backend
-                    await deleteCartItem(productoId);
-                    
-                    // Actualizar UI
-                    row.remove();
-                    renderCart();
-                    updateSummary();
-                    
-                    // Mostrar toast con undo
-                    showToast(`${nombre} eliminado`, 'success', {
-                        action: {
-                            label: 'Deshacer',
-                            callback: () => {
-                                state.items.splice(undoData.index, 0, undoData.itemData);
-                                renderCart();
-                                updateSummary();
-                                syncCartItem(productoId, undoData.itemData.cantidad);
-                                showToast('✅ Producto restaurado', 'success');
-                            }
-                        }
-                    });
-                    
-                } catch (error) {
-                    console.error('Error al eliminar:', error);
-                    row.classList.remove('removing');
-                    showToast('❌ No se pudo eliminar', 'error');
+            try {
+                const res = await fetch(`/ventas/api/carrito/eliminar/${itemId}/`, {  // ajusta la ruta
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    btn.closest('tr').remove();
+                    // Actualizar totales y contador...
+                    showToast('Producto eliminado', 'success');
                 }
-            }, CONFIG.ANIMATION_DURATION);
-        };
+            } catch(e) {
+                showToast('Error al eliminar', 'error');
+            }
+        }
         
         // Guardar para después
         window.guardarParaDespues = function(btn) {

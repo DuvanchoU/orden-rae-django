@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q, Sum
-from .models import Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta, DetalleCotizacion
+from .models import Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta, DetalleCotizacion, Carritos, ItemsCarrito, DetallePedido, MetodosPago
 from inventario.models import Producto
 from usuarios.models import Usuarios
 from django.contrib import messages
@@ -326,3 +326,241 @@ class CotizacionDetailView(DetailView):
     template_name = 'ventas/cotizacion_detail.html'
     context_object_name = 'cotizacion'
     pk_url_kwarg = 'pk'
+
+
+# Carrito
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from inventario.models import Producto, Inventario
+from django.db import models
+
+def get_or_create_carrito(request):
+    """Obtiene o crea carrito para usuario autenticado o sesión anónima"""
+    if request.user.is_authenticated:
+        cliente = Clientes.objects.filter(email=request.user.email).first()
+        if not cliente:
+            # Crear cliente automático si no existe
+            cliente = Clientes.objects.create(
+                nombre=request.user.get_full_name() or request.user.username,
+                email=request.user.email,
+                fecha_registro=timezone.now()
+            )
+        carrito, created = Carritos.objects.get_or_create(cliente=cliente)
+    else:
+        # Para usuarios no autenticados → usamos session_id
+        session_id = request.session.session_key
+        if not session_id:
+            request.session.create()
+            session_id = request.session.session_key
+        carrito, created = Carritos.objects.get_or_create(session_id=session_id)
+    
+    return carrito
+
+
+@login_required  # o quitar si permites carrito anónimo
+def carrito_compra(request):
+    carrito = get_or_create_carrito(request)
+    items_qs = carrito.itemscarrito_set.select_related('producto')
+    
+    items = []
+    total_carrito = 0
+    total_iva = 0
+    
+    for item in items_qs:
+        subtotal = item.precio_unitario * item.cantidad
+        iva_item = subtotal * 0.19  # ajusta según tu IVA real
+        
+        items.append({
+            'producto_id': item.producto.id_producto,
+            'nombre': item.producto.referencia_producto or item.producto.codigo_producto,
+            'sku': item.producto.codigo_producto,
+            'precio_base': float(item.precio_unitario),
+            'cantidad': item.cantidad,
+            'subtotal': float(subtotal),
+            'iva': float(iva_item),
+            'imagen_url': item.producto.get_imagen_principal().ruta_imagen if item.producto.get_imagen_principal() else '/static/img/placeholder.jpg',
+            'stock': item.producto.get_stock_total(),
+            'item_id': item.id_item,  # para eliminar/actualizar
+        })
+        total_carrito += subtotal
+        total_iva += iva_item
+
+    context = {
+        'carrito_items': items,
+        'carrito_cantidad': sum(i.cantidad for i in ItemsCarrito.objects.filter(carrito=carrito)),
+        'total_carrito': float(total_carrito),
+        'total_iva': float(total_iva),
+        'carrito_items_json': items,  # para tu JS si lo necesitas
+    }
+    
+    return render(request, 'pagina/carrito.html', context)
+
+
+@require_POST
+def api_carrito_agregar(request):
+    print("=== API AGREGAR CARRITO INICIADA ===")
+    print("POST data:", dict(request.POST))
+    
+    try:
+        producto_id = request.POST.get('producto_id')
+        if not producto_id:
+            raise ValueError("producto_id no recibido")
+        
+        cantidad_str = request.POST.get('cantidad', '1')
+        cantidad = int(cantidad_str)
+        
+        precio = float(request.POST.get('precio', 0))
+        nombre = request.POST.get('nombre', '')
+        
+        print(f"Buscando producto ID: {producto_id}")
+        producto = Producto.objects.get(id_producto=producto_id)
+        print(f"Producto encontrado: {producto}")
+        
+        carrito = get_or_create_carrito(request)
+        print(f"Carrito obtenido/creado: ID {carrito.id_carrito}")
+        
+        # Stock check
+        stock_disponible = producto.get_stock_total()
+        print(f"Stock disponible: {stock_disponible}")
+        if stock_disponible < cantidad:
+            return JsonResponse({
+                'success': False,
+                'error': f'Solo hay {stock_disponible} unidades disponibles'
+            }, status=400)
+        
+        # Crear/actualizar item
+        print("Creando/actualizando item...")
+        item, created = ItemsCarrito.objects.get_or_create(
+            carrito=carrito,
+            producto=producto,
+            defaults={
+                'precio_unitario': producto.precio_actual,
+                'cantidad': cantidad
+            }
+        )
+        if not created:
+            item.cantidad += cantidad
+            item.save()
+        print(f"Item {'creado' if created else 'actualizado'}: {item}")
+        
+        # Reserva de stock
+        print("Reservando stock...")
+        inventarios = Inventario.objects.filter(
+            producto=producto,
+            cantidad_disponible__gt=0,
+            deleted_at__isnull=True
+        ).order_by('fecha_registro')
+        
+        cantidad_pendiente = cantidad
+        for inv in inventarios:
+            if cantidad_pendiente <= 0:
+                break
+            disponible = inv.cantidad_disponible - (inv.cantidad_reservada or 0)
+            reservar = min(cantidad_pendiente, disponible)
+            if reservar > 0:
+                inv.cantidad_reservada = (inv.cantidad_reservada or 0) + reservar
+                inv.save()
+                print(f"Reservado {reservar} en inventario {inv.id_inventario}")
+                cantidad_pendiente -= reservar
+        
+        if cantidad_pendiente > 0:
+            print("Advertencia: no se pudo reservar todo el stock")
+        
+        total_items = ItemsCarrito.objects.filter(carrito=carrito).aggregate(total=models.Sum('cantidad'))['total'] or 0
+        
+        return JsonResponse({
+            'success': True,
+            'cantidad_total': total_items,
+            'mensaje': f'{nombre or producto} × {cantidad} añadido'
+        })
+    
+    except Producto.DoesNotExist:
+        print("ERROR: Producto no encontrado")
+        return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
+    
+    except ValueError as ve:
+        print(f"ValueError: {ve}")
+        return JsonResponse({'success': False, 'error': str(ve)}, status=400)
+    
+    except Exception as e:
+        import traceback
+        print("ERROR INESPERADO EN AGREGAR CARRITO:")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'success': False,
+            'error': 'Error interno al procesar el carrito. Contacta soporte.'
+        }, status=500)
+
+
+@require_POST
+def api_carrito_eliminar(request, item_id):
+    try:
+        item = get_object_or_404(ItemsCarrito, id_item=item_id, carrito__cliente__email=request.user.email)  # seguridad
+        producto = item.producto
+        cantidad = item.cantidad
+        
+        # Liberar reserva
+        inventarios = Inventario.objects.filter(producto=producto)
+        cantidad_pendiente = cantidad
+        for inv in inventarios:
+            if cantidad_pendiente <= 0:
+                break
+            liberar = min(cantidad_pendiente, inv.cantidad_reservada or 0)
+            if liberar > 0:
+                inv.cantidad_reservada = max(0, (inv.cantidad_reservada or 0) - liberar)
+                inv.save()
+                cantidad_pendiente -= liberar
+        
+        item.delete()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@require_POST
+def api_carrito_actualizar(request, item_id):
+    try:
+        item = get_object_or_404(ItemsCarrito, id_item=item_id, carrito__cliente__email=request.user.email)
+        nueva_cantidad = int(request.POST.get('cantidad', item.cantidad))
+        
+        if nueva_cantidad < 1:
+            return JsonResponse({'success': False, 'error': 'Cantidad inválida'})
+        
+        diferencia = nueva_cantidad - item.cantidad
+        
+        # Ajustar reserva
+        inventarios = Inventario.objects.filter(producto=item.producto)
+        if diferencia > 0:
+            # Reservar más
+            cantidad_pendiente = diferencia
+            for inv in inventarios:
+                if cantidad_pendiente <= 0:
+                    break
+                disponible = inv.cantidad_disponible - (inv.cantidad_reservada or 0)
+                reservar = min(cantidad_pendiente, disponible)
+                if reservar > 0:
+                    inv.cantidad_reservada = (inv.cantidad_reservada or 0) + reservar
+                    inv.save()
+                    cantidad_pendiente -= reservar
+            if cantidad_pendiente > 0:
+                return JsonResponse({'success': False, 'error': 'Stock insuficiente para aumentar cantidad'}, status=400)
+        elif diferencia < 0:
+            # Liberar
+            cantidad_pendiente = -diferencia
+            for inv in inventarios:
+                if cantidad_pendiente <= 0:
+                    break
+                liberar = min(cantidad_pendiente, inv.cantidad_reservada or 0)
+                if liberar > 0:
+                    inv.cantidad_reservada = max(0, (inv.cantidad_reservada or 0) - liberar)
+                    inv.save()
+                    cantidad_pendiente -= liberar
+        
+        item.cantidad = nueva_cantidad
+        item.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

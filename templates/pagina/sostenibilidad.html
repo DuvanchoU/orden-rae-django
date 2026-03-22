@@ -1,0 +1,487 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiénes Somos - ORDER RAE</title>
+    <meta name="description" content="Conoce al equipo detrás de ORDER RAE: artesanos colombianos dedicados a crear muebles únicos desde 2015.">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
+    
+    <!-- Bootstrap + Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Tu CSS -->
+    <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+    
+    <!-- Estilos específicos -->
+    <style>
+        :root {
+            --color-primario: #8B5E3C;
+            --color-primario-dark: #6B462C;
+            --color-secundario: #7A4B32;
+            --color-acento: #ffd166;
+            --color-exito: #06d6a0;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
+            --radius-lg: 24px;
+            --transition-normal: 300ms ease;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --border-color: #3a3a5a;
+        }
+        body {
+            background: var(--bg-secondary);
+            font-family: 'Figtree', sans-serif;
+            color: var(--text-primary);
+            transition: background var(--transition-normal), color var(--transition-normal);
+        }
+        
+        /* Hero Section */
+        .about-hero {
+            position: relative;
+            height: 70vh;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(139,94,60,0.9) 0%, rgba(122,75,50,0.8) 100%),
+                        url('{% static "img/taller_madera.jpg" %}') center/cover;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--color-acento);
+            color: #333;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            animation: float 3s ease infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .hero-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin-bottom: 1rem; }
+        .hero-subtitle { font-size: clamp(1rem, 2.5vw, 1.25rem); opacity: 0.95; max-width: 700px; margin: 0 auto 2rem; }
+        
+        /* Team Grid */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .team-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            transition: transform var(--transition-normal);
+        }
+        .team-card:hover { transform: translateY(-10px); }
+        .team-avatar {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            margin: 1.5rem auto 1rem;
+            border: 4px solid var(--color-acento);
+            object-fit: cover;
+        }
+        .team-name { font-weight: 700; margin-bottom: 0.25rem; }
+        .team-role { color: var(--color-primario); font-weight: 500; }
+        
+        /* Values Cards */
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .value-card {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all var(--transition-normal);
+        }
+        .value-card:hover {
+            border-color: var(--color-primario);
+            transform: translateY(-5px);
+        }
+        .value-icon {
+            font-size: 2.5rem;
+            color: var(--color-primario);
+            margin-bottom: 1rem;
+        }
+        
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-radius: var(--radius-lg);
+            margin: 4rem 0;
+        }
+        .btn-cta {
+            background: var(--color-acento);
+            color: #333;
+            padding: 1rem 2.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform var(--transition-normal);
+        }
+        .btn-cta:hover { transform: translateY(-3px); }
+        
+        /* Dark Mode Toggle & WhatsApp */
+        .theme-toggle {
+            position: fixed; bottom: 2rem; left: 2rem;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: var(--bg-primary); border: 2px solid var(--border-color);
+            color: var(--text-primary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; z-index: 100;
+        }
+        .btn-flotante-whatsapp {
+            position: fixed; bottom: 2rem; right: 2rem;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.75rem; z-index: 100; text-decoration: none;
+        }
+        
+        @media (max-width: 768px) {
+            .team-grid, .values-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Encabezado -->
+    <header id="barra_superior" class="bg-white border-bottom">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+            <a href="{% url 'pagina:home' %}" class="text-decoration-none d-flex align-items-center gap-2">
+                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" style="height: 45px;" />
+                <span class="fw-bold d-none d-md-inline" style="color: var(--color-primario); font-size: 1.1rem;">ORDER RAE</span>
+            </a>
+
+            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
+                <div class="position-relative">
+                    <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
+                    <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3 text-muted" style="pointer-events: none;"></i>
+                </div>
+                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+                <!-- NOTIFICACIONES -->
+                <div class="notifications-bell position-relative" id="notifications-bell" style="cursor: pointer;">
+                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
+                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                    <div class="notifications-dropdown" id="notifications-dropdown">
+                        <div class="notifications-header d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <strong>Notificaciones</strong>
+                            <a href="#" id="clear-notifications" class="small text-decoration-none">Marcar como leídas</a>
+                        </div>
+                        <div id="notifications-list" style="max-height: 300px; overflow-y: auto;">
+                            {% if notificaciones %}
+                                {% for notif in notificaciones %}
+                                <div class="notification-item {% if not notif.leida %}new{% endif %} p-3 border-bottom">
+                                    <div class="d-flex gap-2">
+                                        <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
+                                        <div class="notification-content flex-1">
+                                            <strong class="d-block">{{ notif.mensaje }}</strong>
+                                            <span class="notification-time small text-muted">{{ notif.fecha }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARRITO DE COMPRA -->
+                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative text-decoration-none">
+                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                        {{ carrito_cantidad|default:0 }}
+                    </span>
+                </a>
+                
+                <!-- Usuario autenticado -->
+                {% if user.is_authenticated %}
+                <div class="menu-usuario position-relative">
+                    <div class="d-flex align-items-center position-relative" style="cursor: pointer;">
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                            alt="Usuario" class="icono-img" id="user-avatar" style="border-radius: 50%;">
+                        <span class="user-tooltip ms-2 text-dark d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+                    </div>
+                    <div class="submenu mt-1">
+                        <!--<a href="{% url 'pagina:perfil' %}">Mi cuenta</a> -->
+                        <a href="{% url 'pagina:logout' %}?next={% url 'pagina:home' %}">Cerrar sesión</a>
+                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="menu-usuario position-relative">
+                    <a href="#" style="cursor: pointer;"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <div class="submenu mt-1">
+                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-2 bg-light">
+            <div class="container">
+                <nav class="navegacion d-flex flex-wrap justify-content-center">
+                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1 fw-bold" style="color: var(--color-primario);">HOME</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
+                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
+                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container main-with-fixed-header">
+        
+        <!-- Sección de métricas -->
+        <section style="background: linear-gradient(135deg, #06d6a0 0%, #118ab2 100%); color: white; padding: 4rem 0; border-radius: var(--radius-lg); margin: 3rem 0;">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <h2 style="font-size: 2.5rem; font-weight: 700;">Nuestro Impacto Positivo</h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+                    {% for m in metrics %}
+                    <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 2rem; border-radius: var(--radius-lg); text-align: center; border: 1px solid rgba(255,255,255,0.2);" data-aos="zoom-in">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">{{ m.icono }}</div>
+                        <div style="font-size: 2rem; font-weight: 700;">{{ m.numero }}</div>
+                        <div>{{ m.label }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer (igual que home) -->
+    <footer class="footer-moderno footer-bg text-dark">
+        <!-- ... contenido del footer (igual que antes) ... -->
+        <div class="container">
+            <div class="row g-4 g-lg-5">
+                <!-- Columna 1: Logo + Redes + Newsletter -->
+                <div class="col-12 col-lg-4">
+                    <div class="footer-brand mb-4">
+                        <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" class="footer-logo" />
+                        <p class="footer-description text-muted mt-3">
+                            Diseñamos muebles con alma para transformar tu hogar en un espacio único, cálido y funcional.
+                        </p>
+                    </div>
+                    
+                    <div class="footer-social mb-4">
+                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-newsletter">
+                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
+                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
+                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
+                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Columna 2: Empresa -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">EMPRESA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
+                        <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
+                        <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
+                        <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
+                        <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 3: Ayuda -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">AYUDA</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Preguntas Frecuentes</a></li>
+                        <li><a href="#">Guía de tallas</a></li>
+                        <li><a href="#">Cuidado de muebles</a></li>
+                        <li><a href="#">Política de envíos</a></li>
+                        <li><a href="#">Devoluciones</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 4: Legal -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">LEGAL</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Política de Cookies</a></li>
+                        <li><a href="#">Accesibilidad Web</a></li>
+                        <li><a href="#">PQRS</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Columna 5: Contacto -->
+                <div class="col-6 col-lg-2">
+                    <h6 class="footer-column-title">CONTACTO</h6>
+                    <ul class="footer-contact list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-phone text-primary me-2"></i>
+                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
+                        </li>
+                        <li>
+                            <i class="fab fa-whatsapp text-primary me-2"></i>
+                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Métodos de pago y certificaciones -->
+            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
+                <div class="row align-items-center g-3">
+                    <div class="col-12 col-lg-6">
+                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
+                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
+                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
+                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
+                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 text-lg-end">
+                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
+                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
+                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
+                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright + Back to top -->
+            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
+                <p class="mb-0 small text-muted">
+                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
+                </p>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Botones Flotantes -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Alternar modo oscuro">
+        <i class="fas fa-moon"></i>
+    </button>
+    <a href="https://wa.me/573166712526" class="btn-flotante-whatsapp" target="_blank" aria-label="WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // Inicializar AOS
+        AOS.init({ duration: 800, once: true });
+        
+        // Dark Mode Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle?.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            themeToggle.querySelector('i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        });
+        
+        // Aplicar tema guardado
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeToggle.querySelector('i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        
+        // Toast simple
+        window.showToast = function(msg, type='info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast-modern ${type}`;
+            toast.style.cssText = `background:var(--bg-primary); border-left:4px solid var(--color-${type==='success'?'exito':'primario'}); border-radius:16px; padding:1rem 1.5rem; box-shadow:0 8px 25px rgba(0,0,0,0.15); display:flex; align-items:center; gap:0.75rem; min-width:320px; max-width:400px; animation:slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;`;
+            toast.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'info-circle'}"></i><div>${msg}</div>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        };
+    </script>
+</body>
+</html>
