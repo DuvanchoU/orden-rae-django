@@ -299,11 +299,36 @@ def productos(request):
             'precio': int(prod.precio_actual),
             'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg'
         })
+
+    # === PRODUCTOS PARA EL GRID PRINCIPAL ===
+    todos_productos = Producto.objects.filter(
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).select_related('categoria')[:50]
+
+    productos_list = []
+    for prod in todos_productos:
+        img = prod.get_imagen_principal()
+        # Generar slug consistente con el de las categorías
+        cat_slug = prod.categoria.nombre_categoria.lower().replace(' ', '-').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u') if prod.categoria else 'sin-categoria'
+        
+        productos_list.append({
+            'id_producto': prod.id_producto,
+            'nombre': prod.referencia_producto or prod.codigo_producto,
+            'referencia_producto': prod.referencia_producto or prod.codigo_producto,
+            'codigo_producto': prod.codigo_producto,
+            'precio_actual': prod.precio_actual,
+            'precio_numeric': float(prod.precio_actual),
+            'categoria_slug': cat_slug,
+            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+            'created_at': prod.created_at.isoformat() if prod.created_at else '',  # ← Formato ISO para JS
+        })
     
     context = {
         'categorias_principales': categorias_principales,
         'categorias_secundarias': categorias_secundarias,
         'productos_destacados': productos_destacados,
+        'productos': productos_list,
         'categorias_json': json.dumps([
             {'nombre': c['nombre'], 'slug': c['slug'], 'productos_count': c['productos_count']} 
             for c in categorias_principales + categorias_secundarias
@@ -893,9 +918,6 @@ def logout_view(request):
     if 'carrito_cantidad' in request.session:
         del request.session['carrito_cantidad']
     return redirect('pagina:home')
-
-def carrito_compra(request):
-    return render(request, 'pagina/carrito.html')
 
 
 def promociones(request):

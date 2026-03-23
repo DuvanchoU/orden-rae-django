@@ -7,360 +7,355 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Productos - ORDER RAE</title>
-    <meta name="description" content="Explora nuestros muebles hechos a mano: sofás, camas, escritorios y más.">
+    <title>Productos • ORDER RAE 2026</title>
+    <meta name="description" content="Explora sofás, camas, escritorios y más — hechos a mano por artesanos colombianos.">
 
-    <!-- Fonts -->
+    <!-- Fuentes -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap + Font Awesome -->
+    <!-- Bootstrap 5.3 + Font Awesome 6 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- Tu CSS -->
-    <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
-    <link rel="stylesheet" href="{% static 'css/productos.css' %}">
-    
-    <!-- Estilos específicos para página de productos -->
-    <style>
-        :root {
-            --color-primario: #8B5E3C;
-            --color-secundario: #7A4B32;
-            --color-acento: #ffd166;
-        }
-        body {
-            background: #f8f9fa;
-            font-family: 'Figtree', sans-serif;
-        }
-        
-        /* === FILTROS DE CATEGORÍA === */
-        .filters-container {
-            background: white;
-            border-radius: 16px;
-            padding: 1rem;
-            margin: 2rem 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-        
-        .filters-title {
-            font-weight: 600;
-            color: var(--color-primario);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .filters-scroll {
-            display: flex;
-            gap: 0.75rem;
-            overflow-x: auto;
-            padding: 0.5rem 0;
-            scrollbar-width: thin;
-            scrollbar-color: var(--color-primario) transparent;
-        }
-        
-        .filters-scroll::-webkit-scrollbar {
-            height: 6px;
-        }
-        
-        .filters-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        .filters-scroll::-webkit-scrollbar-thumb {
-            background: var(--color-primario);
-            border-radius: 3px;
-        }
-        
-        .filter-btn {
-            flex: 0 0 auto;
-            padding: 0.6rem 1.25rem;
-            border: 2px solid var(--border-color);
-            background: white;
-            color: var(--text-primary);
-            border-radius: 50px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            white-space: nowrap;
-        }
-        
-        .filter-btn:hover,
-        .filter-btn.active {
-            background: var(--color-primario);
-            border-color: var(--color-primario);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(139, 94, 60, 0.3);
-        }
-        
-        .filter-btn .badge-count {
-            background: var(--color-acento);
-            color: #333;
-            font-size: 0.75rem;
-            padding: 0.15rem 0.5rem;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-        
-        /* === TARJETAS DE CATEGORÍA === */
-        .card-producto {
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: none;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .card-producto:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        }
-        
-        .card-producto .img-container {
-            height: 220px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .card-producto .img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-        
-        .card-producto:hover .img-container img {
-            transform: scale(1.1);
-        }
-        
-        .card-producto .card-body {
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .card-producto .card-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--color-primario);
-            margin-bottom: 0.5rem;
-        }
-        
-        .card-producto .card-text {
-            color: #6c757d;
-            line-height: 1.6;
-            flex-grow: 1;
-        }
-        
-        .card-producto .btn-primary {
-            background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
-            border: none;
-            padding: 0.6rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-        
-        .card-producto .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(139, 94, 60, 0.4);
-        }
-        
-        /* === PRODUCTOS DESTACADOS === */
-        .featured-section {
-            margin: 4rem 0;
-        }
-        
-        .featured-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--color-primario);
-            text-align: center;
-            margin-bottom: 2rem;
-            position: relative;
-            display: inline-block;
-        }
-        
-        .featured-title::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 4px;
-            background: linear-gradient(90deg, var(--color-primario), var(--color-acento));
-            border-radius: 2px;
-        }
-        
-        .featured-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .featured-card {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            text-align: center;
-            padding: 1rem;
-        }
-        
-        .featured-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
-        }
-        
-        .featured-card .img-container {
-            height: 180px;
-            overflow: hidden;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-        }
-        
-        .featured-card .img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .featured-card:hover .img-container img {
-            transform: scale(1.05);
-        }
-        
-        .featured-card .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .featured-card .price {
-            color: var(--color-primario);
-            font-weight: 700;
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-        }
-        
-        .btn-featured {
-            background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
-            color: white;
-            border: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-featured:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(139, 94, 60, 0.4);
-            color: white;
-        }
-        
-        /* === TOAST NOTIFICATIONS === */
-        .toast-container {
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-        }
-        
-        .toast-modern {
-            background: white;
-            border-left: 4px solid var(--color-primario);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            min-width: 320px;
-            max-width: 400px;
-            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
-            pointer-events: auto;
-        }
-        
-        .toast-modern.success { border-left-color: #06d6a0; }
-        .toast-modern.error { border-left-color: #ef476f; }
-        .toast-modern.warning { border-left-color: #ffd166; }
-        .toast-modern.info { border-left-color: #118ab2; }
-        
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(100px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateX(20px); }
-        }
-        
-        /* === DARK MODE TOGGLE === */
-        .theme-toggle {
-            position: fixed;
-            bottom: 2rem;
-            left: 2rem;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: white;
-            border: 2px solid var(--border-color);
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .theme-toggle:hover {
-            transform: rotate(15deg);
-            border-color: var(--color-primario);
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .filters-scroll {
-                padding: 0.5rem;
-            }
-            .filter-btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.85rem;
-            }
-            .featured-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
-</head>
-<body class="bg-light">
+    <!-- Tu CSS base -->
+    <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.1">
 
-    <!-- Encabezado (igual que tu header existente) -->
-    <header id="barra_superior" class="bg-white border-bottom">
+    <!-- Estilos -->
+<style>
+    :root {
+        --color-primario: #8B5E3C;
+        --color-primario-dark: #6B462C;
+        --color-secundario: #7A4B32;
+        --color-acento: #ffd166;
+        --color-exito: #06d6a0;
+        --color-advertencia: #ffaa00;
+        --color-peligro: #ef476f;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --text-primary: #212529;
+        --text-secondary: #6c757d;
+        --shadow-sm: 0 4px 12px rgba(0,0,0,0.08);
+        --shadow-md: 0 8px 24px rgba(139,94,60,0.15);
+        --radius-lg: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+        --bg-primary: #1a1a2e;
+        --bg-secondary: #16213e;
+        --text-primary: #e0e0ff;
+        --text-secondary: #a0a0cc;
+    }
+
+    body {
+        font-family: 'Figtree', sans-serif;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        transition: var(--transition);
+    }
+
+    .products-header {
+        background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-secundario) 100%);
+        color: white;
+        padding: 4rem 1rem;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .products-title {
+        font-size: 3rem;
+        font-weight: 800;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+
+    /* Filtros modernos */
+    .filters-bar {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        padding: 1.2rem;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    .filter-select, .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #dee2e6;
+        border-radius: 50px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .filter-select:focus, .search-input:focus {
+        border-color: var(--color-primario);
+        box-shadow: 0 0 0 4px rgba(139,94,60,0.15);
+        outline: none;
+    }
+
+    .sort-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+    }
+
+    /* GRID DE PRODUCTOS - CORREGIDO */
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.8rem;
+        align-items: stretch; 
+    }
+
+    .product-card {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+        position: relative;
+        
+        /*  FLEXBOX PARA DISTRIBUCIÓN VERTICAL */
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 480px; 
+        
+        /* Animación de entrada */
+        animation: fadeInUp 0.4s ease forwards;
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    .product-card:hover {
+        transform: translateY(-12px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .product-img-container {
+        height: 260px;
+        overflow: hidden;
+        position: relative;
+        flex-shrink: 0; 
+    }
+
+    .product-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s ease;
+    }
+
+    .product-card:hover .product-img {
+        transform: scale(1.08);
+    }
+
+    .product-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        padding: 0.4rem 1rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-new { background: var(--color-exito); color: white; }
+    .badge-sale { background: var(--color-peligro); color: white; }
+
+    /* INFO DEL PRODUCTO - FLEXBOX VERTICAL */
+    .product-info {
+        padding: 1.4rem;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1; 
+        justify-content: space-between; 
+        text-align: center;
+    }
+
+    .product-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 0.6rem;
+        color: var(--color-primario);
+        line-height: 1.3;
+        
+        /* LIMITAR A 2 LÍNEAS CON ELLIPSIS */
+        min-height: 3.2rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-price {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--color-primario);
+        margin: 0.8rem 0;
+    }
+
+    /* 🔧 BOTONES - SIEMPRE AL FONDO */
+    .product-actions {
+        display: flex;
+        gap: 0.8rem;
+        margin-top: auto;
+        padding-top: 1rem;
+    }
+
+    .btn-add-cart {
+        flex: 1;
+        background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+        color: white;
+        border: none;
+        padding: 0.8rem;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn-add-cart:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(139,94,60,0.3);
+    }
+
+    .btn-info {
+        background: var(--color-acento);
+        color: #333;
+        border: none;
+        padding: 0.8rem 1.2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    /* Modal rápido (inline) */
+    .quick-view-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.65);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(6px);
+    }
+
+    .quick-view-content {
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        max-width: 900px;
+        width: 92%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-md);
+        position: relative;
+        animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modalPop {
+        from { transform: scale(0.7); opacity: 0; }
+        to   { transform: scale(1); opacity: 1; }
+    }
+
+    .quick-close {
+        position: absolute;
+        top: 1rem;
+        right: 1.2rem;
+        background: rgba(0,0,0,0.4);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 1.4rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .quick-close:hover { background: var(--color-peligro); transform: rotate(90deg); }
+
+    /* ANIMACIONES */
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Ya cargadas: mostrar inmediatamente */
+    .products-grid.loaded .product-card {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+
+    .no-results-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--bg-primary);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        animation: fadeIn 0.4s ease;
+    }
+
+    .no-results-state i {
+        font-size: 4rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 992px) {
+        .products-grid { 
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+        }
+        .product-card {
+            min-height: 450px; /* ← Ajuste para tablets */
+        }
+        .product-img-container {
+            height: 220px; /* ← Imagen más pequeña */
+        }
+    }
+
+    @media (max-width: 576px) {
+        .filters-bar { flex-direction: column; }
+        .filter-group { width: 100%; }
+        .product-card {
+            min-height: 430px; /* ← Ajuste para móvil */
+        }
+        .product-title {
+            font-size: 1rem;
+            min-height: 2.8rem;
+        }
+        .product-img-container {
+            height: 200px;
+        }
+    }
+</style>
+</head>
+<body>
+
+    <!-- Header (mismo que home, pero actualizado) -->
+<header id="barra_superior" class="bg-white border-bottom">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
             <a href="{% url 'pagina:home' %}">
                 <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" />
@@ -438,8 +433,8 @@
             <div class="container">
                 <nav class="navegacion d-flex flex-wrap justify-content-center">
                     <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
-                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1 fw-bold" style="color: #7A4B32;">PRODUCTOS</a>
-                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
+                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
+                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1 fw-bold" style="color: #8B5E3C;">PROMOCIONES</a>
                     <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
                     <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
                 </nav>
@@ -447,153 +442,132 @@
         </div>
     </header>
 
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toast-container"></div>
+    <!-- Toast container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container"></div>
 
-    <!-- Contenido principal -->
     <main class="container main-with-fixed-header">
-        
-        <!-- Header de productos -->
-        <section class="products-header text-center py-4">
-            <h1 class="products-title mb-2" style="color: var(--color-primario); font-weight: 700;">Nuestros Productos</h1>
-            <p class="products-subtitle text-muted">Muebles hechos a mano por artesanos colombianos</p>
+
+        <!-- Header de página -->
+        <section class="products-header mb-5">
+            <h1 class="products-title">Nuestra Colección 2026</h1>
+            <p class="lead">Muebles artesanales hechos a mano con amor en Colombia</p>
         </section>
-        
-        <!-- Filtros por categoría -->
-        <section class="filters-container">
-            <div class="filters-title">
-                <i class="fas fa-filter"></i> Filtrar por categoría
+
+        <!-- Barra de filtros y ordenamiento -->
+        <div class="filters-bar mb-5">
+            <div class="filter-group">
+                <select class="form-select filter-select" id="categoryFilter">
+                    <option value="all">Todas las categorías</option>
+                    {% for cat in categorias_principales %}
+                        <option value="{{ cat.slug }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                    {% for cat in categorias_secundarias %}
+                        <option value="{{ cat.slug }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="filters-scroll" id="filters-scroll">
-                <!-- Categorías principales (fijas) -->
-                {% for categoria in categorias_principales %}
-                <button class="filter-btn {% if forloop.first %}active{% endif %}" 
-                        data-filter="{{ categoria.slug }}"
-                        data-nombre="{{ categoria.nombre }}">
-                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
-                    {% if categoria.productos_count > 0 %}
-                    <span class="badge-count">{{ categoria.productos_count }}</span>
-                    {% endif %}
-                </button>
-                {% endfor %}
-                
-                <!-- Categorías secundarias (slider) -->
-                {% for categoria in categorias_secundarias %}
-                <button class="filter-btn" 
-                        data-filter="{{ categoria.slug }}"
-                        data-nombre="{{ categoria.nombre }}">
-                    <i class="fas fa-tag"></i> {{ categoria.nombre }}
-                    <span class="badge-count">{{ categoria.productos_count }}</span>
-                </button>
-                {% endfor %}
+
+            <div class="filter-group">
+                <input type="text" class="form-control search-input" id="searchInput" placeholder="Buscar producto...">
             </div>
-        </section>
-        
-        <!-- Grid de categorías (dinámico desde Django) -->
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4" id="categorias-grid">
-            {% with todas_las_categorias=categorias_principales|add:categorias_secundarias %}
-            {% for categoria in todas_las_categorias %}
-            <div class="col" data-category="{{ categoria.slug }}">
-                <article class="card-producto h-100">
-                    <div class="img-container">
-                        <img src="{{ categoria.imagen_url|default:'/static/img/placeholder.jpg' }}"
-                            class="card-img-top"
-                            alt="{{ categoria.nombre }}"
-                            onerror="this.src='https://via.placeholder.com/400x300?text={{ categoria.nombre }}'">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <h2 class="card-title">{{ categoria.nombre|upper }}</h2>
-                        <p class="text-muted small mb-2">{{ categoria.descripcion_corta }}</p>
-                        <p class="card-text flex-grow-1">{{ categoria.descripcion_larga }}</p>
-                        <a href="{% url 'pagina:productos_por_categoria' categoria.slug %}"
-                            class="btn btn-primary mt-2"
-                            data-nombre="{{ categoria.nombre }}">
-                            Ver {{ categoria.nombre|lower }}
-                        </a>
-                    </div>
-                </article>
+
+            <div class="filter-group">
+                <select class="form-select filter-select" id="sortSelect">
+                    <option value="newest">Más recientes primero</option>
+                    <option value="price-asc">Precio: menor a mayor</option>
+                    <option value="price-desc">Precio: mayor a menor</option>
+                    <option value="name-asc">Nombre A-Z</option>
+                    <option value="name-desc">Nombre Z-A</option>
+                </select>
             </div>
-            {% empty %}
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-folder-open display-4 text-muted mb-3"></i>
-                <p class="text-muted">No hay categorías disponibles</p>
-            </div>
-            {% endfor %}
-            {% endwith %}
+
+            <button class="btn btn-outline-secondary sort-btn" id="resetFilters">
+                <i class="fas fa-sync-alt"></i> Limpiar filtros
+            </button>
         </div>
-        
-        <!-- Productos destacados -->
-        <section class="featured-section">
-            <h2 class="featured-title">✨ Productos Destacados</h2>
+
+    <!-- Grid principal de productos -->
+    <div class="products-grid" id="productsGrid">
+        {% for producto in productos %}
+        <div class="product-card" 
+            data-category="{{ producto.categoria_slug|default:'sin-categoria' }}"
+            data-price="{{ producto.precio_numeric }}"
+            data-name="{{ producto.nombre|lower|escapejs }}"
+            data-date="{{ producto.created_at }}">
             
-            {% if productos_destacados %}
-            <div class="featured-grid">
-                {% for destacado in productos_destacados %}
-                <div class="featured-card" data-id="{{ destacado.id }}">
-                    <div class="img-container">
-                        <img src="{{ destacado.imagen_url|default:'/static/img/placeholder.jpg' }}" 
-                             alt="{{ destacado.nombre }}"
-                             loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x200?text=Producto'">
-                    </div>
-                    <h5 class="card-title">{{ destacado.nombre }}</h5>
-                    <p class="price">${{ destacado.precio|floatformat:0|intcomma }}</p>
-                    <button class="btn-featured" 
-                            onclick="verProducto('{{ destacado.slug|default:destacado.id }}', '{{ destacado.nombre|escapejs }}', {{ destacado.precio }})"
-                            data-slug="{{ destacado.slug|default:destacado.id }}"
-                            data-nombre="{{ destacado.nombre|escapejs }}"
-                            data-precio="{{ destacado.precio }}">
-                        Más info
+            <div class="product-img-container">
+                <img src="{{ producto.imagen_url|default:'/static/img/placeholder.jpg' }}"
+                    class="product-img" alt="{{ producto.nombre }}"
+                    loading="lazy">
+                {% if producto.estado == 'AGOTADO' %}
+                    <span class="product-badge bg-danger">Agotado</span>
+                {% endif %}
+            </div>
+
+            <div class="product-info text-center">
+                <h3 class="product-title">{{ producto.nombre }}</h3>
+                <div class="product-price">
+                    ${{ producto.precio_actual|floatformat:0|intcomma }}
+                </div>
+
+                <div class="product-actions">
+                    <button class="btn btn-add-cart"
+                            onclick="addToCart('{{ producto.id_producto }}', '{{ producto.nombre|escapejs }}', {{ producto.precio_actual }})">
+                        <i class="fas fa-cart-plus me-2"></i>Añadir
+                    </button>
+                    <button class="btn btn-info"
+                            onclick="showQuickView('{{ producto.id_producto }}', '{{ producto.nombre|escapejs }}', {{ producto.precio_actual }}, '{{ producto.imagen_url|default:'' }}')">
+                        <i class="fas fa-eye me-2"></i>Más info
                     </button>
                 </div>
-                {% endfor %}
             </div>
-            {% else %}
-            <!-- Fallback estático -->
-            <div class="featured-grid">
-                <div class="featured-card">
-                    <div class="img-container">
-                        <img src="{% static 'img/sofapremiun.jpeg' %}" alt="Sofá Premium" loading="lazy">
-                    </div>
-                    <h5 class="card-title">Sofá Premium</h5>
-                    <p class="price">$1.200.000</p>
-                    <button class="btn-featured" onclick="verProducto('sofa-premium', 'Sofá Premium', 1200000)">Más info</button>
-                </div>
-                <div class="featured-card">
-                    <div class="img-container">
-                        <img src="{% static 'img/cunaLujo.jpg' %}" alt="Cuna Lujo" loading="lazy">
-                    </div>
-                    <h5 class="card-title">Cuna Lujo</h5>
-                    <p class="price">$950.000</p>
-                    <button class="btn-featured" onclick="verProducto('cuna-lujo', 'Cuna Lujo', 950000)">Más info</button>
-                </div>
-                <div class="featured-card">
-                    <div class="img-container">
-                        <img src="{% static 'img/escritorioEjecutivo.jpg' %}" alt="Escritorio Ejecutivo" loading="lazy">
-                    </div>
-                    <h5 class="card-title">Escritorio Ejecutivo</h5>
-                    <p class="price">$850.000</p>
-                    <button class="btn-featured" onclick="verProducto('escritorio-ejecutivo', 'Escritorio Ejecutivo', 850000)">Más info</button>
-                </div>
-                <div class="featured-card">
-                    <div class="img-container">
-                        <img src="{% static 'img/ColechoDestacado.jpg' %}" alt="Colecho Plus" loading="lazy">
-                    </div>
-                    <h5 class="card-title">Colecho Plus</h5>
-                    <p class="price">$720.000</p>
-                    <button class="btn-featured" onclick="verProducto('colecho-plus', 'Colecho Plus', 720000)">Más info</button>
-                </div>
-            </div>
-            {% endif %}
-        </section>
-        
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4>No hay productos disponibles</h4>
+            <p class="text-muted">Prueba ajustando los filtros o vuelve más tarde</p>
+        </div>
+        {% endfor %}
+    </div>
+
     </main>
 
+    <!-- Modal rápido (inline) -->
+    <div class="quick-view-modal" id="quickViewModal">
+        <div class="quick-view-content">
+            <button class="quick-close" onclick="closeQuickView()">×</button>
+            <div class="row g-0">
+                <div class="col-md-5">
+                    <img id="qvImage" class="w-100 h-100 object-fit-cover" alt="Producto">
+                </div>
+                <div class="col-md-7 p-4">
+                    <h2 id="qvTitle" class="mb-3"></h2>
+                    <div class="mb-4">
+                        <span id="qvPrice" class="fs-3 fw-bold text-primario"></span>
+                    </div>
+                    <p id="qvDescription" class="text-secondary mb-4">
+                        <!-- Descripción dinámica o placeholder -->
+                        Producto artesanal hecho a mano en Colombia. Materiales premium y diseño exclusivo.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <button class="btn btn-add-cart w-50" id="qvAddBtn">
+                            <i class="fas fa-cart-plus me-2"></i>Añadir al carrito
+                        </button>
+                        <button class="btn btn-outline-secondary w-50" onclick="closeQuickView()">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
-    <footer class="footer-moderno footer-bg text-dark">
-        <!-- ... contenido del footer (igual que antes) ... -->
+        <footer class="footer-moderno footer-bg text-dark">
         <div class="container">
             <div class="row g-4 g-lg-5">
+                
                 <!-- Columna 1: Logo + Redes + Newsletter -->
                 <div class="col-12 col-lg-4">
                     <div class="footer-brand mb-4">
@@ -719,270 +693,219 @@
                 </p>
                 <div class="d-flex align-items-center gap-3">
                     <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+                    <button class="btn btn-sm btn-back-to-top d-none" id="btnBackToTop" aria-label="Volver arriba">
+                        <i class="fas fa-arrow-up"></i> <span class="d-none d-sm-inline">Arriba</span>
+                    </button>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema" aria-label="Alternar modo oscuro">
-        <i class="fas fa-moon"></i>
-    </button>
-
-    <!-- Bootstrap JS -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Datos desde Django -->
-    <script id="productos-data" type="application/json">
-        {
-            "carrito_cantidad": {{ carrito_cantidad|default:0 }},
-            "notificaciones_nuevas": {{ notificaciones_nuevas|default:0 }},
-            "categorias": {{ categorias_json|default:"[]"|safe }},
-            "destacados": {{ destacados_json|default:"[]"|safe }}
-        }
-    </script>
-
-    <!-- Script principal -->
+    <!-- Tu script principal con mejoras -->
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('🛍️ Página de productos cargada');
-        
-        // === DATOS DESDE DJANGO ===
-        const djangoData = JSON.parse(document.getElementById('productos-data')?.textContent || '{}');
-        let contadorCarrito = djangoData.carrito_cantidad || 0;
-        let notificaciones = [];
-        
-        const contadorEl = document.getElementById('contador-carrito');
-        if (contadorEl) contadorEl.textContent = contadorCarrito;
-        
-        // === FUNCIÓN CSRF TOKEN ===
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+    // === CSRF ===
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
-        
-        // === FILTROS POR CATEGORÍA ===
-        document.querySelectorAll('.filter-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                // Actualizar botones activos
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                button.classList.add('active');
-                
-                const filter = button.dataset.filter;
-                const items = document.querySelectorAll('#categorias-grid > .col');
-                
-                items.forEach(item => {
-                    const category = item.dataset.category;
-                    const show = (filter === 'all' || filter === 'todas' || category === filter);
-                    
-                    if (show) {
-                        item.style.display = 'block';
-                        // Animación de entrada
-                        item.style.opacity = '0';
-                        item.style.transform = 'translateY(10px)';
-                        setTimeout(() => {
-                            item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                            item.style.opacity = '1';
-                            item.style.transform = 'translateY(0)';
-                        }, 50);
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-                
-                // Notificación
-                const nombreFiltro = button.dataset.nombre || 'todos';
-                showToast(`🔍 Filtrando: ${nombreFiltro}`, 'info', { duration: 2000 });
+        return cookieValue;
+    }
+
+    // === TOAST ===
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container') || document.body.appendChild(Object.assign(document.createElement('div'), {id: 'toast-container', className: 'toast-container position-fixed top-0 end-0 p-3'}));
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>`;
+        container.appendChild(toast);
+        new bootstrap.Toast(toast, {delay: 4000}).show();
+    }
+
+    // === AÑADIR AL CARRITO ===
+    async function addToCart(productId, nombre, precio) {
+        const btn = event.target;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch("{% url 'ventas:api_carrito_agregar' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: new URLSearchParams({ producto_id: productId, cantidad: '1', precio, nombre })
             });
+
+            const data = await res.json();
+
+            if (data.success) {
+                document.getElementById('contador-carrito').textContent = data.cantidad_total;
+                showToast(`¡${nombre} añadido! (${data.cantidad_total} en carrito)`, 'success');
+            } else {
+                showToast(data.error || 'No se pudo agregar', 'danger');
+            }
+        } catch (e) {
+            showToast('Error de conexión', 'danger');
+        } finally {
+            btn.innerHTML = original;
+            btn.disabled = false;
+        }
+    }
+
+    // === MODAL RÁPIDO (Más info) ===
+    function showQuickView(id, nombre, precio, img) {
+        document.getElementById('qvTitle').textContent = nombre;
+        document.getElementById('qvPrice').textContent = '$' + Number(precio).toLocaleString('es-CO');
+        document.getElementById('qvImage').src = img || '/static/img/placeholder.jpg';
+        document.getElementById('qvAddBtn').onclick = () => addToCart(id, nombre, precio);
+
+        document.getElementById('quickViewModal').style.display = 'flex';
+    }
+
+    function closeQuickView() {
+        document.getElementById('quickViewModal').style.display = 'none';
+    }
+
+    document.getElementById('quickViewModal')?.addEventListener('click', e => {
+        if (e.target === e.currentTarget) closeQuickView();
+    });
+
+    // === UTILIDADES ===
+    function getCleanPrice(value) {
+        if (value === null || value === undefined || value === '') return 0;
+        if (typeof value === 'number') return value;
+        
+        // Limpiar formato de moneda: "$1.234,56" → 1234.56
+        let clean = value.toString()
+            .replace(/[^\d.,-]/g, '')  // Solo dígitos, coma, punto, guion
+            .replace(/\./g, '')         // Quitar puntos de miles
+            .replace(',', '.');         // Coma decimal → punto (estándar JS)
+        
+        const parsed = parseFloat(clean);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    function parseDate(dateStr) {
+        if (!dateStr) return new Date(0);
+        // Soporta: ISO, "YYYY-MM-DD", "YYYY-MM-DDTHH:mm:ss"
+        try {
+            return new Date(dateStr);
+        } catch {
+            return new Date(0);
+        }
+    }
+
+    // === FILTROS Y ORDENAMIENTO ===
+    const productsGrid = document.getElementById('productsGrid');
+    const originalProducts = Array.from(productsGrid.querySelectorAll('.product-card'));
+    let debounceTimer;
+
+    function filterAndSort() {
+        const category = document.getElementById('categoryFilter')?.value || 'all';
+        const search = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+        const sort = document.getElementById('sortSelect')?.value || 'newest';
+
+        // Filtrar
+        let filtered = originalProducts.filter(card => {
+            const catMatch = category === 'all' || category === 'todas' || card.dataset.category === category;
+            const searchMatch = !search || (card.dataset.name || '').includes(search);
+            return catMatch && searchMatch;
         });
-        
-        // === VER CATEGORÍA ===
-        window.verCategoria = function(slug, nombre) {
-            console.log('📂 Ver categoría:', { slug, nombre });
-            showToast(`📂 Navegando a: ${nombre}`, 'info');
-        };
-        
-        // === VER PRODUCTO ===
-        window.verProducto = function(slug, nombre, precio) {
-            console.log('👁️ Ver producto:', { slug, nombre, precio });
-            showToast(`👁️ Viendo: ${nombre}`, 'info');
-        };
-        
-        // === SISTEMA DE NOTIFICACIONES ===
-        const notificationsList = document.getElementById('notifications-list');
-        const bellBadge = document.getElementById('bell-badge');
-        const notificationsDropdown = document.getElementById('notifications-dropdown');
-        const notificationsBell = document.getElementById('notifications-bell');
-        
-        if (bellBadge && djangoData.notificaciones_nuevas > 0) {
-            bellBadge.textContent = djangoData.notificaciones_nuevas;
-            bellBadge.style.display = 'block';
-        }
-        
-        function guardarNotificacion(mensaje, tipo = 'sistema') {
-            const notif = {
-                id: Date.now(),
-                mensaje,
-                tipo,
-                leida: false,
-                fecha: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            notificaciones.unshift(notif);
-            actualizarNotificaciones();
-        }
-        
-        function actualizarNotificaciones() {
-            const nuevas = notificaciones.filter(n => !n.leida);
-            if (bellBadge) {
-                bellBadge.textContent = nuevas.length || '';
-                bellBadge.style.display = nuevas.length ? 'block' : 'none';
+
+        // Ordenar
+        filtered.sort((a, b) => {
+            switch(sort) {
+                case 'price-asc':
+                    return getCleanPrice(a.dataset.price) - getCleanPrice(b.dataset.price);
+                case 'price-desc':
+                    return getCleanPrice(b.dataset.price) - getCleanPrice(a.dataset.price);
+                case 'name-asc':
+                    return (a.dataset.name || '').localeCompare(b.dataset.name || '');
+                case 'name-desc':
+                    return (b.dataset.name || '').localeCompare(a.dataset.name || '');
+                case 'newest':
+                    return parseDate(b.dataset.date) - parseDate(a.dataset.date);
+                default:
+                    return 0;
             }
-            if (notificaciones.length === 0 && notificationsList) {
-                notificationsList.innerHTML = '<div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>';
-                return;
-            }
-            if (notificationsList) {
-                notificationsList.innerHTML = notificaciones.map(n => `
-                    <div class="notification-item ${n.leida ? '' : 'new'}">
-                        <span class="notification-icon">${n.tipo === 'carrito' ? '🛒' : '👀'}</span>
-                        <div class="notification-content">
-                            <strong>${n.mensaje}</strong>
-                            <span class="notification-time">${n.fecha}</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
+        });
+
+        // Render con animación
+        productsGrid.style.opacity = '0.7';
+        productsGrid.style.pointerEvents = 'none';
         
-        if (notificationsBell) {
-            notificationsBell.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (notificationsDropdown) notificationsDropdown.classList.toggle('show');
-                notificaciones.forEach(n => n.leida = true);
-                actualizarNotificaciones();
-            });
-            document.addEventListener('click', (e) => {
-                if (!notificationsBell.contains(e.target)) {
-                    if (notificationsDropdown) notificationsDropdown.classList.remove('show');
-                }
-            });
-            const clearBtn = document.getElementById('clear-notifications');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    notificaciones = [];
-                    actualizarNotificaciones();
+        setTimeout(() => {
+            productsGrid.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                productsGrid.innerHTML = `
+                    <div class="no-results-state">
+                        <i class="fas fa-box-open"></i>
+                        <h4>No hay productos que coincidan</h4>
+                        <p class="text-muted mb-3">Intenta con otros términos o limpia los filtros</p>
+                        <button class="btn btn-outline-primary" onclick="resetFilters()">
+                            <i class="fas fa-eraser me-2"></i>Limpiar filtros
+                        </button>
+                    </div>`;
+            } else {
+                filtered.forEach((card, index) => {
+                    card.style.animation = `fadeInUp 0.4s ease forwards ${index * 0.05}s`;
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(15px)';
+                    productsGrid.appendChild(card);
                 });
             }
-        }
+            
+            productsGrid.style.opacity = '1';
+            productsGrid.style.pointerEvents = 'auto';
+        }, 200);
+    }
+
+    function resetFilters() {
+        const categoryFilter = document.getElementById('categoryFilter');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
         
-        // === TOAST NOTIFICATIONS ===
-        window.showToast = function(message, type = 'info', options = {}) {
-            const container = document.getElementById('toast-container') || createToastContainer();
-            const toast = document.createElement('div');
-            toast.className = `toast-modern ${type}`;
-            const icons = {
-                success: 'fa-check-circle',
-                error: 'fa-exclamation-circle',
-                warning: 'fa-exclamation-triangle',
-                info: 'fa-info-circle'
-            };
-            toast.innerHTML = `
-                <i class="fas ${icons[type] || icons.info}"></i>
-                <div class="toast-content">
-                    <div class="toast-title">${type === 'success' ? '¡Éxito!' : 'Atención'}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-                <button class="toast-close" onclick="this.closest('.toast-modern').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.style.animation = 'fadeOut 0.3s ease forwards';
-                    setTimeout(() => toast.remove(), 300);
-                }
-            }, options.duration || 5000);
-        };
+        if (categoryFilter) categoryFilter.value = 'all';
+        if (searchInput) searchInput.value = '';
+        if (sortSelect) sortSelect.value = 'newest';
         
-        function createToastContainer() {
-            const container = document.createElement('div');
-            container.id = 'toast-container';
-            container.className = 'toast-container';
-            document.body.appendChild(container);
-            return container;
-        }
-        
-        // === DARK MODE TOGGLE ===
-        const themeToggle = document.getElementById('theme-toggle');
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => {
-                const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-                themeToggle.querySelector('i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-                localStorage.setItem('theme', isDark ? 'light' : 'dark');
-                showToast(`🌓 Modo ${isDark ? 'claro' : 'oscuro'} activado`, 'info');
-            });
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-                themeToggle.querySelector('i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-            }
-        }
-        
-        // === BÚSQUEDA EN TIEMPO REAL ===
-        const busquedaInput = document.getElementById('Buscador');
-        const sugerenciasBox = document.getElementById('sugerencias-busqueda');
-        if (busquedaInput && sugerenciasBox) {
-            const categoriasBusqueda = djangoData.categorias?.map(c => c.nombre) || [];
-            busquedaInput.addEventListener('input', () => {
-                const valor = busquedaInput.value.toLowerCase().trim();
-                sugerenciasBox.innerHTML = '';
-                if (valor.length >= 2) {
-                    const coincidencias = categoriasBusqueda.filter(c => c.toLowerCase().includes(valor));
-                    if (coincidencias.length > 0) {
-                        coincidencias.forEach(nombre => {
-                            const item = document.createElement('a');
-                            item.href = '#';
-                            item.className = 'list-group-item list-group-item-action';
-                            item.textContent = nombre;
-                            item.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                busquedaInput.value = nombre;
-                                sugerenciasBox.style.display = 'none';
-                                showToast(`🔍 Buscando: ${nombre}`, 'info');
-                            });
-                            sugerenciasBox.appendChild(item);
-                        });
-                        sugerenciasBox.style.display = 'block';
-                    } else {
-                        sugerenciasBox.style.display = 'none';
-                    }
-                } else {
-                    sugerenciasBox.style.display = 'none';
-                }
-            });
-            document.addEventListener('click', (e) => {
-                if (!busquedaInput.contains(e.target) && !sugerenciasBox.contains(e.target)) {
-                    sugerenciasBox.style.display = 'none';
-                }
-            });
-        }
-        
-        // Inicializar
-        actualizarNotificaciones();
-        console.log('✅ Script de productos cargado');
+        filterAndSort();
+        showToast('Filtros restablecidos', 'info');
+    }
+
+    // Eventos
+    document.getElementById('categoryFilter')?.addEventListener('change', filterAndSort);
+    document.getElementById('sortSelect')?.addEventListener('change', filterAndSort);
+
+    // Debounce para búsqueda
+    document.getElementById('searchInput')?.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(filterAndSort, 300);
+    });
+
+    document.getElementById('resetFilters')?.addEventListener('click', resetFilters);
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+        filterAndSort();
     });
     </script>
 </body>
