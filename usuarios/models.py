@@ -30,7 +30,62 @@ class Usuarios(models.Model):
     deleted_at = models.DateTimeField(blank=True, null=True)
     
     def __str__(self):
-        return f"{self.nombres} {self.apellidos}" 
+        return f"{self.nombres} {self.apellidos}"
+
+    # =====================================================================
+    # ✅ PROPIEDADES PARA COMPATIBILIDAD CON DJANGO
+    # =====================================================================
+    
+    @property
+    def username(self):
+        """Retorna el correo como username"""
+        return self.correo_usuario
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    @property
+    def is_active(self):
+        return self.estado == 'ACTIVO'
+    
+    @property
+    def is_superuser(self):
+        """Retorna True solo si es GERENTE"""
+        if self.id_rol:
+            return self.id_rol.nombre_rol == 'GERENTE'
+        return False
+    
+    @property
+    def is_staff(self):
+        """Retorna True si no es CLIENTE"""
+        if self.id_rol:
+            return self.id_rol.nombre_rol != 'CLIENTE'
+        return False
+    
+    # =====================================================================
+    # ✅ MÉTODOS ADICIONALES ÚTILES
+    # =====================================================================
+    
+    def get_full_name(self):
+        return f"{self.nombres} {self.apellidos}"
+    
+    def get_short_name(self):
+        return self.nombres
+    
+    def has_role(self, role_name):
+        if self.id_rol:
+            return self.id_rol.nombre_rol == role_name
+        return False
+    
+    def has_any_role(self, role_names):
+        if self.id_rol:
+            return self.id_rol.nombre_rol in role_names
+        return False
 
     class Meta:
         managed = True

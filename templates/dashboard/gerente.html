@@ -1,12 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard - Inicio{% endblock %}
+{% block title %}Dashboard Gerente - ORDEN R.A.E{% endblock %}
 
 {% block content %}
 <!-- Header -->
 <div class="page-header mb-4">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Resumen general del sistema</p>
+    <h1 class="page-title">
+        <i class="bi bi-speedometer2 me-2"></i>Dashboard General
+    </h1>
+    <p class="page-subtitle">Bienvenido, {{ user_nombre }} | Rol: {{ user_rol }}</p>
 </div>
 
 <!-- Tarjetas de Estadísticas Principales -->
@@ -146,7 +148,10 @@
                     <option>Este año</option>
                 </select>
             </div>
-            <canvas id="ventasChart" height="80"></canvas>
+            <!--  Contenedor con altura definida -->
+            <div style="position: relative; height: 400px;">
+                <canvas id="ventasChart"></canvas>
+            </div>
         </div>
     </div>
     
@@ -154,7 +159,10 @@
     <div class="col-lg-4">
         <div class="card-modern p-4">
             <h5 class="fw-bold mb-4">Productos por Categoría</h5>
-            <canvas id="categoriasChart" height="200"></canvas>
+            <!--  Contenedor con altura definida -->
+            <div style="position: relative; height: 300px;">
+                <canvas id="categoriasChart"></canvas>
+            </div>
         </div>
     </div>
 </div>
@@ -164,9 +172,13 @@
     <div class="col-lg-6">
         <div class="card-modern p-4">
             <h5 class="fw-bold mb-4">Pedidos por Estado</h5>
-            <canvas id="pedidosChart" height="150"></canvas>
+            <!--  Contenedor con altura definida -->
+            <div style="position: relative; height: 300px;">
+                <canvas id="pedidosChart"></canvas>
+            </div>
         </div>
     </div>
+    ...
     
     <!-- Estado de Producción -->
     <div class="col-lg-6">
@@ -297,12 +309,11 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-    // Configurar colores del tema
     const colors = {
         primary: '#2dd4bf',
         success: '#10b981',
@@ -338,15 +349,10 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.8)',
                     padding: 12,
-                    titleFont: { size: 13 },
-                    bodyFont: { size: 13 },
-                    cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
                             return '$ ' + context.parsed.y.toLocaleString();
@@ -357,23 +363,15 @@
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(100, 116, 139, 0.1)'
-                    },
+                    grid: { color: 'rgba(100, 116, 139, 0.1)' },
                     ticks: {
                         color: colors.gray,
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
-                        }
+                        callback: function(value) { return '$' + value.toLocaleString(); }
                     }
                 },
                 x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: colors.gray
-                    }
+                    grid: { display: false },
+                    ticks: { color: colors.gray }
                 }
             }
         }
@@ -387,13 +385,7 @@
             labels: {{ productos_por_categoria.etiquetas|safe }},
             datasets: [{
                 data: {{ productos_por_categoria.datos|safe }},
-                backgroundColor: [
-                    colors.primary,
-                    colors.success,
-                    colors.warning,
-                    colors.danger,
-                    colors.info
-                ],
+                backgroundColor: [colors.primary, colors.success, colors.warning, colors.danger, colors.info],
                 borderWidth: 0,
                 hoverOffset: 4
             }]
@@ -404,12 +396,7 @@
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        usePointStyle: true,
-                        pointStyle: 'circle',
-                        color: colors.gray
-                    }
+                    labels: { padding: 15, usePointStyle: true, pointStyle: 'circle', color: colors.gray }
                 }
             },
             cutout: '65%'
@@ -425,13 +412,7 @@
             datasets: [{
                 label: 'Pedidos',
                 data: {{ pedidos_estado_data.datos|safe }},
-                backgroundColor: [
-                    colors.gray,
-                    colors.info,
-                    colors.warning,
-                    colors.success,
-                    colors.danger
-                ],
+                backgroundColor: [colors.gray, colors.info, colors.warning, colors.success, colors.danger],
                 borderRadius: 8,
                 borderSkipped: false
             }]
@@ -439,29 +420,16 @@
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            plugins: { legend: { display: false } },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(100, 116, 139, 0.1)'
-                    },
-                    ticks: {
-                        color: colors.gray,
-                        stepSize: 1
-                    }
+                    grid: { color: 'rgba(100, 116, 139, 0.1)' },
+                    ticks: { color: colors.gray, stepSize: 1 }
                 },
                 x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: colors.gray
-                    }
+                    grid: { display: false },
+                    ticks: { color: colors.gray }
                 }
             }
         }

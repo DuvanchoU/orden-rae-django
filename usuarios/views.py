@@ -6,9 +6,69 @@ from .models import Usuarios, RolesOld
 from .forms import UsuarioForm, UsuarioUpdateForm, RolForm
 from django.contrib import messages
 from django.utils import timezone
+import hashlib
+from django.contrib.auth import login as auth_login  
 
 
-# ROLES
+# =============================================================================
+# === VISTAS DE LOGIN Y LOGOUT ===
+# =============================================================================
+
+def login_view(request):
+    if request.method == 'POST':
+        correo = request.POST.get('correo')      # ← Debe coincidir con name="correo"
+        contrasena = request.POST.get('contrasena')  # ← Debe coincidir con name="contrasena"
+        
+        try:
+            usuario = Usuarios.objects.get(correo_usuario=correo)
+            
+            # Encriptar contraseña con SHA256 (igual que cuando creaste los usuarios)
+            contrasena_hash = hashlib.sha256(contrasena.encode()).hexdigest()
+            
+            if usuario.contrasena_usuario == contrasena_hash:
+                
+                if usuario.estado != 'ACTIVO':
+                    messages.error(request, 'Usuario inactivo.')
+                    return render(request, 'pagina/login.html')
+                
+                # Guardar en sesión para tu middleware
+                request.session['usuario_id'] = usuario.id_usuario
+                request.session['usuario_nombre'] = f"{usuario.nombres} {usuario.apellidos}"
+                request.session['usuario_rol'] = usuario.id_rol.nombre_rol
+                
+                # Redirigir al dashboard (que manejará la redirección por rol)
+                return redirect('dashboard:dashboard_home')
+            else:
+                messages.error(request, 'Contraseña incorrecta')
+                
+        except Usuarios.DoesNotExist:
+            messages.error(request, 'Usuario no encontrado')
+        
+        return render(request, 'pagina/login.html')
+    
+    return render(request, 'pagina/login.html')
+
+
+def logout_view(request):
+    """
+    Cierra la sesión del usuario y redirige al login.
+    """
+    from django.contrib.auth import logout as django_logout
+    
+    # Limpiar sesión de Django (si se usa auth_login)
+    django_logout(request)
+    
+    # Limpiar sesión personalizada
+    request.session.flush()
+    
+    # ✅ Redirigir al login (debe coincidir con el name en config/urls.py)
+    return redirect('login')  # name='login' está en config/urls.py línea 14
+
+
+# =============================================================================
+# === VISTAS DE ROLES ===
+# =============================================================================
+
 class RolListView(ListView):
     model = RolesOld
     template_name = 'usuarios/rol_list.html'
@@ -68,13 +128,16 @@ class RolDetailView(DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Agregar usuarios con este rol
         rol = self.get_object()
         context['usuarios_con_rol'] = Usuarios.objects.filter(id_rol=rol)[:5]
         context['total_usuarios'] = Usuarios.objects.filter(id_rol=rol).count()
         return context
-    
-# USUARIOS
+
+
+# =============================================================================
+# === VISTAS DE USUARIOS ===
+# =============================================================================
+
 class UsuarioListView(ListView):
     model = Usuarios
     template_name = 'usuarios/usuario_list.html'
@@ -150,7 +213,6 @@ class UsuarioDetailView(DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Agregar datos adicionales si los necesitas
         usuario = self.get_object()
         context['rol_nombre'] = usuario.id_rol.nombre_rol if usuario.id_rol else "Sin rol"
         return context

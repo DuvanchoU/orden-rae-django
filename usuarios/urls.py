@@ -1,12 +1,21 @@
+# usuarios/urls.py
 from django.urls import path
 from .views import (
+    # Login/Logout
+    login_view, logout_view,
+    # Roles
     RolListView, RolCreateView, RolUpdateView, RolDeleteView, RolDetailView,
+    # Usuarios
     UsuarioListView, UsuarioCreateView, UsuarioUpdateView, UsuarioDeleteView, UsuarioDetailView,
 )
 
 app_name = 'usuarios'
 
 urlpatterns = [
+    # Login/Logout
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
+    
     # Roles
     path('roles/', RolListView.as_view(), name='rol_list'),
     path('roles/nuevo/', RolCreateView.as_view(), name='rol_create'),

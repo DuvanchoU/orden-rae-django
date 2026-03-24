@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'usuarios.middleware.CustomAuthMiddleware', 
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -74,6 +75,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'ventas.context_processors.carrito_context',
+                'usuarios.context_processors.user_permissions', 
             ],
         },
     },
@@ -149,6 +151,12 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 LOGOUT_REDIRECT_URL = '/'  # ← Redirige a la página principal
 
-# URL de login (opcional)
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/dashboard/'
+# URL de login
+LOGIN_URL = 'usuarios:login'
+LOGIN_REDIRECT_URL = 'dashboard:dashboard_home'
+LOGOUT_REDIRECT_URL = 'usuarios:login'
+
+AUTHENTICATION_BACKENDS = [
+    'usuarios.backends.UsuariosAuthBackend',  # Backend personalizado (PRIORITARIO)
+    'django.contrib.auth.backends.ModelBackend',  # Backend por defecto (fallback)
+]
