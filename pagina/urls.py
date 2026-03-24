@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'pagina'
@@ -19,23 +19,20 @@ urlpatterns = [
     path('blog-decoracion/', views.blog_decoracion, name='blog_decoracion'),   
     
     # --- Carrito y Checkout ---
-    path('carrito-compra/', views.carrito_compra, name='carrito_compra'),
     path('checkout/', views.checkout, name='checkout'),
+    path('carrito/', include(('ventas.urls', 'ventas'), namespace='carrito')),
     
     # --- Usuario y Autenticación ---
     path('login/', views.login_view, name='login'),
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
-    path('perfil/', views.perfil_view, name='perfil'), 
+    path('perfil/', views.perfil_view, name='perfil'),
 
     # --- Formularios ---
     path('contacto/', views.contacto, name='contacto'),
     path('cotiza/', views.cotiza, name='cotiza'), 
     
     # --- API ---
-    path('api/carrito/agregar/', views.api_agregar_carrito, name='api_agregar_carrito'),
-    path('api/carrito/actualizar/', views.api_carrito_actualizar, name='api_carrito_actualizar'),
-    path('api/carrito/eliminar/', views.api_carrito_eliminar, name='api_carrito_eliminar'),
     path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
     path('api/cotiza/enviar/', views.api_cotiza_enviar, name='api_cotiza_enviar'),
     path('api/contacto/enviar/', views.api_contacto_enviar, name='api_contacto_enviar'),

@@ -18,6 +18,7 @@ import string
 from django.core.mail import send_mail
 from django.conf import settings
 
+
 def generar_avatar_url(nombre, tamaño=128):
     """Genera una URL de avatar consistente basada en el nombre."""
     colores = [
@@ -947,117 +948,9 @@ def perfil_view(request):
     }
     return render(request, 'pagina/perfil.html', context)
 
-def carrito_compra(request):
-    """Vista de carrito de compras"""
-    
-    carrito_session = request.session.get('carrito', {})
-    
-    carrito_items = []
-    total_carrito = 0
-    total_iva = 0
-    
-    for producto_id_str, cantidad in carrito_session.items():
-        try:
-            prod = Producto.objects.get(id_producto=producto_id_str)
-            img = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
-            
-            precio_base = int(prod.precio_actual)
-            iva = int(precio_base * 0.19)  # 19% IVA
-            subtotal = (precio_base + iva) * cantidad
-            
-            carrito_items.append({
-                'producto_id': producto_id_str,
-                'nombre': prod.referencia_producto or prod.codigo_producto,
-                'precio_base': precio_base,
-                'iva': iva,
-                'cantidad': cantidad,
-                'subtotal': subtotal,
-                'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
-                'stock': 99,  # Puedes obtenerlo del inventario
-                'variantes': [],
-                'sku': prod.codigo_producto,
-            })
-            
-            total_carrito += precio_base * cantidad
-            total_iva += iva * cantidad
-            
-        except Producto.DoesNotExist:
-            continue
-    
-    context = {
-        'carrito_items': carrito_items,
-        'carrito_items_json': json.dumps(carrito_items),
-        'saved_items_json': json.dumps([]),
-        'carrito_cantidad': sum(item['cantidad'] for item in carrito_items),
-        'total_carrito': total_carrito,
-        'total_iva': total_iva,
-        'notificaciones_nuevas': 0,
-    }
-    
-    return render(request, 'pagina/carrito.html', context)
-
-
 # =============================================================================
 # API ENDPOINTS ACTUALIZADOS
 # =============================================================================
-
-@require_http_methods(["POST"])
-def api_carrito_actualizar(request):
-    """Actualizar cantidad con validación de stock"""
-    try:
-        data = json.loads(request.body)
-        producto_id = str(data.get('producto_id'))
-        cantidad = max(1, int(data.get('cantidad', 1)))
-        
-        # TODO: Validar stock real desde BD
-        # producto = Producto.objects.get(id=producto_id)
-        # if cantidad > producto.stock:
-        #     return JsonResponse({'success': False, 'error': 'Stock insuficiente'}, status=400)
-        
-        carrito = request.session.get('carrito', {})
-        if producto_id in carrito:
-            carrito[producto_id] = cantidad
-            request.session['carrito'] = carrito
-            request.session.modified = True
-            
-            return JsonResponse({
-                'success': True,
-                'cantidad_total': sum(carrito.values()),
-                'message': 'Cantidad actualizada'
-            })
-        return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
-            
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
-
-
-@require_http_methods(["POST"])
-def api_carrito_eliminar(request):
-    """Eliminar producto con soporte para undo"""
-    try:
-        data = json.loads(request.body)
-        producto_id = str(data.get('producto_id'))
-        
-        carrito = request.session.get('carrito', {})
-        if producto_id in carrito:
-            # Guardar snapshot para posible undo (en caché por 5 min)
-            from django.core.cache import cache
-            cache.set(f'cart_undo_{request.session.session_key}_{producto_id}', 
-                     {producto_id: carrito[producto_id]}, 300)
-            
-            del carrito[producto_id]
-            request.session['carrito'] = carrito
-            request.session.modified = True
-            
-            return JsonResponse({
-                'success': True,
-                'cantidad_total': sum(v for k, v in carrito.items()),
-                'message': 'Producto eliminado'
-            })
-        return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
-            
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 @require_http_methods(["POST"])
@@ -1124,50 +1017,6 @@ def checkout(request):
 # API ENDPOINTS PARA AJAX - URLs deben coincidir con el JavaScript
 # =============================================================================
 
-@require_http_methods(["POST"])
-def api_agregar_carrito(request):
-    """Agregar producto al carrito - API Endpoint"""
-    try:
-        data = json.loads(request.body)
-        producto_id = str(data.get('producto_id'))
-        cantidad = data.get('cantidad', 1)
-        precio = data.get('precio', 0)
-        nombre = data.get('nombre', 'Producto')
-        
-        # Obtener carrito actual de la sesión
-        carrito = request.session.get('carrito', {})
-        
-        # Agregar o actualizar producto
-        if producto_id in carrito:
-            carrito[producto_id] += cantidad
-        else:
-            carrito[producto_id] = cantidad
-        
-        # Guardar en sesión
-        request.session['carrito'] = carrito
-        request.session['carrito_cantidad'] = sum(carrito.values())
-        request.session.modified = True
-        
-        print(f"✅ Producto añadido: {nombre} (ID: {producto_id})")
-        print(f"🛒 Carrito actual: {carrito}")
-        print(f"📊 Total items: {request.session['carrito_cantidad']}")
-        
-        return JsonResponse({
-            'success': True,
-            'cantidad_total': request.session['carrito_cantidad'],
-            'message': f'{nombre} añadido al carrito'
-        })
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'error': 'JSON inválido'
-        }, status=400)
-    except Exception as e:
-        print(f"❌ Error en api_agregar_carrito: {e}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
 
 @login_required
 def checkout(request):
@@ -1419,7 +1268,7 @@ def trabaja_con_nosotros(request):
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
         'notificaciones_nuevas': 0,
         'vacantes': vacantes,
-        'default_vacantes': default_vacantes,  # ← AGREGAR ESTA LÍNEA
+        'default_vacantes': default_vacantes,
         'beneficios': beneficios,
     }
     return render(request, 'pagina/trabaja_con_nosotros.html', context)

@@ -40,7 +40,19 @@ urlpatterns = [
 
     # Carrito
     path('carrito/', views.carrito_compra, name='carrito_compra'),
+    path('carrito/agregar/', views.api_carrito_agregar, name='carrito_agregar'),
+    path('carrito/eliminar/<int:item_id>/', views.api_carrito_eliminar, name='carrito_eliminar'),
+    path('carrito/actualizar/<int:item_id>/', views.api_carrito_actualizar, name='carrito_actualizar'),
     path('api/carrito/agregar/', views.api_carrito_agregar, name='api_carrito_agregar'),
-    path('api/carrito/eliminar/<int:item_id>/', views.api_carrito_eliminar, name='api_carrito_eliminar'),
-    path('api/carrito/actualizar/<int:item_id>/', views.api_carrito_actualizar, name='api_carrito_actualizar'),
+    path('api/carrito/contador/', views.api_carrito_contador, name='api_carrito_contador'),
+
+     # Perfil
+    path('perfil/', views.perfil_usuario, name='perfil_usuario'),
+    path('perfil/actualizar/', views.perfil_actualizar, name='perfil_actualizar'),
+    path('perfil/avatar/', views.avatar_actualizar, name='avatar_actualizar'),
+    path('perfil/password/', views.password_cambiar, name='password_cambiar'),
+    path('perfil/notificaciones/leidas/', views.notificaciones_marcar_leidas, name='notificaciones_marcar_leidas'),
+    path('perfil/preferencias/', views.preferencias_guardar, name='preferencias_guardar'),
+    path('perfil/exportar/', views.datos_exportar, name='datos_exportar'),
+    path('perfil/stats/', views.perfil_stats, name='perfil_stats'), 
 ]

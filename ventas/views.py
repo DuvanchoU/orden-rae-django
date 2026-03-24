@@ -8,6 +8,9 @@ from usuarios.models import Usuarios
 from django.contrib import messages
 from django.utils import timezone
 from .forms import ClienteForm, PedidoForm, VentaForm, CotizacionForm
+import json
+from django.contrib.auth import login
+from ventas.models import Clientes, Carritos, ItemsCarrito, Pedido, Ventas
 
 # CLIENTES
 class ClienteListView(ListView):
@@ -129,7 +132,7 @@ class PedidoCreateView(CreateView):
         return context
 
     def form_valid(self, form):
-        form.instance.usuario_id = 1  # Cambiar por request.user.id cuando tengas auth
+        form.instance.usuario_id = 1 
         form.instance.fecha_pedido = timezone.now()
         return super().form_valid(form)
 
@@ -334,64 +337,92 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from inventario.models import Producto, Inventario
 from django.db import models
+from decimal import Decimal, ROUND_HALF_UP
+from django.views.decorators.http import require_GET
+
+IVA_RATE = Decimal('0.19')
 
 def get_or_create_carrito(request):
     """Obtiene o crea carrito para usuario autenticado o sesión anónima"""
+    
     if request.user.is_authenticated:
-        cliente = Clientes.objects.filter(email=request.user.email).first()
-        if not cliente:
-            # Crear cliente automático si no existe
+        cliente = Clientes.objects.filter(
+            email=request.user.email,
+            deleted_at__isnull=True
+        ).first()
+        
+        if not cliente and request.user.email:
             cliente = Clientes.objects.create(
                 nombre=request.user.get_full_name() or request.user.username,
                 email=request.user.email,
                 fecha_registro=timezone.now()
             )
-        carrito, created = Carritos.objects.get_or_create(cliente=cliente)
-    else:
-        # Para usuarios no autenticados → usamos session_id
-        session_id = request.session.session_key
-        if not session_id:
-            request.session.create()
-            session_id = request.session.session_key
-        carrito, created = Carritos.objects.get_or_create(session_id=session_id)
+        
+        if cliente:
+            carrito, created = Carritos.objects.get_or_create(
+                cliente=cliente,
+                deleted_at__isnull=True,
+                defaults={'created_at': timezone.now()}
+            )
+            return carrito
     
+    # Para usuarios no autenticados → session_id
+    session_id = request.session.session_key
+    if not session_id:
+        request.session.create()
+        session_id = request.session.session_key
+        request.session.save()
+    
+    carrito, created = Carritos.objects.get_or_create(
+        session_id=session_id,
+        deleted_at__isnull=True,
+        defaults={'created_at': timezone.now()}
+    )
     return carrito
 
 
-@login_required  # o quitar si permites carrito anónimo
+@login_required
 def carrito_compra(request):
     carrito = get_or_create_carrito(request)
-    items_qs = carrito.itemscarrito_set.select_related('producto')
+    items_qs = ItemsCarrito.objects.filter(carrito=carrito).select_related('producto')
     
     items = []
-    total_carrito = 0
-    total_iva = 0
+    total_carrito = Decimal('0')
+    total_iva = Decimal('0') 
     
     for item in items_qs:
-        subtotal = item.precio_unitario * item.cantidad
-        iva_item = subtotal * 0.19  # ajusta según tu IVA real
+        precio = Decimal(str(item.precio_unitario))
+        cantidad = Decimal(str(item.cantidad))
+        
+        # CALCULAR IVA POR UNIDAD 
+        iva_por_unidad = precio * IVA_RATE  
+        subtotal_linea = precio * cantidad   
+        iva_total_linea = iva_por_unidad * cantidad
         
         items.append({
             'producto_id': item.producto.id_producto,
             'nombre': item.producto.referencia_producto or item.producto.codigo_producto,
             'sku': item.producto.codigo_producto,
-            'precio_base': float(item.precio_unitario),
-            'cantidad': item.cantidad,
-            'subtotal': float(subtotal),
-            'iva': float(iva_item),
-            'imagen_url': item.producto.get_imagen_principal().ruta_imagen if item.producto.get_imagen_principal() else '/static/img/placeholder.jpg',
-            'stock': item.producto.get_stock_total(),
-            'item_id': item.id_item,  # para eliminar/actualizar
+            'precio_base': float(precio),
+            'iva_unitario': float(iva_por_unidad),
+            'cantidad': int(cantidad),
+            'subtotal': float(subtotal_linea),
+            'iva': float(iva_total_linea),
+            'imagen_url': item.producto.get_imagen_principal().ruta_imagen 
+                        if hasattr(item.producto, 'get_imagen_principal') 
+                        and item.producto.get_imagen_principal() 
+                        else '/static/img/placeholder.jpg',
+            'stock': item.producto.get_stock_total() if hasattr(item.producto, 'get_stock_total') else 999,
+            'item_id': item.id_item,
         })
-        total_carrito += subtotal
-        total_iva += iva_item
-
+        total_carrito += subtotal_linea
+        total_iva += iva_total_linea 
     context = {
         'carrito_items': items,
-        'carrito_cantidad': sum(i.cantidad for i in ItemsCarrito.objects.filter(carrito=carrito)),
+        'carrito_cantidad': sum(i['cantidad'] for i in items), 
         'total_carrito': float(total_carrito),
         'total_iva': float(total_iva),
-        'carrito_items_json': items,  # para tu JS si lo necesitas
+        'carrito_items_json': items,
     }
     
     return render(request, 'pagina/carrito.html', context)
@@ -399,122 +430,72 @@ def carrito_compra(request):
 
 @require_POST
 def api_carrito_agregar(request):
-    print("=== API AGREGAR CARRITO INICIADA ===")
-    print("POST data:", dict(request.POST))
-    
     try:
         producto_id = request.POST.get('producto_id')
-        if not producto_id:
-            raise ValueError("producto_id no recibido")
+        cantidad = int(request.POST.get('cantidad', 1))
         
-        cantidad_str = request.POST.get('cantidad', '1')
-        cantidad = int(cantidad_str)
-        
-        precio = float(request.POST.get('precio', 0))
-        nombre = request.POST.get('nombre', '')
-        
-        print(f"Buscando producto ID: {producto_id}")
         producto = Producto.objects.get(id_producto=producto_id)
-        print(f"Producto encontrado: {producto}")
-        
         carrito = get_or_create_carrito(request)
-        print(f"Carrito obtenido/creado: ID {carrito.id_carrito}")
         
-        # Stock check
-        stock_disponible = producto.get_stock_total()
-        print(f"Stock disponible: {stock_disponible}")
+        # Verificar stock
+        stock_disponible = producto.get_stock_total() if hasattr(producto, 'get_stock_total') else 999
         if stock_disponible < cantidad:
             return JsonResponse({
                 'success': False,
                 'error': f'Solo hay {stock_disponible} unidades disponibles'
             }, status=400)
         
-        # Crear/actualizar item
-        print("Creando/actualizando item...")
+        precio_unitario = Decimal(str(producto.precio_actual))
+        
         item, created = ItemsCarrito.objects.get_or_create(
             carrito=carrito,
             producto=producto,
             defaults={
                 'precio_unitario': producto.precio_actual,
-                'cantidad': cantidad
+                'cantidad': cantidad,
+                'created_at': timezone.now()
             }
         )
+        
         if not created:
             item.cantidad += cantidad
+            item.updated_at = timezone.now()
             item.save()
-        print(f"Item {'creado' if created else 'actualizado'}: {item}")
         
-        # Reserva de stock
-        print("Reservando stock...")
-        inventarios = Inventario.objects.filter(
-            producto=producto,
-            cantidad_disponible__gt=0,
-            deleted_at__isnull=True
-        ).order_by('fecha_registro')
-        
-        cantidad_pendiente = cantidad
-        for inv in inventarios:
-            if cantidad_pendiente <= 0:
-                break
-            disponible = inv.cantidad_disponible - (inv.cantidad_reservada or 0)
-            reservar = min(cantidad_pendiente, disponible)
-            if reservar > 0:
-                inv.cantidad_reservada = (inv.cantidad_reservada or 0) + reservar
-                inv.save()
-                print(f"Reservado {reservar} en inventario {inv.id_inventario}")
-                cantidad_pendiente -= reservar
-        
-        if cantidad_pendiente > 0:
-            print("Advertencia: no se pudo reservar todo el stock")
-        
-        total_items = ItemsCarrito.objects.filter(carrito=carrito).aggregate(total=models.Sum('cantidad'))['total'] or 0
+        total_items = ItemsCarrito.objects.filter(
+            carrito=carrito
+        ).aggregate(total=Sum('cantidad'))['total'] or 0
         
         return JsonResponse({
             'success': True,
             'cantidad_total': total_items,
-            'mensaje': f'{nombre or producto} × {cantidad} añadido'
+            'mensaje': f'{producto.referencia_producto} × {cantidad} añadido'
         })
-    
+        
     except Producto.DoesNotExist:
-        print("ERROR: Producto no encontrado")
         return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
-    
-    except ValueError as ve:
-        print(f"ValueError: {ve}")
-        return JsonResponse({'success': False, 'error': str(ve)}, status=400)
-    
     except Exception as e:
         import traceback
-        print("ERROR INESPERADO EN AGREGAR CARRITO:")
+        print(f"❌ Error en api_carrito_agregar: {e}")
         print(traceback.format_exc())
-        return JsonResponse({
-            'success': False,
-            'error': 'Error interno al procesar el carrito. Contacta soporte.'
-        }, status=500)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @require_POST
 def api_carrito_eliminar(request, item_id):
     try:
-        item = get_object_or_404(ItemsCarrito, id_item=item_id, carrito__cliente__email=request.user.email)  # seguridad
-        producto = item.producto
-        cantidad = item.cantidad
-        
-        # Liberar reserva
-        inventarios = Inventario.objects.filter(producto=producto)
-        cantidad_pendiente = cantidad
-        for inv in inventarios:
-            if cantidad_pendiente <= 0:
-                break
-            liberar = min(cantidad_pendiente, inv.cantidad_reservada or 0)
-            if liberar > 0:
-                inv.cantidad_reservada = max(0, (inv.cantidad_reservada or 0) - liberar)
-                inv.save()
-                cantidad_pendiente -= liberar
-        
+        carrito = get_or_create_carrito(request)
+        item = get_object_or_404(ItemsCarrito, id_item=item_id, carrito=carrito)
         item.delete()
         
-        return JsonResponse({'success': True})
+        total_items = ItemsCarrito.objects.filter(
+            carrito=carrito
+        ).aggregate(total=Sum('cantidad'))['total'] or 0
+        
+        return JsonResponse({
+            'success': True,
+            'cantidad_total': total_items
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -522,45 +503,333 @@ def api_carrito_eliminar(request, item_id):
 @require_POST
 def api_carrito_actualizar(request, item_id):
     try:
-        item = get_object_or_404(ItemsCarrito, id_item=item_id, carrito__cliente__email=request.user.email)
+        carrito = get_or_create_carrito(request)
+        item = get_object_or_404(ItemsCarrito, id_item=item_id, carrito=carrito)
+        
         nueva_cantidad = int(request.POST.get('cantidad', item.cantidad))
         
         if nueva_cantidad < 1:
-            return JsonResponse({'success': False, 'error': 'Cantidad inválida'})
+            item.delete()
+        else:
+            stock = item.producto.get_stock_total() if hasattr(item.producto, 'get_stock_total') else 999
+            if nueva_cantidad > stock:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Solo hay {stock} unidades disponibles'
+                }, status=400)
+            item.cantidad = nueva_cantidad
+            item.updated_at = timezone.now()
+            item.save()
         
-        diferencia = nueva_cantidad - item.cantidad
+        total_items = ItemsCarrito.objects.filter(
+            carrito=carrito
+        ).aggregate(total=Sum('cantidad'))['total'] or 0
         
-        # Ajustar reserva
-        inventarios = Inventario.objects.filter(producto=item.producto)
-        if diferencia > 0:
-            # Reservar más
-            cantidad_pendiente = diferencia
-            for inv in inventarios:
-                if cantidad_pendiente <= 0:
-                    break
-                disponible = inv.cantidad_disponible - (inv.cantidad_reservada or 0)
-                reservar = min(cantidad_pendiente, disponible)
-                if reservar > 0:
-                    inv.cantidad_reservada = (inv.cantidad_reservada or 0) + reservar
-                    inv.save()
-                    cantidad_pendiente -= reservar
-            if cantidad_pendiente > 0:
-                return JsonResponse({'success': False, 'error': 'Stock insuficiente para aumentar cantidad'}, status=400)
-        elif diferencia < 0:
-            # Liberar
-            cantidad_pendiente = -diferencia
-            for inv in inventarios:
-                if cantidad_pendiente <= 0:
-                    break
-                liberar = min(cantidad_pendiente, inv.cantidad_reservada or 0)
-                if liberar > 0:
-                    inv.cantidad_reservada = max(0, (inv.cantidad_reservada or 0) - liberar)
-                    inv.save()
-                    cantidad_pendiente -= liberar
-        
-        item.cantidad = nueva_cantidad
-        item.save()
-        
-        return JsonResponse({'success': True})
+        return JsonResponse({
+            'success': True,
+            'cantidad_total': total_items
+        })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@require_GET
+def api_carrito_contador(request):
+    """API endpoint para obtener la cantidad del carrito (AJAX)"""
+    carrito_cantidad = 0
+    
+    try:
+        if request.user.is_authenticated:
+            cliente = Clientes.objects.filter(
+                email=request.user.email,
+                deleted_at__isnull=True
+            ).first()
+            
+            if cliente:
+                carrito = Carritos.objects.filter(
+                    cliente=cliente,
+                    deleted_at__isnull=True
+                ).first()
+                
+                if carrito:
+                    result = ItemsCarrito.objects.filter(
+                        carrito=carrito
+                    ).aggregate(total=Sum('cantidad'))
+                    carrito_cantidad = result['total'] or 0
+        else:
+            session_id = request.session.session_key
+            if session_id:
+                carrito = Carritos.objects.filter(
+                    session_id=session_id,
+                    deleted_at__isnull=True
+                ).first()
+                
+                if carrito:
+                    result = ItemsCarrito.objects.filter(
+                        carrito=carrito
+                    ).aggregate(total=Sum('cantidad'))
+                    carrito_cantidad = result['total'] or 0
+    except Exception as e:
+        print(f" Error en api_carrito_contador: {e}")
+    
+    return JsonResponse({'cantidad': carrito_cantidad})
+#  VISTA PRINCIPAL DEL PERFIL
+
+@login_required
+def perfil_usuario(request):
+    """Vista principal del perfil de usuario"""
+    
+    # Obtener cliente asociado al usuario
+    cliente = Clientes.objects.filter(
+        email=request.user.email,
+        deleted_at__isnull=True
+    ).first()
+    
+    # Stats del usuario
+    total_pedidos = Pedido.objects.filter(cliente=cliente).count() if cliente else 0
+    wishlist_count = 0  # Implementar si tienes modelo de favoritos
+    
+    # Puntos de lealtad (ejemplo simple)
+    puntos_lealtad = (total_pedidos * 100) if cliente else 0
+    
+    # Gamificación
+    user_level = min(10, (puntos_lealtad // 500) + 1)
+    xp_current = puntos_lealtad % 500
+    xp_next = 500
+    xp_percent = (xp_current / xp_next) * 100
+    xp_to_next = xp_next - xp_current
+    
+    # Pedidos recientes
+    pedidos_recientes = []
+    if cliente:
+        pedidos_qs = Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')[:5]
+        for p in pedidos_qs:
+            pedidos_recientes.append({
+                'id': p.id_pedido if hasattr(p, 'id_pedido') else p.pk,
+                'numero': p.numero_pedido if hasattr(p, 'numero_pedido') else f'ORD-{p.pk}',
+                'fecha': p.fecha_pedido,
+                'estado': p.estado_pedido if hasattr(p, 'estado_pedido') else 'PENDIENTE',
+                'estado_color': 'success' if p.estado_pedido == 'COMPLETADO' else 'warning',
+                'total': p.total if hasattr(p, 'total') else 0,
+                'total_items': 3,  # Calcular desde DetallePedido si existe
+                'progreso_percent': {'PENDIENTE': 25, 'CONFIRMADO': 50, 'EN PROCESO': 75, 'COMPLETADO': 100}.get(p.estado_pedido, 25),
+                'estado_detalle': {'PENDIENTE': 'Esperando confirmación', 'CONFIRMADO': 'Preparando envío', 'EN PROCESO': 'En camino', 'COMPLETADO': 'Entregado'}.get(p.estado_pedido, 'Procesando'),
+                'puede_rastrear': p.estado_pedido in ['EN PROCESO', 'CONFIRMADO']
+            })
+    
+    # Badges/Gamification
+    badges_count = min(5, total_pedidos // 2)
+    
+    # Notificaciones nuevas
+    notificaciones_nuevas = 0  # Implementar si tienes modelo de notificaciones
+    
+    context = {
+        'cliente': cliente,
+        'total_pedidos': total_pedidos,
+        'wishlist_count': wishlist_count,
+        'puntos_lealtad': puntos_lealtad,
+        'badges_count': badges_count,
+        'user_level': user_level,
+        'xp_current': xp_current,
+        'xp_next': xp_next,
+        'xp_percent': xp_percent,
+        'xp_to_next': xp_to_next,
+        'pedidos_recientes': pedidos_recientes,
+        'notificaciones_nuevas': notificaciones_nuevas,
+        'last_password_change': getattr(request.user, 'last_login', 'Nunca'),
+    }
+    
+    return render(request, 'pagina/perfil.html', context)
+
+
+#  ACTUALIZAR INFORMACIÓN DEL PERFIL
+
+@require_POST
+@login_required
+def perfil_actualizar(request):
+    """Actualizar datos personales del usuario"""
+    try:
+        cliente = Clientes.objects.filter(
+            email=request.user.email,
+            deleted_at__isnull=True
+        ).first()
+        
+        if not cliente:
+            return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+        
+        # Actualizar campos permitidos
+        if 'nombre' in request.POST:
+            nombre_completo = request.POST.get('nombre', '').strip()
+            partes = nombre_completo.split(' ', 1)
+            request.user.first_name = partes[0]
+            request.user.last_name = partes[1] if len(partes) > 1 else ''
+            request.user.save()
+        
+        if 'telefono' in request.POST:
+            cliente.telefono = request.POST.get('telefono', '')
+        if 'fecha_nacimiento' in request.POST:
+            cliente.fecha_nacimiento = request.POST.get('fecha_nacimiento') or None
+        if 'direccion' in request.POST:
+            cliente.direccion = request.POST.get('direccion', '')
+        
+        cliente.save()
+        
+        return JsonResponse({'success': True, 'mensaje': 'Perfil actualizado'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+#  ACTUALIZAR AVATAR
+
+@require_POST
+@login_required
+def avatar_actualizar(request):
+    """Actualizar foto de perfil del usuario"""
+    try:
+        data = json.loads(request.body)
+        avatar_url = data.get('avatar_url', '')
+        
+        # Aquí iría la lógica para guardar la imagen en media/
+        # Por ahora, actualizamos un campo hipotético en el modelo User
+        # Si tu modelo Usuarios tiene campo 'foto_perfil':
+        if hasattr(request.user, 'foto_perfil') and avatar_url:
+            # request.user.foto_perfil = avatar_url
+            # request.user.save()
+            pass
+        
+        return JsonResponse({'success': True, 'avatar_url': avatar_url})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+#  CAMBIAR CONTRASEÑA
+
+@require_POST
+@login_required
+def password_cambiar(request):
+    """Cambiar contraseña del usuario"""
+    try:
+        data = json.loads(request.body)
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        
+        # Verificar contraseña actual
+        if not request.user.check_password(current_password):
+            return JsonResponse({'success': False, 'error': 'Contraseña actual incorrecta'}, status=400)
+        
+        # Validar nueva contraseña
+        if len(new_password) < 8:
+            return JsonResponse({'success': False, 'error': 'La contraseña debe tener al menos 8 caracteres'}, status=400)
+        
+        # Cambiar contraseña
+        request.user.set_password(new_password)
+        request.user.save()
+        
+        # ✅ NO necesitas update_last_login - Django lo hace automáticamente
+        # Si quieres forzar la actualización:
+        from django.utils import timezone
+        request.user.last_login = timezone.now()
+        request.user.save()
+        
+        return JsonResponse({'success': True, 'mensaje': 'Contraseña actualizada'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+#  NOTIFICACIONES
+
+@require_POST
+@login_required
+def notificaciones_marcar_leidas(request):
+    """Marcar todas las notificaciones como leídas"""
+    try:
+        # Implementar según tu modelo de notificaciones
+        # Ejemplo: Notification.objects.filter(usuario=request.user, leida=False).update(leida=True)
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ⚙️ PREFERENCIAS
+
+@require_POST
+@login_required
+def preferencias_guardar(request):
+    """Guardar preferencias del usuario"""
+    try:
+        data = json.loads(request.body)
+        # Guardar en un campo JSON o modelo de preferencias
+        # request.user.preferencias = data
+        # request.user.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+#  EXPORTAR DATOS (GDPR)
+
+@require_GET
+@login_required
+def datos_exportar(request):
+    """Exportar datos personales del usuario en formato JSON"""
+    try:
+        cliente = Clientes.objects.filter(
+            email=request.user.email,
+            deleted_at__isnull=True
+        ).first()
+        
+        datos_usuario = {
+            'usuario': {
+                'username': request.user.username,
+                'email': request.user.email,
+                'fecha_registro': request.user.date_joined.isoformat() if hasattr(request.user, 'date_joined') else None,
+                'ultimo_acceso': request.user.last_login.isoformat() if request.user.last_login else None,
+            },
+            'cliente': {
+                'nombre': cliente.nombre if cliente else None,
+                'telefono': cliente.telefono if cliente else None,
+                'direccion': cliente.direccion if cliente else None,
+            } if cliente else None,
+            'pedidos': list(Pedido.objects.filter(cliente=cliente).values(
+                'id_pedido', 'numero_pedido', 'fecha_pedido', 'estado_pedido', 'total'
+            ) if cliente else []),
+            'exportado_en': timezone.now().isoformat()
+        }
+        
+        import json
+        from django.http import HttpResponse
+        
+        response = HttpResponse(
+            json.dumps(datos_usuario, indent=2, ensure_ascii=False),
+            content_type='application/json'
+        )
+        response['Content-Disposition'] = f'attachment; filename="order-rae-datos-{timezone.now().date()}.json"'
+        return response
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+#  STATS EN TIEMPO REAL
+
+@require_GET
+@login_required
+def perfil_stats(request):
+    """API para actualizar stats del perfil en tiempo real"""
+    try:
+        cliente = Clientes.objects.filter(
+            email=request.user.email,
+            deleted_at__isnull=True
+        ).first()
+        
+        stats = {
+            'pedidos': Pedido.objects.filter(cliente=cliente).count() if cliente else 0,
+            'notificaciones_nuevas': 0,  # Implementar según tu modelo
+            'puntos_lealtad': (Pedido.objects.filter(cliente=cliente).count() * 100) if cliente else 0,
+        }
+        
+        return JsonResponse(stats)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

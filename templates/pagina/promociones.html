@@ -20,6 +20,9 @@
 
     <!-- Tu CSS -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+
+    <!--  Tu JS global del carrito -->
+    <script src="{% static 'js/carrito.js' %}?v=1.0"></script>
     
     <style>
         :root {
@@ -458,12 +461,14 @@
                 </div>
 
                 <!-- CARRITO -->
-                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative">
                     <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                        id="contador-carrito"
+                        data-cantidad="{{ carrito_cantidad|default:0 }}">
                         {{ carrito_cantidad|default:0 }}
                     </span>
-                </a>
+                </a>        
 
                 <!-- Usuario -->
                 {% if user.is_authenticated %}
@@ -476,7 +481,7 @@
                         </span>
                     </div>
                     <div class="submenu mt-1">
-                        <a href="#">Mi cuenta</a> 
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
                         <a href="{% url 'logout' %}">Cerrar sesión</a>
                     </div>
                 </div>
@@ -891,82 +896,6 @@
         updateCountdown();
         const countdownInterval = setInterval(updateCountdown, 1000);
         
-        /* === SISTEMA DE NOTIFICACIONES === */
-        const notificationsList = document.getElementById('notifications-list');
-        const bellBadge = document.getElementById('bell-badge');
-        const notificationsDropdown = document.getElementById('notifications-dropdown');
-        const notificationsBell = document.getElementById('notifications-bell');
-        
-        if (bellBadge && djangoData.notificaciones_nuevas > 0) {
-            bellBadge.textContent = djangoData.notificaciones_nuevas;
-            bellBadge.style.display = 'block';
-        }
-        
-        function guardarNotificacion(mensaje, tipo = 'carrito') {
-            console.log('🔔 Guardando notificación:', mensaje);
-            const notif = {
-                id: Date.now(),
-                mensaje,
-                tipo,
-                leida: false,
-                fecha: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            notificaciones.unshift(notif);
-            actualizarNotificaciones();
-        }
-        
-        function actualizarNotificaciones() {
-            const nuevas = notificaciones.filter(n => !n.leida);
-            if (bellBadge) {
-                bellBadge.textContent = nuevas.length || '';
-                bellBadge.style.display = nuevas.length ? 'block' : 'none';
-            }
-            
-            if (notificaciones.length === 0 && notificationsList) {
-                notificationsList.innerHTML = '<div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>';
-                return;
-            }
-            
-            if (notificationsList) {
-                notificationsList.innerHTML = notificaciones.map(n => `
-                    <div class="notification-item ${n.leida ? '' : 'new'}">
-                        <span class="notification-icon">${n.tipo === 'carrito' ? '🛒' : '📣'}</span>
-                        <div class="notification-content">
-                            <strong>${n.mensaje}</strong>
-                            <span class="notification-time">${n.fecha}</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-        
-        if (notificationsBell) {
-            notificationsBell.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const dropdown = document.getElementById('notifications-dropdown');
-                if (dropdown) dropdown.classList.toggle('show');
-                notificaciones.forEach(n => n.leida = true);
-                actualizarNotificaciones();
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!notificationsBell.contains(e.target)) {
-                    const dropdown = document.getElementById('notifications-dropdown');
-                    if (dropdown) dropdown.classList.remove('show');
-                }
-            });
-            
-            const clearBtn = document.getElementById('clear-notifications');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    notificaciones = [];
-                    localStorage.removeItem('notificaciones');
-                    actualizarNotificaciones();
-                });
-            }
-        }
-        
         /* === API CARRITO === */
         async function agregarAlCarritoAPI(productoId, nombre, precio) {
             console.log('🛒 Intentando añadir al carrito:', { productoId, nombre, precio });
@@ -1139,23 +1068,25 @@
         });
         
         /* === TOAST NOTIFICATIONS === */
-        function showToast(message, type = 'info') {
-            const toastContainer = document.getElementById('toast-container') || createToastContainer();
-            
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show`;
-            toast.style.cssText = 'position: fixed; top: 100px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.className = `toast-modern ${type}`;
             toast.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${type === 'success' ? '¡Éxito!' : 'Error'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close">✕</button>
             `;
+            container.appendChild(toast);
             
-            toastContainer.appendChild(toast);
-            
+            // Auto-remove
             setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 150);
-            }, 3000);
+                toast.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
         }
         
         function createToastContainer() {
@@ -1167,7 +1098,7 @@
         
         // Inicializar notificaciones
         actualizarNotificaciones();
-        console.log('✅ Script de promociones completamente cargado');
+        console.log(' Script de promociones completamente cargado');
     });
     </script>
 </body>

@@ -19,6 +19,9 @@
 
     <!-- Tu CSS con Django static -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+
+    <!--  Tu JS global del carrito -->
+    <script src="{% static 'js/carrito.js' %}?v=1.0"></script>
     
     <!-- Estilos avanzados para contacto 2026 -->
     <style>
@@ -672,9 +675,11 @@
                 </div>
 
                 <!-- CARRITO -->
-                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative">
                     <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                        id="contador-carrito"
+                        data-cantidad="{{ carrito_cantidad|default:0 }}">
                         {{ carrito_cantidad|default:0 }}
                     </span>
                 </a>
@@ -690,7 +695,7 @@
                         </span>
                     </div>
                     <div class="submenu mt-1">
-                        <a href="#">Mi cuenta</a> 
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
                         <a href="{% url 'logout' %}">Cerrar sesión</a> 
                         
                         {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
@@ -803,9 +808,9 @@
                             <div class="mb-3">
                                 <label for="nombre" class="form-label">Nombre completo <span class="required">*</span></label>
                                 <input type="text" id="nombre" name="nombre" class="form-control"
-                                       placeholder="Ej: María González"
-                                       value="{{ form_data.nombre|default:'' }}" required
-                                       pattern="^[A-Za-zÁ-ú\s]{3,50}$">
+                                        placeholder="Ej: María González"
+                                        value="{{ form_data.nombre|default:'' }}" required
+                                        pattern="^[A-Za-zÁ-ú\s]{3,50}$">
                                 <div class="invalid-feedback">Ingresa un nombre válido (mín. 3 letras)</div>
                             </div>
                             
@@ -813,15 +818,16 @@
                                 <div class="col-md-6">
                                     <label for="email" class="form-label">Correo <span class="required">*</span></label>
                                     <input type="email" id="email" name="email" class="form-control"
-                                           placeholder="tu@email.com"
-                                           value="{{ form_data.email|default:'' }}" required>
+                                            placeholder="tu@email.com"
+                                            value="{{ form_data.email|default:'' }}" required>
                                     <div class="invalid-feedback">Ingresa un correo válido</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="telefono" class="form-label">Teléfono</label>
                                     <input type="tel" id="telefono" name="telefono" class="form-control"
-                                           placeholder="+57 300 123 4567"
-                                           value="{{ form_data.telefono|default:'' }}">
+                                            placeholder="+57 300 123 4567"
+                                            value="{{ form_data.telefono|default:'' }}" required
+                                            pattern="^\+57\s?[0-9]{3}\s?[0-9]{3}\s?[0-9]{4}$">
                                     <div class="form-text">Opcional, para contacto rápido</div>
                                 </div>
                             </div>
@@ -829,15 +835,15 @@
                             <div class="mb-3">
                                 <label for="asunto_detalle" class="form-label">Asunto específico</label>
                                 <input type="text" id="asunto_detalle" name="asunto_detalle" class="form-control"
-                                       placeholder="Ej: Consulta sobre entrega de sofá"
-                                       value="{{ form_data.asunto_detalle|default:'' }}">
+                                        placeholder="Ej: Consulta sobre entrega de sofá"
+                                        value="{{ form_data.asunto_detalle|default:'' }}">
                             </div>
                             
                             <div class="mb-4 textarea-wrapper">
                                 <label for="mensaje" class="form-label">Mensaje <span class="required">*</span></label>
                                 <textarea id="mensaje" name="mensaje" rows="5" class="form-control"
-                                          placeholder="Cuéntanos cómo podemos ayudarte..."
-                                          maxlength="1000" required>{{ form_data.mensaje|default:'' }}</textarea>
+                                            placeholder="Cuéntanos cómo podemos ayudarte..."
+                                            maxlength="1000" required>{{ form_data.mensaje|default:'' }}</textarea>
                                 <span class="char-count" id="char-count">0/1000</span>
                             </div>
                             
@@ -1354,17 +1360,29 @@
             if (!telefono) return;
             
             telefono.addEventListener('input', (e) => {
+                // Solo números
                 let value = e.target.value.replace(/\D/g, '');
                 
+                // Quitar 57 inicial si existe
                 if (value.startsWith('57')) {
                     value = value.slice(2);
                 }
                 
-                if (value.length > 0) value = '+57 ' + value;
-                if (value.length > 7) value = value.slice(0, 4) + ' ' + value.slice(4);
-                if (value.length > 12) value = value.slice(0, 8) + ' ' + value.slice(8);
+                // Limitar a 10 dígitos (número colombiano)
+                value = value.slice(0, 10);
                 
-                e.target.value = value.slice(0, 17);
+                // Formatear: +57 3XX XXX XXXX
+                if (value.length > 0) {
+                    value = '+57 ' + value;
+                }
+                if (value.length > 7) { // +57 + 3 dígitos
+                    value = value.slice(0, 7) + ' ' + value.slice(7);
+                }
+                if (value.length > 12) { // +57 XXX + 3 dígitos
+                    value = value.slice(0, 12) + ' ' + value.slice(12);
+                }
+                
+                e.target.value = value;
             });
         }
         

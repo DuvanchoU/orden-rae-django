@@ -21,6 +21,9 @@
     <!-- Tu CSS base -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.1">
 
+    <!--  Tu JS global del carrito -->
+    <script src="{% static 'js/carrito.js' %}?v=1.0"></script>
+
     <!-- Estilos -->
 <style>
     :root {
@@ -395,31 +398,34 @@
                 </div>
 
                 <!-- CARRITO -->
-                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative">
+                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative">
                     <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                        id="contador-carrito"
+                        data-cantidad="{{ carrito_cantidad|default:0 }}">
                         {{ carrito_cantidad|default:0 }}
                     </span>
                 </a>
 
-                <!-- Usuario -->
+                <!-- Usuario autenticado -->
                 {% if user.is_authenticated %}
                 <div class="menu-usuario position-relative">
-                    <div class="d-flex align-items-center position-relative">
+                    <div class="d-flex align-items-center position-relative" style="cursor: pointer;">
                         <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
-                             alt="Usuario" class="icono-img">
-                        <span class="user-tooltip ms-2 text-dark">
-                            {{ user.get_full_name|default:user.username }}
-                        </span>
+                            alt="Usuario" class="icono-img" id="user-avatar" style="border-radius: 50%;">
+                        <span class="user-tooltip ms-2 text-dark d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
                     </div>
                     <div class="submenu mt-1">
-                        <a href="#">Mi cuenta</a> 
-                        <a href="{% url 'logout' %}">Cerrar sesión</a>
+                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a>
+                        <a href="{% url 'pagina:logout' %}?next={% url 'pagina:home' %}">Cerrar sesión</a>
+                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
+                        {% endif %}
                     </div>
                 </div>
                 {% else %}
                 <div class="menu-usuario position-relative">
-                    <a href="#"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <a href="#" style="cursor: pointer;"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
                     <div class="submenu mt-1">
                         <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
                         <a href="{% url 'pagina:registro' %}">Registrarse</a>
@@ -738,7 +744,10 @@
 
     // === AÑADIR AL CARRITO ===
     async function addToCart(productId, nombre, precio) {
-        const btn = event.target;
+        const btn = event.currentTarget;
+        if (btn.dataset.loading === 'true') return;
+        
+        btn.dataset.loading = 'true';
         const original = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         btn.disabled = true;
@@ -764,6 +773,7 @@
         } catch (e) {
             showToast('Error de conexión', 'danger');
         } finally {
+            btn.dataset.loading = 'false'; 
             btn.innerHTML = original;
             btn.disabled = false;
         }

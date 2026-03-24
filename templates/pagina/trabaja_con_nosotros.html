@@ -541,12 +541,12 @@
                 </div>
 
                 <!-- CARRITO DE COMPRA -->
-                <a href="{% url 'pagina:carrito_compra' %}" class="position-relative text-decoration-none">
+                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative text-decoration-none">
                     <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
                         {{ carrito_cantidad|default:0 }}
                     </span>
-                </a>
+                </>
                 
                 <!-- Usuario autenticado -->
                 {% if user.is_authenticated %}
