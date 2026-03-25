@@ -39,7 +39,7 @@ def dashboard_redirect(request):
         'ASESOR COMERCIAL': 'dashboard:dashboard_asesor',
         'JEFE LOGISTICO': 'dashboard:dashboard_logistica',
         'AUXILIAR DE BODEGA': 'dashboard:dashboard_bodega',
-        'CLIENTE': 'pagina:index'  # Los clientes van al home público
+        'CLIENTE': 'pagina:home'  # Los clientes van al home público
     }
     
     # Obtener la URL del dashboard correspondiente o redirigir al de gerente por defecto

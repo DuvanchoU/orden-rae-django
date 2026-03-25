@@ -6,7 +6,7 @@ import hashlib
 class UsuariosAuthBackend(BaseBackend):
     """
     Backend de autenticación personalizado para el modelo Usuarios.
-    Compatible con Django Auth pero usando tu tabla personalizada.
+    Compatible con Django Auth usando tu tabla personalizada.
     """
     
     def authenticate(self, request, username=None, password=None, **kwargs):
@@ -27,15 +27,11 @@ class UsuariosAuthBackend(BaseBackend):
             contrasena_hash = hashlib.sha256(password.encode()).hexdigest()
             
             if usuario.contrasena_usuario == contrasena_hash:
-                # Agregar atributos que Django espera
-                usuario.is_authenticated = True
-                usuario.is_anonymous = False
-                usuario.is_active = True
-                usuario.is_staff = usuario.id_rol.nombre_rol != 'CLIENTE' if usuario.id_rol else False
-                usuario.is_superuser = usuario.id_rol.nombre_rol == 'GERENTE' if usuario.id_rol else False
-                usuario.username = usuario.correo_usuario  # Para compatibilidad
+                # ✅ NO asignar propiedades - ya están definidas en el modelo
+                # Las propiedades is_authenticated, is_active, etc. 
+                # se calculan automáticamente desde el modelo
                 
-                return usuario
+                return usuario  # ✅ Solo retornar el usuario
             else:
                 return None
                 
@@ -47,8 +43,6 @@ class UsuariosAuthBackend(BaseBackend):
         Obtiene un usuario por su ID para Django Auth
         """
         try:
-            usuario = Usuarios.objects.get(id_usuario=user_id)
-            usuario.username = usuario.correo_usuario
-            return usuario
+            return Usuarios.objects.get(id_usuario=user_id)
         except Usuarios.DoesNotExist:
             return None

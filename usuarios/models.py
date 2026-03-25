@@ -38,7 +38,6 @@ class Usuarios(models.Model):
     
     @property
     def username(self):
-        """Retorna el correo como username"""
         return self.correo_usuario
     
     @property
@@ -55,17 +54,56 @@ class Usuarios(models.Model):
     
     @property
     def is_superuser(self):
-        """Retorna True solo si es GERENTE"""
         if self.id_rol:
             return self.id_rol.nombre_rol == 'GERENTE'
         return False
     
     @property
     def is_staff(self):
-        """Retorna True si no es CLIENTE"""
         if self.id_rol:
             return self.id_rol.nombre_rol != 'CLIENTE'
         return False
+    
+    # =====================================================================
+    # ✅ MÉTODOS DE PERMISOS PARA DJANGO ADMIN
+    # =====================================================================
+    
+    def has_perm(self, perm, obj=None):
+        """Verifica si el usuario tiene un permiso específico"""
+        if not self.is_active:
+            return False
+        if self.is_superuser:
+            return True
+        return True  # Personaliza según necesites
+    
+    def has_module_perms(self, app_label):
+        """Verifica si el usuario tiene permisos para una app del admin"""
+        if not self.is_active:
+            return False
+        if self.is_superuser:
+            return True
+        
+        # Mapeo de apps permitidas por rol
+        permisos_por_rol = {
+            'GERENTE': ['admin', 'auth', 'contenttypes', 'sessions', 'usuarios', 'dashboard', 'inventario', 'ventas', 'compras', 'produccion'],
+            'ASESOR COMERCIAL': ['usuarios', 'dashboard', 'inventario', 'ventas'],
+            'JEFE LOGISTICO': ['usuarios', 'dashboard', 'inventario', 'produccion'],
+            'AUXILIAR DE BODEGA': ['dashboard', 'inventario'],
+            'CLIENTE': [],
+        }
+        
+        apps_permitidas = permisos_por_rol.get(self.id_rol.nombre_rol if self.id_rol else '', [])
+        return app_label in apps_permitidas
+    
+    def get_all_permissions(self, obj=None):
+        """Retorna todos los permisos del usuario"""
+        if not self.is_active:
+            return set()
+        return set()
+    
+    def get_group_permissions(self, obj=None):
+        """Retorna permisos de grupos"""
+        return set()
     
     # =====================================================================
     # ✅ MÉTODOS ADICIONALES ÚTILES
