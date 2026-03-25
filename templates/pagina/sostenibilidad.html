@@ -192,7 +192,7 @@
     <header id="barra_superior" class="bg-white border-bottom">
         <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
             <a href="{% url 'pagina:home' %}" class="text-decoration-none d-flex align-items-center gap-2">
-                <img src="{% static 'img/Logo3-orden.png' %}" class="logo_principal" alt="Logo Orden Rae" style="height: 45px;" />
+                <img src="{% static 'img/super_bodega0.2.png' %}" class="logo_principal" alt="Logo Orden Rae" style="height: 45px;" />
                 <span class="fw-bold d-none d-md-inline" style="color: var(--color-primario); font-size: 1.1rem;">ORDER RAE</span>
             </a>
 
@@ -236,7 +236,7 @@
 
                 <!-- CARRITO DE COMPRA -->
                 <a href="{% url 'ventas:carrito_compra' %}" class="position-relative text-decoration-none">
-                    <img src="{% static 'img/CarritoCompra2.png' %}" alt="Carrito" class="icono-img">
+                    <img src="{% static 'img/CarritoCompra0.1.png' %}" alt="Carrito" class="icono-img">
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
                         {{ carrito_cantidad|default:0 }}
                     </span>
@@ -246,7 +246,7 @@
                 {% if user.is_authenticated %}
                 <div class="menu-usuario position-relative">
                     <div class="d-flex align-items-center position-relative" style="cursor: pointer;">
-                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario2.png' %}{% endif %}" 
+                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}" 
                             alt="Usuario" class="icono-img" id="user-avatar" style="border-radius: 50%;">
                         <span class="user-tooltip ms-2 text-dark d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
                     </div>
@@ -260,7 +260,7 @@
                 </div>
                 {% else %}
                 <div class="menu-usuario position-relative">
-                    <a href="#" style="cursor: pointer;"><img src="{% static 'img/usuario2.png' %}" alt="Usuario" class="icono-img"></a>
+                    <a href="#" style="cursor: pointer;"><img src="{% static 'img/usuario0.1.png' %}" alt="Usuario" class="icono-img"></a>
                     <div class="submenu mt-1">
                         <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
                         <a href="{% url 'pagina:registro' %}">Registrarse</a>
@@ -314,9 +314,9 @@
                 <!-- Columna 1: Logo + Redes + Newsletter -->
                 <div class="col-12 col-lg-4">
                     <div class="footer-brand mb-4">
-                        <img src="{% static 'img/order_rae.png' %}" alt="ORDER R.A.E" class="footer-logo" />
+                        <img src="{% static 'img/emblema_bodega.png' %}" alt="ORDER R.A.E" class="footer-logo" />
                         <p class="footer-description text-muted mt-3">
-                            Diseñamos muebles con alma para transformar tu hogar en un espacio único, cálido y funcional.
+                            "Diseños hechos con el alma: transformamos cada rincón con piezas únicas, exclusivas y confortables"
                         </p>
                     </div>
                     
