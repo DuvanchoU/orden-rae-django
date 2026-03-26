@@ -33,11 +33,16 @@ class Usuarios(models.Model):
         return f"{self.nombres} {self.apellidos}"
 
     # =====================================================================
-    # ✅ PROPIEDADES PARA COMPATIBILIDAD CON DJANGO
+    # PROPIEDADES PARA COMPATIBILIDAD CON DJANGO
     # =====================================================================
     
     @property
     def username(self):
+        return self.correo_usuario
+    
+    """Compatibilidad: retorna correo_usuario como email"""
+    @property
+    def email(self):
         return self.correo_usuario
     
     @property
@@ -65,7 +70,7 @@ class Usuarios(models.Model):
         return False
     
     # =====================================================================
-    # ✅ MÉTODOS DE PERMISOS PARA DJANGO ADMIN
+    # MÉTODOS DE PERMISOS PARA DJANGO ADMIN
     # =====================================================================
     
     def has_perm(self, perm, obj=None):
@@ -106,7 +111,7 @@ class Usuarios(models.Model):
         return set()
     
     # =====================================================================
-    # ✅ MÉTODOS ADICIONALES ÚTILES
+    # MÉTODOS ADICIONALES ÚTILES
     # =====================================================================
     
     def get_full_name(self):

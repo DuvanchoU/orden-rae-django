@@ -9,6 +9,7 @@ from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
+from usuarios.models import Usuarios, RolesOld
 from inventario.models import Producto, Categorias, ImagenesProducto, Inventario
 import hashlib
 import json
@@ -835,9 +836,9 @@ def login_view(request):
 
 
 def registro_view(request):
-    """Vista de registro de usuarios"""
+    """Vista de registro de usuarios - Usa modelo Usuarios personalizado"""
     
-    if request.user.is_authenticated:
+    if hasattr(request.user, 'id_usuario'):
         return redirect('pagina:home')
     
     if request.method == 'POST':
@@ -864,7 +865,7 @@ def registro_view(request):
         if password != password2:
             errores.append('Las contraseñas no coinciden')
         
-        if correo and User.objects.filter(email=correo).exists():
+        if correo and Usuarios.objects.filter(correo_usuario=correo).exists():
             errores.append('Este correo electrónico ya está registrado')
         
         if errores:
@@ -874,41 +875,87 @@ def registro_view(request):
             })
         
         try:
-            username = correo.split('@')[0]
-            base_username = username
-            counter = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{base_username}{counter}"
-                counter += 1
+            print(f"🔍 DEBUG: Iniciando creación de usuario para {correo}")
             
-            user = User.objects.create_user(
-                username=username,
-                email=correo,
-                password=password,
-                first_name=nombre,
-                last_name=apellidos
+            # Obtener rol CLIENTE por defecto
+            rol_cliente = RolesOld.objects.get(nombre_rol='CLIENTE')
+            print(f"Rol CLIENTE encontrado: {rol_cliente.id_rol}")
+            
+            # Encriptar contraseña con SHA256
+            contrasena_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            # Convertir género a formato de 1 carácter
+            genero_abreviado = None
+            if genero:
+                if genero.lower() in ['masculino', 'm', 'hombre', 'varon']:
+                    genero_abreviado = 'M'
+                elif genero.lower() in ['femenino', 'f', 'mujer']:
+                    genero_abreviado = 'F'
+                else:
+                    genero_abreviado = None
+            
+            # Crear usuario en TU modelo Usuarios
+            nuevo_usuario = Usuarios.objects.create(
+                nombres=nombre,
+                apellidos=apellidos,
+                documento=documento,
+                correo_usuario=correo,
+                contrasena_usuario=contrasena_hash,
+                estado='ACTIVO',
+                fecha_registro=timezone.now(),
+                id_rol=rol_cliente,
+                telefono=telefono if telefono else None,
+                genero=genero_abreviado,
             )
+            print(f"Usuario creado con ID: {nuevo_usuario.id_usuario}")
             
-            request.session['user_extra_data'] = {
-                'documento': documento,
-                'telefono': telefono,
-                'genero': genero,
-                'user_id': user.id
-            }
+            # Login con backend especificado
+            from django.contrib.auth import login as auth_login
+            try:
+                auth_login(
+                    request, 
+                    nuevo_usuario, 
+                    backend='usuarios.backends.UsuariosAuthBackend'
+                )
+                print(f"Login de Django completado")
+            except Exception as login_error:
+                print(f"⚠️  Error en login de Django: {login_error}")
+                # Si falla el login de Django, al menos guarda en sesión personalizada
             
-            login(request, user)
+            # Guardar en sesión personalizada
+            request.session['usuario_id'] = nuevo_usuario.id_usuario
+            request.session['usuario_nombre'] = f"{nombre} {apellidos}"
+            request.session['usuario_rol'] = 'CLIENTE'
+            print(f"Sesión personalizada guardada")
+            
             messages.success(request, f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.')
+            print(f"Redirigiendo a dashboard:dashboard_home")
             
-            return redirect('pagina:home')
+            # REDIRECCIÓN - Probar primero al home si dashboard falla
+            try:
+                return redirect('dashboard:dashboard_home')
+            except Exception as redirect_error:
+                print(f"Error redirigiendo a dashboard: {redirect_error}")
+                print(f"Redirigiendo a home como fallback")
+                return redirect('pagina:home')
             
-        except IntegrityError:
-            return render(request, 'pagina/registro.html', {
-                'error': 'Ocurrió un error al crear tu cuenta. Intenta nuevamente.',
-                'form_data': request.POST
-            })
+        except RolesOld.DoesNotExist:
+            print("ERROR: Rol CLIENTE no existe")
+            messages.error(request, 'Error de configuración: Rol CLIENTE no encontrado')
+        except IntegrityError as e:
+            print(f"ERROR de integridad: {e}")
+            messages.error(request, 'Ocurrió un error al crear tu cuenta. Intenta nuevamente.')
+        except Exception as e:
+            print(f"ERROR inesperado: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Error: {str(e)}')
+        
+        return render(request, 'pagina/registro.html', {
+            'form_data': request.POST
+        })
     
     return render(request, 'pagina/registro.html')
-
 
 def logout_view(request):
     """Cerrar sesión y redirigir al home"""
