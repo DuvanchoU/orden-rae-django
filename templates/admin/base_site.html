@@ -1,0 +1,110 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<!-- Script para cerrar sesión al cerrar pestaña en admin -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Solo ejecutar si el usuario está autenticado
+    if (document.cookie.indexOf('sessionid') !== -1) {
+        
+        let isUnloading = false;
+        const logoutUrl = '{% url "admin:logout" %}';
+        
+        // Función para enviar solicitud de logout
+        const sendLogout = function() {
+            if (isUnloading) return;
+            isUnloading = true;
+            
+            // Usar sendBeacon: más confiable que fetch/XMLHttpRequest en unload
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(logoutUrl);
+            } else {
+                // Fallback para navegadores antiguos (síncrono, menos ideal)
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', logoutUrl, false);
+                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                xhr.send();
+            }
+        };
+        
+        // Obtener token CSRF de la cookie
+        const getCsrfToken = function() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie) {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        };
+        
+        // Eventos que indican cierre de pestaña/ventana
+        window.addEventListener('pagehide', sendLogout);
+        window.addEventListener('beforeunload', function(e) {
+            // Solo logout si realmente se cierra la pestaña (no navegación interna)
+            if (e.type === 'beforeunload') {
+                // Verificar si es navegación interna (mismo origen y ruta de admin)
+                const isInternalNav = performance.getEntriesByType('navigation')[0]?.type === 'navigate';
+                if (!isInternalNav || !document.referral?.includes('/admin/')) {
+                    sendLogout();
+                }
+            }
+        });
+        
+        // También escuchar el evento 'unload' como respaldo
+        window.addEventListener('unload', sendLogout);
+    }
+});
+
+// Sincronizar logout entre pestañas
+const channel = new BroadcastChannel('admin_logout_channel');
+
+// Escuchar logout desde otras pestañas
+channel.onmessage = function(event) {
+    if (event.data === 'logout') {
+        // Forzar recarga que redirigirá a login
+        window.location.href = logoutUrl;
+    }
+};
+
+// Modificar sendLogout para notificar a otras pestañas
+const sendLogout = function() {
+    if (isUnloading) return;
+    isUnloading = true;
+    
+    // Notificar a otras pestañas
+    try {
+        channel.postMessage('logout');
+    } catch(e) {
+        // BroadcastChannel no soportado, continuar con logout normal
+    }
+    
+    // Enviar logout al servidor
+    if (navigator.sendBeacon) {
+        navigator.sendBeacon(logoutUrl);
+    }
+};
+
+// Limpiar channel al cerrar
+window.addEventListener('unload', function() {
+    channel.close();
+});
+</script>
+{% endblock %}
+
+{% block branding %}
+<!-- Logo personalizado del admin (opcional) -->
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        Orden Rae Admin
+    </a>
+</h1>
+{% endblock %}
