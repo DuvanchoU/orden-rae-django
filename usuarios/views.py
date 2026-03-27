@@ -2,73 +2,122 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.db.models import Q
+from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
+from django.utils import timezone
+import hashlib
+import time
+
+# Importar modelos y formularios
 from .models import Usuarios, RolesOld
 from .forms import UsuarioForm, UsuarioUpdateForm, RolForm
 from django.contrib import messages
-from django.utils import timezone
-import hashlib
-from django.contrib.auth import login as auth_login  
 
+# Importar funciones de utilidad para manejo de intentos de login y bloqueo
+from .utils import (
+    get_login_attempts, 
+    increment_login_attempts, 
+    reset_login_attempts,
+    is_login_blocked,
+    block_login,
+    get_client_ip
+)
 
-# =============================================================================
-# === VISTAS DE LOGIN Y LOGOUT ===
-# =============================================================================
+# Vistas de Autenticación Personalizada con Rate Limiting y Protección de Caché
 
+@never_cache  # Previene que el navegador guarde esta página en caché
 def login_view(request):
+    """
+    Vista de login con Rate Limiting y Protección de Caché.
+    """
+    # Si ya está autenticado (según tu middleware), redirigir al dashboard
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        return redirect('dashboard:dashboard_home')
+    
+    # 1. Verificar si la IP está bloqueada por muchos intentos
+    if is_login_blocked(request):
+        messages.error(request, 'Demasiados intentos fallidos. Intente nuevamente en 15 minutos.')
+        return render(request, 'pagina/login.html')
+    
     if request.method == 'POST':
-        correo = request.POST.get('correo')      # ← Debe coincidir con name="correo"
-        contrasena = request.POST.get('contrasena')  # ← Debe coincidir con name="contrasena"
+        correo = request.POST.get('correo')
+        contrasena = request.POST.get('contrasena')
+        
+        # 2. Verificar límite de intentos antes de procesar
+        attempts = get_login_attempts(request)
+        if attempts >= 5:
+            block_login(request)
+            messages.error(request, 'Demasiados intentos fallidos. Intente en 15 minutos.')
+            return render(request, 'pagina/login.html')
         
         try:
             usuario = Usuarios.objects.get(correo_usuario=correo)
             
-            # Encriptar contraseña con SHA256 (igual que cuando creaste los usuarios)
+            # Encriptar contraseña con SHA256
             contrasena_hash = hashlib.sha256(contrasena.encode()).hexdigest()
             
             if usuario.contrasena_usuario == contrasena_hash:
                 
                 if usuario.estado != 'ACTIVO':
-                    messages.error(request, 'Usuario inactivo.')
+                    messages.error(request, 'Usuario inactivo. Contacte al administrador.')
                     return render(request, 'pagina/login.html')
                 
-                # Guardar en sesión para tu middleware
+                # LOGIN EXITOSO
+                # Guardar en sesión para tu middleware personalizado
                 request.session['usuario_id'] = usuario.id_usuario
                 request.session['usuario_nombre'] = f"{usuario.nombres} {usuario.apellidos}"
-                request.session['usuario_rol'] = usuario.id_rol.nombre_rol
+                request.session['usuario_rol'] = usuario.id_rol.nombre_rol if usuario.id_rol else 'SIN_ROL'
+                request.session['last_activity_timestamp'] = time.time()  # Para timeout
                 
-                # Redirigir al dashboard (que manejará la redirección por rol)
+                # Resetear contador de intentos fallidos
+                reset_login_attempts(request)
+                
+                messages.success(request, f'Bienvenido {usuario.nombres}')
                 return redirect('dashboard:dashboard_home')
             else:
-                messages.error(request, 'Contraseña incorrecta')
+                # CONTRASEÑA INCORRECTA
+                increment_login_attempts(request)
+                attempts_remaining = 5 - get_login_attempts(request)
+                
+                if attempts_remaining <= 0:
+                    messages.error(request, 'Demasiados intentos fallidos. Cuenta bloqueada temporalmente.')
+                else:
+                    messages.error(request, f'Contraseña incorrecta. Intentos restantes: {attempts_remaining}')
                 
         except Usuarios.DoesNotExist:
-            messages.error(request, 'Usuario no encontrado')
+            # USUARIO NO ENCONTRADO (También cuenta como intento fallido)
+            increment_login_attempts(request)
+            messages.error(request, 'Credenciales inválidas')
         
         return render(request, 'pagina/login.html')
+    
+    # Mensajes informativos para GET
+    if request.GET.get('timeout') == '1':
+        messages.warning(request, 'Tu sesión expiró por inactividad. Por favor, inicia sesión nuevamente.')
+    
+    if request.GET.get('logged_out') == '1':
+        messages.info(request, 'Sesión cerrada correctamente.')
     
     return render(request, 'pagina/login.html')
 
 
+@never_cache  # Previene caché en logout
 def logout_view(request):
     """
-    Cierra la sesión del usuario y redirige al login.
+    Cierra la sesión del usuario y limpia todo.
     """
-    from django.contrib.auth import logout as django_logout
-    
-    # Limpiar sesión de Django (si se usa auth_login)
-    django_logout(request)
-    
-    # Limpiar sesión personalizada
+    # Limpiar TODA la sesión
     request.session.flush()
     
-    # ✅ Redirigir al login (debe coincidir con el name en config/urls.py)
-    return redirect('login')  # name='login' está en config/urls.py línea 14
-
+    # Redirigir al login Construye URL con query params de forma segura
+    login_url = reverse_lazy('login')
+    return redirect(f"{login_url}?logged_out=1")
 
 # =============================================================================
 # === VISTAS DE ROLES ===
 # =============================================================================
 
+@method_decorator(never_cache, name='dispatch')
 class RolListView(ListView):
     model = RolesOld
     template_name = 'usuarios/rol_list.html'
@@ -78,7 +127,6 @@ class RolListView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         busqueda = self.request.GET.get('busqueda')
-
         if busqueda:
             queryset = queryset.filter(
                 Q(nombre_rol__icontains=busqueda) |
@@ -88,9 +136,11 @@ class RolListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Lista de Roles'
         return context
 
 
+@method_decorator(never_cache, name='dispatch')
 class RolCreateView(CreateView):
     model = RolesOld
     template_name = 'usuarios/rol_form.html'
@@ -102,7 +152,13 @@ class RolCreateView(CreateView):
         context['titulo'] = 'Nuevo Rol'
         return context
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Rol creado exitosamente')
+        return response
 
+
+@method_decorator(never_cache, name='dispatch')
 class RolUpdateView(UpdateView):
     model = RolesOld
     template_name = 'usuarios/rol_form.html'
@@ -114,13 +170,25 @@ class RolUpdateView(UpdateView):
         context['titulo'] = 'Editar Rol'
         return context
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Rol actualizado exitosamente')
+        return response
 
+
+@method_decorator(never_cache, name='dispatch')
 class RolDeleteView(DeleteView):
     model = RolesOld
     template_name = 'usuarios/rol_confirm_delete.html'
     success_url = reverse_lazy('usuarios:rol_list')
 
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, 'Rol eliminado exitosamente')
+        return response
 
+
+@method_decorator(never_cache, name='dispatch')
 class RolDetailView(DetailView):
     model = RolesOld
     template_name = 'usuarios/rol_detail.html'
@@ -129,6 +197,7 @@ class RolDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         rol = self.get_object()
+        context['titulo'] = f'Detalle: {rol.nombre_rol}'
         context['usuarios_con_rol'] = Usuarios.objects.filter(id_rol=rol)[:5]
         context['total_usuarios'] = Usuarios.objects.filter(id_rol=rol).count()
         return context
@@ -138,6 +207,7 @@ class RolDetailView(DetailView):
 # === VISTAS DE USUARIOS ===
 # =============================================================================
 
+@method_decorator(never_cache, name='dispatch')
 class UsuarioListView(ListView):
     model = Usuarios
     template_name = 'usuarios/usuario_list.html'
@@ -163,13 +233,16 @@ class UsuarioListView(ListView):
             )
         return queryset.order_by('-fecha_registro')
 
+    # Agregar datos adicionales al contexto para filtros y títulos
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Lista de Usuarios'
         context['roles'] = RolesOld.objects.all()
         context['estados'] = ['ACTIVO', 'INACTIVO', 'SUSPENDIDO']
         return context
 
 
+@method_decorator(never_cache, name='dispatch')
 class UsuarioCreateView(CreateView):
     model = Usuarios
     template_name = 'usuarios/usuario_form.html'
@@ -184,9 +257,12 @@ class UsuarioCreateView(CreateView):
 
     def form_valid(self, form):
         form.instance.fecha_registro = timezone.now()
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(self.request, 'Usuario creado exitosamente')
+        return response
 
 
+@method_decorator(never_cache, name='dispatch')
 class UsuarioUpdateView(UpdateView):
     model = Usuarios
     template_name = 'usuarios/usuario_form.html'
@@ -199,13 +275,25 @@ class UsuarioUpdateView(UpdateView):
         context['roles'] = RolesOld.objects.all()
         return context
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Usuario actualizado exitosamente')
+        return response
 
+
+@method_decorator(never_cache, name='dispatch')
 class UsuarioDeleteView(DeleteView):
     model = Usuarios
     template_name = 'usuarios/usuario_confirm_delete.html'
     success_url = reverse_lazy('usuarios:usuario_list')
 
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, 'Usuario eliminado exitosamente')
+        return response
 
+
+@method_decorator(never_cache, name='dispatch')
 class UsuarioDetailView(DetailView):
     model = Usuarios
     template_name = 'usuarios/usuario_detail.html'
@@ -214,5 +302,6 @@ class UsuarioDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()
+        context['titulo'] = f'Detalle: {usuario.nombres} {usuario.apellidos}'
         context['rol_nombre'] = usuario.id_rol.nombre_rol if usuario.id_rol else "Sin rol"
         return context

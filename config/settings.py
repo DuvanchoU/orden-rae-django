@@ -12,20 +12,25 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+# ==========================================
+# CARGA DE VARIABLES DE ENTORNO (.env)
+# ==========================================
+from dotenv import load_dotenv
+load_dotenv()  # Carga variables desde archivo .env
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@(k-na(%5w3n6p_!%vh8h#x1oo8obz50w@*uo7q2r0tkjc_5@u'
+# SECRET_KEY cargada desde variable de entorno (NUNCA hardcoded en producción)
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-cambia-esto-en-produccion')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG controlado por variable de entorno
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS desde variable de entorno (separados por coma)
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -54,12 +59,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'usuarios.middleware.NoCacheMiddleware',  
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'usuarios.middleware.SessionIdleTimeoutMiddleware',
+    'usuarios.middleware.CustomAuthMiddleware',      
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'usuarios.middleware.CustomAuthMiddleware', 
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -67,7 +74,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Directorio de templates
+        'DIRS': [BASE_DIR / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -90,13 +97,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bd_orden_rae_django',
-        'USER': 'root', 
-        'PASSWORD': '', 
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
+        'USER': os.getenv('DB_USER', 'root'), 
+        'PASSWORD': os.getenv('DB_PASSWORD', ''), 
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4', 
         },
     }
 }
@@ -149,9 +157,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Configuración para el sistema de mensajes
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
-LOGOUT_REDIRECT_URL = '/'  # ← Redirige a la página principal
+# CONFIGURACIÓN DE AUTENTICACIÓN
 
-# URL de login
 LOGIN_URL = 'usuarios:login'
 LOGIN_REDIRECT_URL = 'dashboard:dashboard_home'
 LOGOUT_REDIRECT_URL = 'usuarios:login'
@@ -160,3 +167,152 @@ AUTHENTICATION_BACKENDS = [
     'usuarios.backends.UsuariosAuthBackend',  # Backend personalizado (PRIORITARIO)
     'django.contrib.auth.backends.ModelBackend',  # Backend por defecto (fallback)
 ]
+
+
+# CONFIGURACIÓN DE TIMEOUT DE SESIÓN (10 MINUTOS)
+
+# Tiempo de vida de la sesión para usuarios normales (10 minutos = 600 segundos)
+SESSION_COOKIE_AGE = 600
+
+# Tiempo de vida de la sesión para el admin (5 minutos = 300 segundos)
+ADMIN_SESSION_TIMEOUT = 300  # 5 minutos
+
+# Refrescar la cookie en cada solicitud para medir inactividad real
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Expirar la sesión al cerrar el navegador (recomendado)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Usar cookies firmadas para sesiones (más seguro)
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+# Cookies solo para HTTP (no accesibles desde JavaScript)
+SESSION_COOKIE_HTTPONLY = True
+
+# Cookies solo por HTTPS (activar cuando tengas SSL)
+SESSION_COOKIE_SECURE = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+
+# Protección CSRF adicional contra ataques cross-site
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+
+# CONFIGURACIÓN DE SEGURIDAD PARA PRODUCCIÓN
+
+# --- HTTPS / SSL ---
+# Redirigir todo tráfico HTTP a HTTPS (activar solo con certificado SSL instalado)
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+
+# HTTP Strict Transport Security (HSTS) - 1 año
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# --- Cookies Seguras ---
+# Enviar cookie CSRF solo por HTTPS
+CSRF_COOKIE_SECURE = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+# Cookie CSRF no accesible desde JavaScript
+CSRF_COOKIE_HTTPONLY = True
+# Protección CSRF SameSite
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# --- Protección contra Clickjacking ---
+# Prevenir que el sitio sea embebido en iframes
+X_FRAME_OPTIONS = 'DENY'
+
+# --- Protección contra MIME Sniffing ---
+# Prevenir que el navegador interprete archivos con tipo MIME incorrecto
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# --- Referrer Policy ---
+# Controlar cuánta información del referer se envía
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+
+
+# CONFIGURACIÓN DE EMAIL (Desarrollo vs Producción)
+
+# Por defecto: consola (desarrollo)
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND', 
+    'django.core.mail.backends.console.EmailBackend'
+)
+
+# Configuración SMTP para producción (se activa si EMAIL_BACKEND es smtp)
+if 'smtp' in EMAIL_BACKEND:
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ordenrae.com')
+
+
+# LOGGING PARA AUDITORÍA DE SEGURIDAD
+
+# Crear carpeta logs si no existe
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOGS_DIR, 'security.log'),
+            'formatter': 'verbose',
+        },
+        'django_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOGS_DIR, 'django.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'django_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.security': {
+            'handlers': ['console', 'security_file'],
+            'level': 'WARNING',
+            'propagate': True,
+        },
+        'django.security.DisallowedHost': {
+            'handlers': ['security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+
+# CONFIGURACIONES ADICIONALES
+
+# Límite de tamaño para uploads (10 MB por defecto)
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('DATA_UPLOAD_MAX_MEMORY_SIZE', 10485760))  # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('FILE_UPLOAD_MAX_MEMORY_SIZE', 10485760))
+
+# Protección contra CSRF en formularios (Django lo hace por defecto, pero es bueno explicitarlo)
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
+
+# Versión de la aplicación (útil para debugging y monitoreo)
+APP_VERSION = os.getenv('APP_VERSION', '1.0.0')

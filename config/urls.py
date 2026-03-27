@@ -1,22 +1,23 @@
-# config/urls.py
 from django.contrib import admin
 from django.urls import path, include
 
-# IMPORTAR VISTAS PERSONALIZADAS
+# Importar vistas de autenticación personalizada
 from usuarios.views import login_view, logout_view
 
 urlpatterns = [
+    # ADMIN
     path('admin/', admin.site.urls),
     
-    # VISTAS PERSONALIZADAS 
-    path('login/', login_view, name='login'),      
+    # AUTENTICACIÓN PERSONALIZADA
+    path('login/', login_view, name='login'),
+    path('usuarios/login/', login_view, name='login'),      
     path('logout/', logout_view, name='logout'),   
     
-    # INCLUYE NAMESPACES
+    # APLICACIONES PRINCIPALES
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('', include('pagina.urls', namespace='pagina')),
 
-    # Otras apps con namespaces
+    # OTRAS APLICACIONES
     path('produccion/', include('produccion.urls', namespace='produccion')),
     path('inventario/', include('inventario.urls', namespace='inventario')),
     path('ventas/', include('ventas.urls')),
