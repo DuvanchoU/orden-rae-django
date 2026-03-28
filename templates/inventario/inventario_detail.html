@@ -10,11 +10,11 @@
         <p class="detail-subtitle">Información detallada del stock en bodega</p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'inventario:inventario_list' %}" class="btn btn-volver">
-            <i class="bi bi-arrow-left me-2"></i>Volver
+        <a href="{% url 'inventario:inventario_list' %}" class="btn btn-volver btn-sm">
+            <i class="bi bi-arrow-left"></i>Volver
         </a>
-        <a href="{% url 'inventario:inventario_update' item.pk %}" class="btn btn-editar">
-            <i class="bi bi-pencil-fill me-2"></i>Editar
+        <a href="{% url 'inventario:inventario_update' item.pk %}" class="btn btn-editar btn-sm">
+            <i class="bi bi-pencil-fill"></i>Editar
         </a>
     </div>
 </div>
@@ -67,34 +67,28 @@
 
             <hr class="my-4 border-secondary">
 
-            <!-- Sección 2: Desglose de Stock -->
-            <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Desglose de Stock</h6>
+            <!-- Sección 2: Desglose de Stock Compacto -->
+            <h6 class="text-uppercase text-muted fw-bold mb-2 section-label">Desglose de Stock</h6>
             
-            <div class="row g-3">
+            <div class="stock-grid">
                 <!-- 1. Total Físico -->
-                <div class="col-4">
-                    <div class="text-start">
-                        <small class="text-muted d-block mb-1" style="font-size: 0.7rem;">TOTAL FÍSICO</small>
-                        <span class="fs-5 fw-bold text-white">{{ total_fisico }}</span>
-                    </div>
+                <div class="stock-item">
+                    <small class="text-muted d-block mb-1 stock-label">TOTAL FÍSICO</small>
+                    <span class="stock-value fw-bold">{{ total_fisico }}</span>
                 </div>
 
                 <!-- 2. Reservado -->
-                <div class="col-4">
-                    <div class="text-start">
-                        <small class="text-warning d-block mb-1" style="font-size: 0.7rem;">RESERVADO</small>
-                        <span class="fs-5 fw-bold text-warning">{{ cantidad_reservada }}</span>
-                    </div>
+                <div class="stock-item">
+                    <small class="text-warning d-block mb-1 stock-label">RESERVADO</small>
+                    <span class="stock-value fw-bold text-warning">{{ cantidad_reservada }}</span>
                 </div>
 
-                <!-- 3. Stock Libre (Usando variable calculada en Vista) -->
-                <div class="col-4">
-                    <div class="text-start">
-                        <small class="text-success d-block mb-1" style="font-size: 0.7rem;">LIBRE PARA VENTA</small>
-                        <span class="fs-5 fw-bold {% if stock_libre <= 0 %}text-danger{% else %}text-success{% endif %}">
-                            {{ stock_libre }}
-                        </span>
-                    </div>
+                <!-- 3. Stock Libre -->
+                <div class="stock-item">
+                    <small class="text-success d-block mb-1 stock-label">LIBRE PARA VENTA</small>
+                    <span class="stock-value fw-bold {% if stock_libre <= 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ stock_libre }}
+                    </span>
                 </div>
             </div>
             

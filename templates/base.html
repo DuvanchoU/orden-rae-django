@@ -15,12 +15,22 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 
-    <!-- Dashboard CSS (TEMAS Y BASE)-->
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=2.0">
+    <!-- Dashboard CSS (TEMAS Y BASE) - CON VERSIONADO -->
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v={{ VERSION|default:'2.1' }}">
 
     {% block extra_css %}{% endblock %}
+    
+    <!-- Script para aplicar tema ANTES de renderizar -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            // Remover cualquier clase de tema previa y aplicar la guardada
+            document.documentElement.classList.remove('theme-light', 'theme-dark');
+            document.documentElement.classList.add(`theme-${savedTheme}`);
+        })();
+    </script>
 </head>
-<body class="theme-light">
+<body class="theme-base">
 
 <div class="app-layout">
     
@@ -278,32 +288,36 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Theme Toggle Script -->
+<!-- Theme Toggle Script - CORREGIDO -->
 <script>
-    (function() {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.body.classList.add(`theme-${savedTheme}`);
-    })();
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('checkbox-theme');
+    const body = document.body;
+    
+    if (!themeToggle) return;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const themeToggle = document.getElementById('checkbox-theme');
+    // Obtener tema guardado o usar 'light' por defecto
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    
+    // Aplicar tema al body
+    body.classList.remove('theme-light', 'theme-dark');
+    body.classList.add(`theme-${savedTheme}`);
+    
+    // Sincronizar el estado del toggle
+    themeToggle.checked = savedTheme === 'dark';
+
+    // Evento de cambio de tema
+    themeToggle.addEventListener('change', function() {
+        const newTheme = this.checked ? 'dark' : 'light';
         
-        if (!themeToggle) return;
-
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        if (savedTheme === 'dark') {
-            themeToggle.checked = true;
-        }
-
-        themeToggle.addEventListener('change', function() {
-            const body = document.body;
-            const newTheme = this.checked ? 'dark' : 'light';
-            
-            body.classList.remove('theme-light', 'theme-dark');
-            body.classList.add(`theme-${newTheme}`);
-            localStorage.setItem('theme', newTheme);
-        });
+        // Remover clases anteriores y aplicar nueva
+        body.classList.remove('theme-light', 'theme-dark');
+        body.classList.add(`theme-${newTheme}`);
+        
+        // Guardar en localStorage
+        localStorage.setItem('theme', newTheme);
     });
+});
 </script>
 
 {% block extra_js %}{% endblock %}

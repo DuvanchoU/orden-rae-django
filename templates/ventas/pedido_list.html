@@ -20,7 +20,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="busqueda" class="form-control" 
+                <input type="text" name="busqueda" class="form-select" 
                        placeholder="Número de pedido o cliente" 
                        value="{{ request.GET.busqueda }}">
             </div>
@@ -43,7 +43,7 @@
                 <label class="form-label">Entrega Hasta</label>
                 <input type="date" name="entrega_hasta" class="form-control" value="{{ request.GET.entrega_hasta }}">
             </div>
-            <div class="col-md-1 d-flex gap-2">
+            <div class="col-md-2 d-flex gap-3">
                 <button type="submit" class="btn btn-filtrar flex-grow-1">
                     <i class="bi bi-funnel"></i>
                 </button>

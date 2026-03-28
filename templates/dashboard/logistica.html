@@ -3,27 +3,43 @@
 {% block title %}Dashboard Logística - ORDEN R.A.E{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="page-header mb-4">
-    <h1 class="page-title">
-        <i class="bi bi-truck me-2"></i>Dashboard Logística
-    </h1>
-    <p class="page-subtitle">Bienvenido, {{ user_nombre }} | Rol: {{ user_rol }}</p>
+<!-- Header Ultra Compacto con Welcome Badge -->
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <div>
+            <h1 class="page-title mb-0">
+                <i class="bi bi-truck me-2"></i>Panel Logístico
+            </h1>
+        </div>
+        <!-- Welcome Badge Minimalista -->
+        <span class="welcome-badge">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ user_nombre }}
+            <span class="welcome-separator">•</span>
+            <span class="user-rol-badge">{{ user_rol }}</span>
+        </span>
+    </div>
+    
+    <!-- Fecha y hora actual -->
+    <small class="text-muted d-none d-md-block">
+        <i class="bi bi-clock me-1"></i>
+        {% now "d/m/Y H:i" %}
+    </small>
 </div>
 
-<!-- Alertas Críticas -->
+<!-- Alerta Crítica Compacta -->
 {% if productos_bajo_stock > 0 %}
-<div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
-    <div>
-        <strong>Atención:</strong> Hay {{ productos_bajo_stock }} productos con stock bajo. 
-        <a href="{% url 'inventario:inventario_list' %}" class="alert-link">Revisar inventario</a>
+<div class="alert alert-warning alert-compact d-flex align-items-center justify-content-center mb-3 text-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <div class="small">
+        <strong>Atención:</strong> {{ productos_bajo_stock }} productos con stock bajo. 
+        <a href="{% url 'inventario:inventario_list' %}" class="alert-link fw-semibold">Revisar inventario</a>
     </div>
 </div>
 {% endif %}
 
-<!-- Tarjetas de Estadísticas Logísticas -->
-<div class="row g-4 mb-4">
+<!-- Tarjetas de Estadísticas - Compactas -->
+<div class="row g-3 mb-3">
     <!-- Stock Bajo -->
     <div class="col-md-3">
         <div class="stat-card stat-card-danger">
@@ -34,7 +50,7 @@
                 <div class="stat-card-label">STOCK BAJO</div>
                 <div class="stat-card-value">{{ productos_bajo_stock }}</div>
                 <div class="stat-card-change text-muted">
-                    <span>Productos < 5 unidades</span>
+                    <span class="d-block">Productos &lt; 5 unidades</span>
                 </div>
             </div>
         </div>
@@ -90,14 +106,13 @@
     </div>
 </div>
 
-<!-- Gráficas Logísticas -->
-<div class="row g-4 mb-4">
+<!-- Gráficas y Accesos - Compactos -->
+<div class="row g-3 mb-3">
     <!-- Productos por Categoría -->
     <div class="col-lg-4">
-        <div class="card-modern p-4">
-            <h5 class="fw-bold mb-4">Inventario por Categoría</h5>
-            <!-- ✅ CONTENDOR CON ALTURA DEFINIDA -->
-            <div style="position: relative; height: 300px;">
+        <div class="card-modern p-3">
+            <h5 class="fw-bold mb-3 fs-6">Inventario por Categoría</h5>
+            <div style="position: relative; height: 240px;">
                 <canvas id="categoriasChart"></canvas>
             </div>
         </div>
@@ -105,69 +120,92 @@
     
     <!-- Estado de Pedidos -->
     <div class="col-lg-4">
-        <div class="card-modern p-4">
-            <h5 class="fw-bold mb-4">Pedidos por Estado</h5>
-            <!-- ✅ CONTENDOR CON ALTURA DEFINIDA -->
-            <div style="position: relative; height: 300px;">
+        <div class="card-modern p-3">
+            <h5 class="fw-bold mb-3 fs-6">Pedidos por Estado</h5>
+            <div style="position: relative; height: 240px;">
                 <canvas id="pedidosChart"></canvas>
             </div>
         </div>
     </div>
     
-    <!-- Accesos Rápidos -->
+    <!-- Accesos Rápidos - Estilo Tile -->
     <div class="col-lg-4">
-        <div class="card-modern p-4">
-            <h5 class="fw-bold mb-4">Accesos Rápidos</h5>
-            <div class="d-grid gap-2">
-                <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-danger">
-                    <i class="bi bi-box-seam me-2"></i>Revisar Stock
-                </a>
-                <a href="{% url 'produccion:produccion_list' %}" class="btn btn-outline-warning">
-                    <i class="bi bi-gear me-2"></i>Gestionar Producción
-                </a>
-                <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-info">
-                    <i class="bi bi-receipt me-2"></i>Ver Pedidos
-                </a>
-                <a href="{% url 'inventario:proveedor_list' %}" class="btn btn-outline-success">
-                    <i class="bi bi-truck me-2"></i>Proveedores
-                </a>
+        <div class="card-modern p-3">
+            <h5 class="fw-bold mb-3 fs-6">Accesos Rápidos</h5>
+            <div class="row g-2">
+                <div class="col-6">
+                    <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-danger btn-action-bodega">
+                        <i class="bi bi-box-seam"></i>
+                        <small>Stock</small>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'produccion:produccion_list' %}" class="btn btn-outline-warning btn-action-bodega">
+                        <i class="bi bi-gear"></i>
+                        <small>Producción</small>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-info btn-action-bodega">
+                        <i class="bi bi-receipt"></i>
+                        <small>Pedidos</small>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'inventario:proveedor_list' %}" class="btn btn-outline-success btn-action-bodega">
+                        <i class="bi bi-truck"></i>
+                        <small>Proveedores</small>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Tablas Críticas -->
-<div class="row g-4">
+<!-- Tablas Críticas - Ultra Compactas -->
+<div class="row g-3">
     <!-- Productos Bajo Stock -->
     <div class="col-lg-6">
         <div class="card-modern p-0 overflow-hidden">
-            <div class="p-4 border-bottom bg-danger bg-opacity-10">
-                <h5 class="fw-bold mb-0 text-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>Productos con Stock Bajo
-                </h5>
+            <div class="p-3 border-bottom d-flex align-items-center justify-content-center gap-2 table-header-danger">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+                <h5 class="fw-bold mb-0 fs-6 text-danger">Productos con Stock Bajo</h5>
             </div>
             <div class="table-responsive">
-                <table class="table table-compact mb-0">
+                <table class="table table-ultra-compact mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Producto</th>
+                            <th class="ps-3">Producto</th>
                             <th>Categoría</th>
                             <th>Stock</th>
-                            <th>Acción</th>
+                            <th class="text-end pe-3">Acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in productos_bajo_stock_lista %}
                         <tr>
-                            <td class="ps-4 fw-semibold">{{ item.producto.nombre }}</td>
-                            <td>{{ item.producto.categoria.nombre_categoria|default:"-" }}</td>
+                            <td class="ps-3">
+                                <div class="fw-semibold text-truncate" style="max-width: 140px;" title="{{ item.producto.nombre }}">
+                                    {{ item.producto.nombre }}
+                                </div>
+                            </td>
+                            <td class="text-truncate text-muted" style="max-width: 120px;">
+                                {{ item.producto.categoria.nombre_categoria|default:"-" }}
+                            </td>
                             <td class="text-danger fw-bold">{{ item.cantidad_disponible }}</td>
-                            <td>
-                                <a href="{% url 'inventario:producto_update' item.producto.id_producto %}" class="btn btn-sm btn-outline-primary">Reponer</a>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'inventario:producto_update' item.producto.id_producto %}" 
+                                   class="btn btn-ghost btn-sm">
+                                    Reponer
+                                </a>
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="text-center py-4 text-muted">Todo el stock está en niveles adecuados</td></tr>
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">
+                                <small>✓ Todo el stock está en niveles adecuados</small>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -178,37 +216,45 @@
     <!-- Producción Reciente -->
     <div class="col-lg-6">
         <div class="card-modern p-0 overflow-hidden">
-            <div class="p-4 border-bottom">
-                <h5 class="fw-bold mb-0">Producción Reciente</h5>
+            <div class="p-3 border-bottom">
+                <h5 class="fw-bold mb-0 fs-6">Producción Reciente</h5>
             </div>
             <div class="table-responsive">
-                <table class="table table-compact mb-0">
+                <table class="table table-ultra-compact mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Producto</th>
-                            <th>Fecha Inicio</th>
+                            <th class="ps-3">Producto</th>
+                            <th>Fecha</th>
                             <th>Cantidad</th>
-                            <th>Estado</th>
+                            <th class="text-end pe-3">Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for prod in produccion_reciente %}
                         <tr>
-                            <td class="ps-4 fw-semibold">{{ prod.producto.nombre }}</td>
-                            <td>{{ prod.fecha_inicio|date:"d/m/Y" }}</td>
+                            <td class="ps-3">
+                                <div class="fw-semibold text-truncate" style="max-width: 140px;" title="{{ prod.producto.nombre }}">
+                                    {{ prod.producto.nombre }}
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ prod.fecha_inicio|date:"d/m/y" }}</td>
                             <td>{{ prod.cantidad_producida }}</td>
-                            <td>
+                            <td class="text-end pe-3">
                                 {% if prod.estado_produccion == 'TERMINADA' %}
-                                    <span class="badge-estado disponible">TERMINADA</span>
+                                    <span class="badge-estado badge-sm disponible">TERMINADA</span>
                                 {% elif prod.estado_produccion == 'EN PROCESO' %}
-                                    <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b;">EN PROCESO</span>
+                                    <span class="badge-estado badge-sm reservado">EN PROCESO</span>
                                 {% else %}
-                                    <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b;">PENDIENTE</span>
+                                    <span class="badge-estado badge-sm neutro">PENDIENTE</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="text-center py-4 text-muted">No hay producción reciente</td></tr>
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">
+                                <small>No hay producción reciente</small>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -221,9 +267,26 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    const colors = { primary: '#2dd4bf', success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6', gray: '#64748b' };
+    // Colores del sistema - usando variables CSS para modo claro/oscuro
+    function getChartColors() {
+        const isDark = document.body.classList.contains('theme-dark');
+        return {
+            primary: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14b8a6',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            info: '#3b82f6',
+            gray: isDark ? '#94a3b8' : '#64748b',
+            grid: isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(100, 116, 139, 0.1)',
+            text: isDark ? '#94a3b8' : '#64748b',
+            tooltipBg: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            tooltipText: isDark ? '#f1f5f9' : '#1e293b'
+        };
+    }
     
-    // Productos por Categoría
+    const c = getChartColors();
+    
+    // Productos por Categoría (Doughnut)
     const categoriasCtx = document.getElementById('categoriasChart').getContext('2d');
     new Chart(categoriasCtx, {
         type: 'doughnut',
@@ -231,21 +294,40 @@
             labels: {{ productos_por_categoria.etiquetas|safe }},
             datasets: [{
                 data: {{ productos_por_categoria.datos|safe }},
-                backgroundColor: [colors.primary, colors.success, colors.warning, colors.danger, colors.info],
-                borderWidth: 0
+                backgroundColor: [c.primary, c.success, c.warning, c.danger, c.info],
+                borderWidth: 0,
+                hoverOffset: 4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 400 },
             plugins: {
-                legend: { position: 'bottom', labels: { padding: 10, usePointStyle: true, color: colors.gray } }
+                legend: {
+                    position: 'bottom',
+                    labels: { 
+                        padding: 8, 
+                        usePointStyle: true, 
+                        pointStyle: 'circle',
+                        color: c.text,
+                        font: { size: 9 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: c.tooltipBg,
+                    titleColor: c.tooltipText,
+                    bodyColor: c.tooltipText,
+                    padding: 8,
+                    titleFont: { size: 11 },
+                    bodyFont: { size: 10 }
+                }
             },
-            cutout: '65%'
+            cutout: '70%'
         }
     });
     
-    // Pedidos por Estado
+    // Pedidos por Estado (Bar Horizontal)
     const pedidosCtx = document.getElementById('pedidosChart').getContext('2d');
     new Chart(pedidosCtx, {
         type: 'bar',
@@ -253,19 +335,50 @@
             labels: {{ pedidos_estado_data.etiquetas|safe }},
             datasets: [{
                 data: {{ pedidos_estado_data.datos|safe }},
-                backgroundColor: [colors.gray, colors.info, colors.warning, colors.success, colors.danger],
-                borderRadius: 8
+                backgroundColor: [c.gray, c.info, c.warning, c.success, c.danger],
+                borderRadius: 6,
+                borderSkipped: false
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 400 },
             indexAxis: 'y',
-            plugins: { legend: { display: false } },
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: c.tooltipBg,
+                    titleColor: c.tooltipText,
+                    bodyColor: c.tooltipText,
+                    padding: 8,
+                    titleFont: { size: 11 },
+                    bodyFont: { size: 10 }
+                }
+            },
             scales: {
-                x: { beginAtZero: true, grid: { color: 'rgba(100, 116, 139, 0.1)' }, ticks: { color: colors.gray } },
-                y: { grid: { display: false }, ticks: { color: colors.gray } }
+                x: { 
+                    beginAtZero: true, 
+                    grid: { color: c.grid }, 
+                    ticks: { color: c.text, font: { size: 9 } } 
+                },
+                y: { 
+                    grid: { display: false }, 
+                    ticks: { color: c.text, font: { size: 9 } } 
+                }
             }
+        }
+    });
+    
+    // Re-renderizar colores al cambiar tema
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('checkbox-theme');
+        if (themeToggle) {
+            themeToggle.addEventListener('change', function() {
+                const newColors = getChartColors();
+                Chart.defaults.color = newColors.text;
+                Chart.defaults.borderColor = newColors.grid;
+            });
         }
     });
 </script>

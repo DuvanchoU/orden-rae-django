@@ -16,7 +16,7 @@ class Bodegas(models.Model):
     deleted_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'bodegas'
 
     def save(self, *args, **kwargs):
@@ -37,7 +37,7 @@ class Categorias(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'categorias'
         ordering = ['nombre_categoria']
 
@@ -75,7 +75,7 @@ class Proveedores(models.Model):
     deleted_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'proveedores'
         ordering = ['nombre']
 
@@ -214,7 +214,7 @@ class Producto(models.Model):
         return self.estado == 'DISPONIBLE' and self.get_stock_total() > 0
 
     class Meta:
-        managed = False
+        managed = True 
         db_table = 'producto'
         ordering = ['-created_at']
         indexes = [
@@ -269,7 +269,7 @@ class Inventario(models.Model):
     deleted_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'inventario'
         ordering = ['-fecha_registro']
 
@@ -369,7 +369,7 @@ class ImagenesProducto(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'imagenes_producto'
 
     def save(self, *args, **kwargs):

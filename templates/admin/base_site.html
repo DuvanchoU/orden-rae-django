@@ -3,108 +3,381 @@
 
 {% block extrahead %}
 {{ block.super }}
-<!-- Script para cerrar sesión al cerrar pestaña en admin -->
+<!-- Estilos para personalizar el admin -->
+<style>
+    /* Header del admin - Coherente con ORDEN R.A.E */
+    #header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #f1f5f9 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    #header a:link,
+    #header a:visited {
+        color: #2dd4bf !important;
+        font-weight: 500;
+    }
+    
+    #header a:hover {
+        color: #14b8a6 !important;
+    }
+    
+    #branding h1 {
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: 0.3px;
+    }
+    
+    #branding h1 a {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    /* Botones de acción */
+    .button,
+    input[type="submit"],
+    input[type="button"],
+    .submit-row input {
+        background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+        color: #0f172a !important;
+        border: none !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .button:hover,
+    input[type="submit"]:hover,
+    input[type="button"]:hover,
+    .submit-row input:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3) !important;
+    }
+    
+    .button.default,
+    input[type="submit"].default {
+        background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+    }
+    
+    /* Botones secundarios / cancelar */
+    .button.secondary,
+    .cancel-link {
+        background: rgba(100, 116, 139, 0.1) !important;
+        color: #64748b !important;
+        border: 1px solid rgba(100, 116, 139, 0.3) !important;
+    }
+    
+    .button.secondary:hover,
+    .cancel-link:hover {
+        background: rgba(100, 116, 139, 0.2) !important;
+        color: #334155 !important;
+    }
+    
+    /* Enlaces de eliminación */
+    .deletelink {
+        background: rgba(239, 68, 68, 0.1) !important;
+        color: #ef4444 !important;
+        border: 1px solid rgba(239, 68, 68, 0.2) !important;
+        border-radius: 8px !important;
+        padding: 10px 15px !important;
+        font-weight: 600 !important;
+    }
+    
+    .deletelink:hover {
+        background: rgba(239, 68, 68, 0.2) !important;
+        color: #dc2626 !important;
+    }
+    
+    /* Sidebar / menú */
+    #nav-sidebar {
+        background-color: #0f172a !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    
+    #nav-sidebar .module h2,
+    #nav-sidebar .module caption {
+        color: #94a3b8 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        font-weight: 700 !important;
+    }
+    
+    #nav-sidebar a {
+        color: #cbd5e1 !important;
+        padding: 10px 14px !important;
+        border-radius: 6px !important;
+        margin: 2px 8px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    #nav-sidebar a:hover {
+        background-color: rgba(20, 184, 166, 0.12) !important;
+        color: #2dd4bf !important;
+    }
+    
+    #nav-sidebar a.selected {
+        background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%) !important;
+        color: #0f172a !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Tablas */
+    #changelist table thead th {
+        background: #1e293b !important;
+        color: #94a3b8 !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-weight: 700 !important;
+    }
+    
+    #changelist table tbody td {
+        padding: 10px 12px !important;
+        font-size: 0.85rem !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1) !important;
+    }
+    
+    #changelist table tbody tr:hover {
+        background-color: rgba(20, 184, 166, 0.06) !important;
+    }
+    
+    /* Formularios */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    select,
+    textarea {
+        background-color: #1e293b !important;
+        border: 1px solid #334155 !important;
+        color: #f1f5f9 !important;
+        border-radius: 8px !important;
+        padding: 8px 12px !important;
+    }
+    
+    input:focus,
+    select:focus,
+    textarea:focus {
+        border-color: #14b8a6 !important;
+        box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15) !important;
+        outline: none !important;
+    }
+    
+    /* Mensajes */
+    .messagelist li {
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 10px 16px !important;
+        font-weight: 500 !important;
+    }
+    
+    .messagelist li.success {
+        background: rgba(16, 185, 129, 0.15) !important;
+        color: #34d399 !important;
+    }
+    
+    .messagelist li.error {
+        background: rgba(239, 68, 68, 0.15) !important;
+        color: #f87171 !important;
+    }
+    
+    .messagelist li.warning {
+        background: rgba(245, 158, 11, 0.15) !important;
+        color: #fbbf24 !important;
+    }
+    
+    /* Footer */
+    #footer {
+        background: #0f172a !important;
+        color: #64748b !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 12px 20px !important;
+        font-size: 0.8rem !important;
+    }
+</style>
+
+<!-- Script para logout al cerrar pestaña en admin -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Solo ejecutar si el usuario está autenticado
-    if (document.cookie.indexOf('sessionid') !== -1) {
+(function() {
+    'use strict';
+    
+    // Configuración
+    const CONFIG = {
+        logoutUrl: '{% url "admin:logout" %}',
+        channelName: 'orden_rae_admin_logout',
+        cookieName: 'sessionid'
+    };
+    
+    // Estado
+    let isLoggingOut = false;
+    let broadcastChannel = null;
+    
+    // Verificar si el usuario está autenticado
+    function isAuthenticated() {
+        return document.cookie.indexOf(CONFIG.cookieName) !== -1;
+    }
+    
+    // Obtener token CSRF desde cookie
+    function getCsrfToken() {
+        const name = 'csrftoken';
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
+            }
+        }
+        return null;
+    }
+    
+    // Enviar solicitud de logout al servidor
+    function sendLogoutRequest() {
+        if (isLoggingOut) return;
+        isLoggingOut = true;
         
-        let isUnloading = false;
-        const logoutUrl = '{% url "admin:logout" %}';
-        
-        // Función para enviar solicitud de logout
-        const sendLogout = function() {
-            if (isUnloading) return;
-            isUnloading = true;
-            
-            // Usar sendBeacon: más confiable que fetch/XMLHttpRequest en unload
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon(logoutUrl);
-            } else {
-                // Fallback para navegadores antiguos (síncrono, menos ideal)
+        // Intentar con sendBeacon (más confiable en unload)
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(CONFIG.logoutUrl);
+        } else {
+            // Fallback: XMLHttpRequest síncrono (último recurso)
+            try {
                 const xhr = new XMLHttpRequest();
-                xhr.open('POST', logoutUrl, false);
-                xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+                xhr.open('POST', CONFIG.logoutUrl, false);
+                const csrfToken = getCsrfToken();
+                if (csrfToken) {
+                    xhr.setRequestHeader('X-CSRFToken', csrfToken);
+                }
                 xhr.send();
+            } catch (e) {
+                console.warn('Logout fallback failed:', e);
             }
-        };
+        }
+    }
+    
+    // Notificar a otras pestañas sobre el logout
+    function broadcastLogout() {
+        if (broadcastChannel) {
+            try {
+                broadcastChannel.postMessage({ type: 'logout', timestamp: Date.now() });
+            } catch (e) {
+                // BroadcastChannel no disponible
+            }
+        }
+    }
+    
+    // Manejar logout recibido de otra pestaña
+    function handleRemoteLogout() {
+        // Redirigir al login para sincronizar sesión
+        if (!isLoggingOut) {
+            isLoggingOut = true;
+            window.location.href = CONFIG.logoutUrl + '?next=' + encodeURIComponent(window.location.pathname);
+        }
+    }
+    
+    // Determinar si es cierre real de pestaña (no navegación interna)
+    function isActualTabClose(event) {
+        // Si no hay evento, asumir que es cierre
+        if (!event) return true;
         
-        // Obtener token CSRF de la cookie
-        const getCsrfToken = function() {
-            const name = 'csrftoken';
-            let cookieValue = null;
-            if (document.cookie) {
-                const cookies = document.cookie.split(';');
-                for (let cookie of cookies) {
-                    cookie = cookie.trim();
-                    if (cookie.startsWith(name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+        // En pagehide, verificar si la página se está descargando permanentemente
+        if (event.type === 'pagehide') {
+            return event.persisted === false;
+        }
+        
+        // En beforeunload, es difícil distinguir, pero podemos usar heurísticas
+        if (event.type === 'beforeunload') {
+            // Si el usuario está navegando dentro del admin, no hacer logout
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/admin/')) {
+                // Verificar si hay navegación inminente (clic en enlace interno)
+                // Esto es imperfecto, pero mejor que nada
+                return true; // Por seguridad, hacer logout en beforeunload
+            }
+        }
+        
+        return true;
+    }
+    
+    // Función principal de logout
+    function handleLogout(event) {
+        if (!isAuthenticated() || isLoggingOut) return;
+        
+        if (isActualTabClose(event)) {
+            broadcastLogout();
+            sendLogoutRequest();
+        }
+    }
+    
+    // Inicializar cuando el DOM esté listo
+    function init() {
+        if (!isAuthenticated()) return;
+        
+        // Configurar BroadcastChannel para sincronización entre pestañas
+        if ('BroadcastChannel' in window) {
+            try {
+                broadcastChannel = new BroadcastChannel(CONFIG.channelName);
+                broadcastChannel.onmessage = function(event) {
+                    if (event.data && event.data.type === 'logout') {
+                        handleRemoteLogout();
                     }
-                }
+                };
+            } catch (e) {
+                console.warn('BroadcastChannel no soportado');
             }
-            return cookieValue;
-        };
+        }
         
-        // Eventos que indican cierre de pestaña/ventana
-        window.addEventListener('pagehide', sendLogout);
-        window.addEventListener('beforeunload', function(e) {
-            // Solo logout si realmente se cierra la pestaña (no navegación interna)
-            if (e.type === 'beforeunload') {
-                // Verificar si es navegación interna (mismo origen y ruta de admin)
-                const isInternalNav = performance.getEntriesByType('navigation')[0]?.type === 'navigate';
-                if (!isInternalNav || !document.referral?.includes('/admin/')) {
-                    sendLogout();
-                }
+        // Event listeners para detectar cierre de pestaña
+        // Orden de prioridad: pagehide > beforeunload > unload
+        window.addEventListener('pagehide', handleLogout);
+        window.addEventListener('beforeunload', handleLogout);
+        
+        // Cleanup al cerrar
+        window.addEventListener('unload', function() {
+            if (broadcastChannel) {
+                broadcastChannel.close();
             }
         });
         
-        // También escuchar el evento 'unload' como respaldo
-        window.addEventListener('unload', sendLogout);
-    }
-});
-
-// Sincronizar logout entre pestañas
-const channel = new BroadcastChannel('admin_logout_channel');
-
-// Escuchar logout desde otras pestañas
-channel.onmessage = function(event) {
-    if (event.data === 'logout') {
-        // Forzar recarga que redirigirá a login
-        window.location.href = logoutUrl;
-    }
-};
-
-// Modificar sendLogout para notificar a otras pestañas
-const sendLogout = function() {
-    if (isUnloading) return;
-    isUnloading = true;
-    
-    // Notificar a otras pestañas
-    try {
-        channel.postMessage('logout');
-    } catch(e) {
-        // BroadcastChannel no soportado, continuar con logout normal
+        // Prevenir logout múltiple
+        document.addEventListener('click', function(e) {
+            // Si el usuario hace clic en un enlace de logout explícito, marcar
+            if (e.target.closest('a[href*="logout"]') || 
+                e.target.closest('form[action*="logout"]')) {
+                isLoggingOut = true;
+            }
+        });
     }
     
-    // Enviar logout al servidor
-    if (navigator.sendBeacon) {
-        navigator.sendBeacon(logoutUrl);
+    // Ejecutar inicialización
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
     }
-};
-
-// Limpiar channel al cerrar
-window.addEventListener('unload', function() {
-    channel.close();
-});
+})();
 </script>
 {% endblock %}
 
 {% block branding %}
-<!-- Logo personalizado del admin (opcional) -->
+<!-- Logo y branding personalizado -->
 <h1 id="site-name">
     <a href="{% url 'admin:index' %}">
-        Orden Rae Admin
+        <i class="bi bi-shield-lock" style="margin-right: 8px; vertical-align: middle;"></i>
+        ORDEN R.A.E <span style="font-weight: 400; opacity: 0.8;">| Admin</span>
     </a>
 </h1>
+{% endblock %}
+
+{% block nav-global %}
+<!-- Enlace rápido al dashboard principal -->
+{% if user.is_authenticated %}
+<div style="margin-left: 20px;">
+    <a href="{% url 'dashboard:dashboard_home' %}" 
+       style="color: #2dd4bf; text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+        <i class="bi bi-speedometer2"></i> Ir al Dashboard
+    </a>
+</div>
+{% endif %}
 {% endblock %}

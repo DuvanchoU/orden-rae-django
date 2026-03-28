@@ -3,27 +3,43 @@
 {% block title %}Dashboard Bodega - ORDEN R.A.E{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="page-header mb-4">
-    <h1 class="page-title">
-        <i class="bi bi-box-seam me-2"></i>Dashboard Bodega
-    </h1>
-    <p class="page-subtitle">Bienvenido, {{ user_nombre }} | Rol: {{ user_rol }}</p>
+<!-- Header Ultra Compacto con Welcome Badge -->
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <div>
+            <h1 class="page-title mb-0">
+                <i class="bi bi-box-seam me-2"></i>Panel Bodegas
+            </h1>
+        </div>
+        <!-- Welcome Badge Minimalista -->
+        <span class="welcome-badge">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ user_nombre }}
+            <span class="welcome-separator">•</span>
+            <span class="user-rol-badge">{{ user_rol }}</span>
+        </span>
+    </div>
+    
+    <!-- Fecha y hora actual -->
+    <small class="text-muted d-none d-md-block">
+        <i class="bi bi-clock me-1"></i>
+        {% now "d/m/Y H:i" %}
+    </small>
 </div>
 
-<!-- Alerta de Stock Crítico -->
+<!-- Alerta Crítica Compacta -->
 {% if productos_sin_stock > 0 %}
-<div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
-    <i class="bi bi-x-circle-fill me-2 fs-4"></i>
-    <div>
+<div class="alert alert-danger alert-compact d-flex align-items-center justify-content-center mb-3 text-center" role="alert">
+    <i class="bi bi-x-circle-fill me-2"></i>
+    <div class="small">
         <strong>CRÍTICO:</strong> {{ productos_sin_stock }} productos SIN STOCK. 
-        <a href="{% url 'inventario:inventario_list' %}" class="alert-link">Ver lista completa</a>
+        <a href="{% url 'inventario:inventario_list' %}" class="alert-link fw-semibold">Ver lista completa</a>
     </div>
 </div>
 {% endif %}
 
-<!-- Tarjetas de Control de Bodega -->
-<div class="row g-4 mb-4">
+<!-- Tarjetas de Control - Compactas -->
+<div class="row g-3 mb-3">
     <!-- Stock Total -->
     <div class="col-md-4">
         <div class="stat-card stat-card-info">
@@ -75,21 +91,20 @@
     </div>
 </div>
 
-<!-- Listas de Prioridad -->
-<div class="row g-4 mb-4">
+<!-- Listas de Prioridad - Ultra Compactas -->
+<div class="row g-3 mb-3">
     <!-- Productos Sin Stock -->
     <div class="col-lg-6">
-        <div class="card-modern p-0 overflow-hidden border-danger">
-            <div class="p-4 border-bottom bg-danger bg-opacity-10">
-                <h5 class="fw-bold mb-0 text-danger">
-                    <i class="bi bi-x-circle me-2"></i>Productos Agotados
-                </h5>
+        <div class="card-modern p-0 overflow-hidden">
+            <div class="p-3 border-bottom d-flex align-items-center gap-2 table-header-danger">
+                <i class="bi bi-x-circle text-danger"></i>
+                <h5 class="fw-bold mb-0 fs-6 text-danger">Productos Agotados</h5>
             </div>
             <div class="table-responsive">
-                <table class="table table-compact mb-0">
+                <table class="table table-ultra-compact mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Producto</th>
+                            <th class="ps-3">Producto</th>
                             <th>Código</th>
                             <th>Última Entrada</th>
                         </tr>
@@ -97,12 +112,20 @@
                     <tbody>
                         {% for item in productos_sin_stock_lista %}
                         <tr>
-                            <td class="ps-4 fw-semibold">{{ item.producto.nombre }}</td>
-                            <td><code>{{ item.producto.codigo|default:"-" }}</code></td>
-                            <td>{{ item.ultima_entrada|date:"d/m/Y"|default:"Nunca" }}</td>
+                            <td class="ps-3">
+                                <div class="fw-semibold text-truncate" style="max-width: 160px;" title="{{ item.producto.nombre }}">
+                                    {{ item.producto.nombre }}
+                                </div>
+                            </td>
+                            <td><code class="text-muted small">{{ item.producto.codigo|default:"-" }}</code></td>
+                            <td class="text-muted">{{ item.ultima_entrada|date:"d/m/y"|default:"Nunca" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="3" class="text-center py-4 text-muted">✓ No hay productos agotados</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center py-3 text-muted">
+                                <small>✓ No hay productos agotados</small>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -113,16 +136,15 @@
     <!-- Producción en Proceso -->
     <div class="col-lg-6">
         <div class="card-modern p-0 overflow-hidden">
-            <div class="p-4 border-bottom bg-warning bg-opacity-10">
-                <h5 class="fw-bold mb-0 text-warning">
-                    <i class="bi bi-hourglass-split me-2"></i>Producción en Proceso
-                </h5>
+            <div class="p-3 border-bottom d-flex align-items-center gap-2 table-header-warning">
+                <i class="bi bi-hourglass-split text-warning"></i>
+                <h5 class="fw-bold mb-0 fs-6 text-warning">Producción en Proceso</h5>
             </div>
             <div class="table-responsive">
-                <table class="table table-compact mb-0">
+                <table class="table table-ultra-compact mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Producto</th>
+                            <th class="ps-3">Producto</th>
                             <th>Cantidad</th>
                             <th>Fecha Estimada</th>
                         </tr>
@@ -130,12 +152,20 @@
                     <tbody>
                         {% for prod in produccion_reciente %}
                         <tr>
-                            <td class="ps-4 fw-semibold">{{ prod.producto.nombre }}</td>
-                            <td>{{ prod.cantidad_producida }} unid.</td>
-                            <td>{{ prod.fecha_estimada|date:"d/m/Y"|default:"-" }}</td>
+                            <td class="ps-3">
+                                <div class="fw-semibold text-truncate" style="max-width: 160px;" title="{{ prod.producto.nombre }}">
+                                    {{ prod.producto.nombre }}
+                                </div>
+                            </td>
+                            <td>{{ prod.cantidad_producida }} <small class="text-muted">unid.</small></td>
+                            <td class="text-muted">{{ prod.fecha_estimada|date:"d/m/y"|default:"-" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="3" class="text-center py-4 text-muted">No hay producción activa</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center py-3 text-muted">
+                                <small>No hay producción activa</small>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -144,32 +174,32 @@
     </div>
 </div>
 
-<!-- Acciones de Bodega -->
-<div class="card-modern p-4">
-    <h5 class="fw-bold mb-4">Acciones de Bodega</h5>
-    <div class="row g-3">
-        <div class="col-md-3">
-            <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-primary w-100 py-3">
-                <i class="bi bi-clipboard-data fs-4 d-block mb-2"></i>
-                <small>Ver Inventario</small>
+<!-- Acciones de Bodega - Grid Compacto -->
+<div class="card-modern p-3">
+    <h5 class="fw-bold mb-3 fs-6">Acciones de Bodega</h5>
+    <div class="row g-2">
+        <div class="col-6 col-md-3">
+            <a href="{% url 'inventario:inventario_list' %}" class="btn btn-outline-primary btn-action-bodega">
+                <i class="bi bi-clipboard-data d-block mb-1"></i>
+                <small class="d-block">Inventario</small>
             </a>
         </div>
-        <div class="col-md-3">
-            <a href="{% url 'inventario:producto_list' %}" class="btn btn-outline-success w-100 py-3">
-                <i class="bi bi-box-seam fs-4 d-block mb-2"></i>
-                <small>Gestionar Productos</small>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'inventario:producto_list' %}" class="btn btn-outline-success btn-action-bodega">
+                <i class="bi bi-box-seam d-block mb-1"></i>
+                <small class="d-block">Productos</small>
             </a>
         </div>
-        <div class="col-md-3">
-            <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-info w-100 py-3">
-                <i class="bi bi-receipt fs-4 d-block mb-2"></i>
-                <small>Ver Pedidos</small>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-info btn-action-bodega">
+                <i class="bi bi-receipt d-block mb-1"></i>
+                <small class="d-block">Pedidos</small>
             </a>
         </div>
-        <div class="col-md-3">
-            <a href="{% url 'produccion:produccion_list' %}" class="btn btn-outline-warning w-100 py-3">
-                <i class="bi bi-gear fs-4 d-block mb-2"></i>
-                <small>Producción</small>
+        <div class="col-6 col-md-3">
+            <a href="{% url 'produccion:produccion_list' %}" class="btn btn-outline-warning btn-action-bodega">
+                <i class="bi bi-gear d-block mb-1"></i>
+                <small class="d-block">Producción</small>
             </a>
         </div>
     </div>

@@ -14,7 +14,7 @@
     <div class="d-flex gap-2">
         <!-- Dropdown de Exportación -->
         <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" 
+            <button class="btn btn-export btn-sm dropdown-toggle" 
                     type="button" 
                     data-bs-toggle="dropdown" 
                     aria-expanded="false">
@@ -54,7 +54,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label">Buscar</label>
-                <input type="text" name="busqueda" class="form-control" 
+                <input type="text" name="busqueda" class="form-select" 
                         placeholder="Código, referencia o color" 
                         value="{{ request.GET.busqueda }}">
             </div>
@@ -78,7 +78,7 @@
                     <option value="AGOTADO" {% if request.GET.estado == 'AGOTADO' %}selected{% endif %}>AGOTADO</option>
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-2">
+            <div class="col-md-3 d-flex gap-3">
                 <button type="submit" class="btn btn-filtrar flex-grow-1">
                     <i class="bi bi-funnel"></i>Filtrar
                 </button>

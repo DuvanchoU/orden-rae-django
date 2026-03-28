@@ -3,16 +3,32 @@
 {% block title %}Dashboard Comercial - ORDEN R.A.E{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="page-header mb-4">
-    <h1 class="page-title">
-        <i class="bi bi-briefcase me-2"></i>Dashboard Comercial
-    </h1>
-    <p class="page-subtitle">Bienvenido, {{ user_nombre }} | Rol: {{ user_rol }}</p>
+<!-- Header Ultra Compacto con Welcome Badge -->
+<div class="page-header d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <div>
+            <h1 class="page-title mb-0">
+                <i class="bi bi-briefcase me-2"></i>Panel Comercial
+            </h1>
+        </div>
+        <!-- Welcome Badge Minimalista -->
+        <span class="welcome-badge">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ user_nombre }}
+            <span class="welcome-separator">•</span>
+            <span class="user-rol-badge">{{ user_rol }}</span>
+        </span>
+    </div>
+    
+    <!-- Fecha y hora actual -->
+    <small class="text-muted d-none d-md-block">
+        <i class="bi bi-clock me-1"></i>
+        {% now "d/m/Y H:i" %}
+    </small>
 </div>
 
-<!-- Tarjetas de Estadísticas Comerciales -->
-<div class="row g-4 mb-4">
+<!-- Tarjetas de Estadísticas - Compactas -->
+<div class="row g-3 mb-3">
     <!-- Ventas del Mes -->
     <div class="col-md-3">
         <div class="stat-card stat-card-primary">
@@ -56,7 +72,7 @@
                 <div class="stat-card-label">COTIZACIONES</div>
                 <div class="stat-card-value">{{ total_cotizaciones }}</div>
                 <div class="stat-card-change">
-                    <span class="badge-estado disponible me-2">{{ cotizaciones_aceptadas }} Aceptadas</span>
+                    <span class="badge-estado badge-sm disponible">{{ cotizaciones_aceptadas }} Aceptadas</span>
                 </div>
             </div>
         </div>
@@ -80,79 +96,99 @@
     </div>
 </div>
 
-<!-- Gráfica de Ventas -->
-<div class="row g-4 mb-4">
+<!-- Gráfica y Accesos - Compactos -->
+<div class="row g-3 mb-3">
+    <!-- Gráfica de Ventas -->
     <div class="col-lg-8">
-        <div class="card-modern p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5 class="fw-bold mb-0">Rendimiento de Ventas</h5>
+        <div class="card-modern p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 fs-6">Rendimiento de Ventas</h5>
                 <select class="form-select form-select-sm" style="width: auto;">
                     <option>Últimos 6 meses</option>
                 </select>
             </div>
-            <!-- ✅ CONTENDOR CON ALTURA DEFINIDA -->
-            <div style="position: relative; height: 400px;">
+            <div style="position: relative; height: 320px;">
                 <canvas id="ventasChart"></canvas>
             </div>
         </div>
     </div>
     
-    <!-- Accesos Rápidos -->
+    <!-- Accesos Rápidos - Estilo Tile -->
     <div class="col-lg-4">
-        <div class="card-modern p-4">
-            <h5 class="fw-bold mb-4">Accesos Rápidos</h5>
-            <div class="d-grid gap-2">
-                <a href="{% url 'ventas:venta_list' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-cart-check me-2"></i>Nueva Venta
-                </a>
-                <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-success">
-                    <i class="bi bi-receipt me-2"></i>Gestionar Pedidos
-                </a>
-                <a href="{% url 'ventas:cotizacion_list' %}" class="btn btn-outline-purple">
-                    <i class="bi bi-file-earmark-text me-2"></i>Crear Cotización
-                </a>
-                <a href="{% url 'ventas:cliente_list' %}" class="btn btn-outline-info">
-                    <i class="bi bi-person-plus me-2"></i>Nuevo Cliente
-                </a>
+        <div class="card-modern p-3">
+            <h5 class="fw-bold mb-3 fs-6">Accesos Rápidos</h5>
+            <div class="row g-2">
+                <div class="col-6">
+                    <a href="{% url 'ventas:venta_create' %}" class="btn btn-outline-primary btn-action-bodega">
+                        <i class="bi bi-cart-check"></i>
+                        <small>Nueva Venta</small>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'ventas:pedido_list' %}" class="btn btn-outline-success btn-action-bodega">
+                        <i class="bi bi-receipt"></i>
+                        <small>Pedidos</small>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'ventas:cotizacion_create' %}" class="btn btn-outline-purple btn-action-bodega">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <small>Cotizar</small>
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="{% url 'ventas:cliente_create' %}" class="btn btn-outline-info btn-action-bodega">
+                        <i class="bi bi-person-plus"></i>
+                        <small>Cliente</small>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Tablas de Actividad -->
-<div class="row g-4">
+<!-- Tablas de Actividad - Ultra Compactas -->
+<div class="row g-3">
     <!-- Últimas Ventas -->
     <div class="col-lg-6">
         <div class="card-modern p-0 overflow-hidden">
-            <div class="p-4 border-bottom">
-                <h5 class="fw-bold mb-0">Mis Últimas Ventas</h5>
+            <div class="p-3 border-bottom">
+                <h5 class="fw-bold mb-0 fs-6">Mis Últimas Ventas</h5>
             </div>
             <div class="table-responsive">
-                <table class="table table-compact mb-0">
+                <table class="table table-ultra-compact mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Cliente</th>
+                            <th class="ps-3">Cliente</th>
                             <th>Fecha</th>
                             <th>Total</th>
-                            <th>Estado</th>
+                            <th class="text-end pe-3">Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for venta in ultimas_ventas %}
                         <tr>
-                            <td class="ps-4 fw-semibold">{{ venta.cliente.nombre }} {{ venta.cliente.apellido|default:"" }}</td>
-                            <td>{{ venta.fecha_venta|date:"d/m/Y" }}</td>
+                            <td class="ps-3">
+                                <div class="fw-semibold text-truncate" style="max-width: 150px;" title="{{ venta.cliente.nombre }} {{ venta.cliente.apellido|default:'' }}">
+                                    {{ venta.cliente.nombre }} {{ venta.cliente.apellido|default:"" }}
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ venta.fecha_venta|date:"d/m/y" }}</td>
                             <td class="fw-bold">${{ venta.total|floatformat:0 }}</td>
-                            <td>
+                            <td class="text-end pe-3">
                                 {% if venta.estado_venta == 'COMPLETADA' %}
-                                    <span class="badge-estado disponible">COMPLETADA</span>
+                                    <span class="badge-estado badge-sm disponible">COMPLETADA</span>
                                 {% else %}
-                                    <span class="badge-estado agotado">PENDIENTE</span>
+                                    <span class="badge-estado badge-sm agotado">PENDIENTE</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="text-center py-4 text-muted">No hay ventas recientes</td></tr>
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">
+                                <small>No hay ventas recientes</small>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -163,37 +199,45 @@
     <!-- Pedidos Recientes -->
     <div class="col-lg-6">
         <div class="card-modern p-0 overflow-hidden">
-            <div class="p-4 border-bottom">
-                <h5 class="fw-bold mb-0">Pedidos Recientes</h5>
+            <div class="p-3 border-bottom">
+                <h5 class="fw-bold mb-0 fs-6">Pedidos Recientes</h5>
             </div>
             <div class="table-responsive">
-                <table class="table table-compact mb-0">
+                <table class="table table-ultra-compact mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Cliente</th>
+                            <th class="ps-3">Cliente</th>
                             <th>Fecha</th>
                             <th>Total</th>
-                            <th>Estado</th>
+                            <th class="text-end pe-3">Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for pedido in ultimos_pedidos %}
                         <tr>
-                            <td class="ps-4 fw-semibold">{{ pedido.cliente.nombre }} {{ pedido.cliente.apellido|default:"" }}</td>
-                            <td>{{ pedido.fecha_pedido|date:"d/m/Y" }}</td>
+                            <td class="ps-3">
+                                <div class="fw-semibold text-truncate" style="max-width: 150px;" title="{{ pedido.cliente.nombre }} {{ pedido.cliente.apellido|default:'' }}">
+                                    {{ pedido.cliente.nombre }} {{ pedido.cliente.apellido|default:"" }}
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ pedido.fecha_pedido|date:"d/m/y" }}</td>
                             <td class="fw-bold">${{ pedido.total_pedido|floatformat:0 }}</td>
-                            <td>
+                            <td class="text-end pe-3">
                                 {% if pedido.estado_pedido == 'COMPLETADO' %}
-                                    <span class="badge-estado disponible">COMPLETADO</span>
+                                    <span class="badge-estado badge-sm disponible">COMPLETADO</span>
                                 {% elif pedido.estado_pedido == 'EN PROCESO' %}
-                                    <span class="badge-estado" style="background-color: rgba(245, 158, 11, 0.15); color: #f59e0b;">EN PROCESO</span>
+                                    <span class="badge-estado badge-sm reservado">EN PROCESO</span>
                                 {% else %}
-                                    <span class="badge-estado" style="background-color: rgba(100, 116, 139, 0.15); color: #64748b;">PENDIENTE</span>
+                                    <span class="badge-estado badge-sm neutro">PENDIENTE</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="text-center py-4 text-muted">No hay pedidos recientes</td></tr>
+                        <tr>
+                            <td colspan="4" class="text-center py-3 text-muted">
+                                <small>No hay pedidos recientes</small>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -206,9 +250,27 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    const colors = { primary: '#2dd4bf', success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6', purple: '#8b5cf6', gray: '#64748b' };
+    // Colores del sistema - usando variables CSS para modo claro/oscuro
+    function getChartColors() {
+        const isDark = document.body.classList.contains('theme-dark');
+        return {
+            primary: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#14b8a6',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            info: '#3b82f6',
+            purple: '#8b5cf6',
+            gray: isDark ? '#94a3b8' : '#64748b',
+            grid: isDark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(100, 116, 139, 0.1)',
+            text: isDark ? '#94a3b8' : '#64748b',
+            tooltipBg: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            tooltipText: isDark ? '#f1f5f9' : '#1e293b'
+        };
+    }
     
-    // Gráfica de Ventas
+    const c = getChartColors();
+    
+    // Gráfica de Ventas por Mes
     const ventasCtx = document.getElementById('ventasChart').getContext('2d');
     new Chart(ventasCtx, {
         type: 'line',
@@ -217,35 +279,64 @@
             datasets: [{
                 label: 'Ventas',
                 data: {{ ventas_6_meses.datos|safe }},
-                borderColor: colors.primary,
-                backgroundColor: 'rgba(45, 212, 191, 0.1)',
+                borderColor: c.primary,
+                backgroundColor: 'rgba(20, 184, 166, 0.1)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointBackgroundColor: colors.primary,
+                pointBackgroundColor: c.primary,
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointRadius: 4
+                pointRadius: 3,
+                pointHoverRadius: 5
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: { duration: 400 },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    callbacks: { label: function(ctx) { return '$ ' + ctx.parsed.y.toLocaleString(); } }
+                    backgroundColor: c.tooltipBg,
+                    titleColor: c.tooltipText,
+                    bodyColor: c.tooltipText,
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '$ ' + context.parsed.y.toLocaleString();
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: 'rgba(100, 116, 139, 0.1)' },
-                    ticks: { color: colors.gray, callback: function(v) { return '$' + v.toLocaleString(); } }
+                    grid: { color: c.grid },
+                    ticks: {
+                        color: c.text,
+                        font: { size: 10 },
+                        callback: function(value) { return '$' + value.toLocaleString(); }
+                    }
                 },
-                x: { grid: { display: false }, ticks: { color: colors.gray } }
+                x: {
+                    grid: { display: false },
+                    ticks: { color: c.text, font: { size: 10 } }
+                }
             }
+        }
+    });
+    
+    // Re-renderizar colores al cambiar tema
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('checkbox-theme');
+        if (themeToggle) {
+            themeToggle.addEventListener('change', function() {
+                const newColors = getChartColors();
+                Chart.defaults.color = newColors.text;
+                Chart.defaults.borderColor = newColors.grid;
+            });
         }
     });
 </script>
