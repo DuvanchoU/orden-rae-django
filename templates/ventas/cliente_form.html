@@ -1,87 +1,197 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ titulo }} - Clientes{% endblock %}
+{% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card-modern p-4">
-            <h4 class="fw-bold mb-4">{{ titulo }}</h4>
-            <form method="post">
-                {% csrf_token %}
+<!-- Header Compacto -->
+<div class="form-header mb-3">
+    <h1 class="form-title">{{ titulo }}</h1>
+    <p class="form-subtitle">Registro de nuevo cliente</p>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    
+    <div class="row g-3">
+        <!-- Columna Izquierda: Datos Personales -->
+        <div class="col-lg-8">
+            <div class="card-modern p-3">
+                <h6 class="section-title mb-3">
+                    <i class="bi bi-person me-2"></i>Información Personal
+                </h6>
                 
                 <div class="row g-3">
+                    <!-- Nombre y Apellido -->
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Nombre *</label>
+                        <label class="form-label-compact">Nombre *</label>
                         {{ form.nombre }}
                         {% if form.nombre.errors %}
-                            <div class="text-danger small">{{ form.nombre.errors }}</div>
+                            <div class="error-message">{{ form.nombre.errors.0 }}</div>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Apellido</label>
+                        <label class="form-label-compact">Apellido</label>
                         {{ form.apellido }}
                         {% if form.apellido.errors %}
-                            <div class="text-danger small">{{ form.apellido.errors }}</div>
+                            <div class="error-message">{{ form.apellido.errors.0 }}</div>
                         {% endif %}
                     </div>
                     
+                    <!-- Teléfono y Email -->
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Teléfono</label>
+                        <label class="form-label-compact">Teléfono</label>
                         {{ form.telefono }}
                         {% if form.telefono.errors %}
-                            <div class="text-danger small">{{ form.telefono.errors }}</div>
+                            <div class="error-message">{{ form.telefono.errors.0 }}</div>
                         {% endif %}
+                        <small class="text-muted d-block mt-1" style="font-size: 0.65rem;">
+                            <i class="bi bi-info-circle me-1"></i>Mín. 7 dígitos
+                        </small>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted">Email</label>
+                        <label class="form-label-compact">Email</label>
                         {{ form.email }}
                         {% if form.email.errors %}
-                            <div class="text-danger small">{{ form.email.errors }}</div>
+                            <div class="error-message">{{ form.email.errors.0 }}</div>
                         {% endif %}
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label small text-muted">Dirección</label>
+                    <!-- Dirección -->
+                    <div class="col-12">
+                        <label class="form-label-compact">Dirección</label>
                         {{ form.direccion }}
                         {% if form.direccion.errors %}
-                            <div class="text-danger small">{{ form.direccion.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small text-muted">Estado *</label>
-                        {{ form.estado }}
-                        {% if form.estado.errors %}
-                            <div class="text-danger small">{{ form.estado.errors }}</div>
+                            <div class="error-message">{{ form.direccion.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="mt-4 d-flex justify-content-end gap-2">
-                    <a href="{% url 'ventas:cliente_list' %}" class="btn btn-cancelar px-4">
-                        <i class="bi bi-x-lg"></i>Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-nuevo">
-                        <i class="bi bi-check-lg"></i>Guardar Cliente
-                    </button>
+        <!-- Columna Derecha: Estado y Acciones -->
+        <div class="col-lg-4">
+            <!-- Estado -->
+            <div class="card-modern p-3 mb-3">
+                <h6 class="section-title mb-3">
+                    <i class="bi bi-toggle-on me-2"></i>Estado
+                </h6>
+                {{ form.estado }}
+                {% if form.estado.errors %}
+                    <div class="error-message">{{ form.estado.errors.0 }}</div>
+                {% endif %}
+                
+                <!-- Hint de estado -->
+                <div class="estado-hint mt-3 p-2 rounded" style="background-color: var(--accent-light);">
+                    <small class="text-muted" style="font-size: 0.7rem;">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        Los clientes <strong>INACTIVOS</strong> no podrán realizar nuevos pedidos.
+                    </small>
                 </div>
-            </form>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="card-modern p-3">
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-guardar-teal">
+                        <i class="bi bi-check-lg me-2"></i>Guardar Cliente
+                    </button>
+                    <a href="{% url 'ventas:cliente_list' %}" class="btn btn-cancelar px-4">
+                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Info adicional (solo en edición) -->
+            {% if form.instance.pk %}
+            <div class="card-modern p-3 mt-3">
+                <h6 class="section-title mb-2">
+                    <i class="bi bi-info-circle me-2"></i>Información
+                </h6>
+                <div class="metadata-compact">
+                    <div class="metadata-row">
+                        <span class="text-muted small">Registrado:</span>
+                        <strong class="small">{{ form.instance.created_at|date:"d/m/Y" }}</strong>
+                    </div>
+                    <div class="metadata-row">
+                        <span class="text-muted small">Actualizado:</span>
+                        <strong class="small">{{ form.instance.updated_at|date:"d/m/Y H:i" }}</strong>
+                    </div>
+                    {% if form.instance.deleted_at %}
+                    <div class="metadata-row">
+                        <span class="text-danger small">Eliminado:</span>
+                        <strong class="small text-danger">{{ form.instance.deleted_at|date:"d/m/Y H:i" }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
-</div>
+</form>
 
+<!-- JavaScript para mejoras UX -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const inputs = document.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            if(input.type !== 'checkbox' && input.type !== 'hidden') {
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar clases Bootstrap a los campos
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if(input.type !== 'checkbox' && input.type !== 'hidden') {
+            if(input.tagName === 'SELECT') {
+                input.classList.add('form-select');
+            } else {
                 input.classList.add('form-control');
-                if(input.tagName === 'SELECT') {
-                    input.classList.remove('form-control');
-                    input.classList.add('form-select');
-                }
+            }
+        }
+    });
+    
+    // Formato de teléfono en tiempo real (opcional)
+    const telefonoInput = document.querySelector('input[name="telefono"]');
+    if (telefonoInput) {
+        telefonoInput.addEventListener('input', function(e) {
+            // Solo permitir números, +, espacios y guiones
+            let value = e.target.value.replace(/[^\d+\-\s()]/g, '');
+            e.target.value = value;
+        });
+        
+        // Validación visual al perder foco
+        telefonoInput.addEventListener('blur', function(e) {
+            const limpio = e.target.value.replace(/[^\d+]/g, '');
+            if (limpio.length > 0 && (limpio.length < 7 || limpio.length > 15)) {
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-invalid');
             }
         });
+    }
+    
+    // Validación visual de email
+    const emailInput = document.querySelector('input[name="email"]');
+    if (emailInput) {
+        emailInput.addEventListener('blur', function(e) {
+            const email = e.target.value.trim();
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !regex.test(email)) {
+                e.target.classList.add('is-invalid');
+            } else {
+                e.target.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    // Capitalizar nombre y apellido al perder foco
+    ['nombre', 'apellido'].forEach(field => {
+        const input = document.querySelector(`input[name="${field}"]`);
+        if (input) {
+            input.addEventListener('blur', function(e) {
+                const words = e.target.value.toLowerCase().split(' ');
+                for (let i = 0; i < words.length; i++) {
+                    words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
+                }
+                e.target.value = words.join(' ');
+            });
+        }
     });
+});
 </script>
 {% endblock %}

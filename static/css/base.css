@@ -2935,3 +2935,81 @@ code {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
+/* ==================================================
+    CLIENTES FORM - ESTILOS ADICIONALES
+   ================================================== */
+
+/* Estado Hint */
+.estado-hint {
+    border-left: 3px solid var(--accent);
+}
+
+/* Validación visual con Bootstrap */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Animación suave en foco */
+.form-control:focus,
+.form-select:focus {
+    transition: all 0.2s ease;
+}
+
+/* Responsive para formulario */
+@media (max-width: 992px) {
+    .col-lg-8, .col-lg-4 {
+        width: 100%;
+    }
+}
+
+/* ==================================================
+    FORMULARIOS - INPUTS VISIBLES
+   ================================================== */
+
+/* Placeholder visible */
+.form-control::placeholder,
+input::placeholder,
+textarea::placeholder {
+    color: var(--input-placeholder, rgba(255, 255, 255, 0.4)) !important;
+    opacity: 1 !important;
+}
+
+/* Modo CLARO - Ajustes */
+body.theme-light .form-control,
+body.theme-light .form-select,
+body.theme-light input[type="text"],
+body.theme-light input[type="email"],
+body.theme-light input[type="tel"],
+body.theme-light textarea {
+    background-color: var(--slate-50, #e9f0f7) !important;
+    border-color: var(--slate-300, #a1b0c2) !important;
+    color: var(--slate-800, #1e293b) !important;
+}
+
+body.theme-light .form-control::placeholder,
+body.theme-light input::placeholder {
+    color: var(--slate-500, #64748b) !important;
+}
+
+body.theme-light .form-control:focus,
+body.theme-light input:focus {
+    background-color: var(--white, #fff) !important;
+    border-color: var(--accent, #13c2ad) !important;
+    box-shadow: 0 0 0 3px rgba(19, 194, 173, 0.1) !important;
+}
+
+/* Labels visibles */
+.form-label,
+.form-label-compact {
+    color: var(--text-secondary, rgba(255, 255, 255, 0.8)) !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.4rem !important;
+}
+
+body.theme-light .form-label,
+body.theme-light .form-label-compact {
+    color: var(--slate-600, #475569) !important;
+}

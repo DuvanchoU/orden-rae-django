@@ -1,16 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
 from django.urls import reverse_lazy
-from django.db.models import Q, Sum
-from .models import Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta, DetalleCotizacion, Carritos, ItemsCarrito, DetallePedido, MetodosPago
-from inventario.models import Producto
-from usuarios.models import Usuarios
+from django.db.models import Q, Sum, Count, F
 from django.contrib import messages
+from .models import Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta, DetalleCotizacion, Carritos, ItemsCarrito, DetallePedido, MetodosPago
+from ventas.models import Clientes, Carritos, ItemsCarrito, Pedido, Ventas, Cotizaciones
+from inventario.models import Producto
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db import transaction
+from decimal import Decimal
 from .forms import ClienteForm, PedidoForm, VentaForm, CotizacionForm
+from django.http import JsonResponse
 import json
 from django.contrib.auth import login
-from ventas.models import Clientes, Carritos, ItemsCarrito, Pedido, Ventas
 
 # CLIENTES
 class ClienteListView(ListView):
@@ -20,7 +23,8 @@ class ClienteListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Clientes.objects.filter(deleted_at__isnull=True)
+
         estado = self.request.GET.get('estado')
         busqueda = self.request.GET.get('busqueda')
 
@@ -31,13 +35,26 @@ class ClienteListView(ListView):
                 Q(nombre__icontains=busqueda) |
                 Q(apellido__icontains=busqueda) |
                 Q(email__icontains=busqueda) |
-                Q(telefono__icontains=busqueda)
+                Q(telefono__icontains=busqueda) |
+                Q(direccion__icontains=busqueda)
             )
-        return queryset.order_by('-fecha_registro')
+
+        return queryset.order_by('-nombre')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['estados'] = ['ACTIVO', 'INACTIVO']
+        context['titulo'] = 'Clientes'
+
+        # Estadísticas rápidas
+        context['total_clientes'] = Clientes.objects.filter(
+            deleted_at__isnull=True
+        ).count()
+        context['clientes_activos'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        ).count()
+
         return context
 
 
@@ -52,6 +69,29 @@ class ClienteCreateView(CreateView):
         context['titulo'] = 'Nuevo Cliente'
         return context
 
+    def form_valid(self, form):
+        try:
+            cliente = form.save(commit=False)
+            cliente.fecha_registro = timezone.now()
+            cliente.created_at = timezone.now()
+            cliente.updated_at = timezone.now()
+            
+            if not cliente.estado:
+                cliente.estado = 'ACTIVO'
+            
+            cliente.save()
+            
+            messages.success(
+                self.request, 
+                f'Cliente "{cliente.get_nombre_completo()}" registrado exitosamente.'
+            )
+            return redirect(self.success_url)
+        except ValidationError as e:
+            messages.error(self.request, f'Error de validación: {str(e)}')
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f'Error al registrar: {str(e)}')
+            return self.form_invalid(form)
 
 class ClienteUpdateView(UpdateView):
     model = Clientes
@@ -59,16 +99,72 @@ class ClienteUpdateView(UpdateView):
     form_class = ClienteForm
     success_url = reverse_lazy('ventas:cliente_list')
 
+    def get_queryset(self):
+        return Clientes.objects.filter(deleted_at__isnull=True)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Cliente'
+
+        # Mostrar alertas si el cliente tiene pedidos
+        cliente = self.get_object()
+        if cliente.tiene_pedidos_asociados():
+            messages.info(
+                self.request,
+                f"Este cliente tiene {cliente.get_cantidad_pedidos()} pedidos asociados"
+            )
+
         return context
 
+    def form_valid(self, form):
+        try:
+            cliente = form.save(commit=False)
+            cliente.updated_at = timezone.now()
+            cliente.save()
+            
+            messages.success(
+                self.request, 
+                f'Cliente "{cliente.get_nombre_completo()}" actualizado correctamente.'
+            )
+            return redirect(self.success_url)
+        except ValidationError as e:
+            messages.error(self.request, f'Error de validación: {str(e)}')
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f'Error al actualizar: {str(e)}')
+            return self.form_invalid(form)
 
-class ClienteDeleteView(DeleteView):
-    model = Clientes
-    template_name = 'ventas/cliente_confirm_delete.html'
-    success_url = reverse_lazy('ventas:cliente_list')
+
+class ClienteDeleteView(View):
+    """Soft delete con validaciones"""
+    
+    def post(self, request, pk):
+        try:
+            cliente = get_object_or_404(
+                Clientes, 
+                pk=pk, 
+                deleted_at__isnull=True
+            )
+            
+            if not cliente.puede_eliminarse():
+                messages.error(
+                    request,
+                    f"No se puede eliminar. El cliente tiene pedidos activos o pendientes."
+                )
+                return redirect('ventas:cliente_list')
+            
+            cliente.delete()  # Soft delete
+            messages.success(
+                request, 
+                f'Cliente "{cliente.get_nombre_completo()}" eliminado correctamente.'
+            )
+            return redirect('ventas:cliente_list')
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('ventas:cliente_list')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar: {str(e)}')
+            return redirect('ventas:cliente_list')
 
 
 class ClienteDetailView(DetailView):
@@ -76,7 +172,87 @@ class ClienteDetailView(DetailView):
     template_name = 'ventas/cliente_detail.html'
     context_object_name = 'cliente'
 
-# PEDIDOS
+    def get_queryset(self):
+        return Clientes.objects.filter(deleted_at__isnull=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cliente = self.get_object()
+        
+        # Total pedidos
+        context['total_pedidos'] = Pedido.objects.filter(
+            cliente=cliente,
+            deleted_at__isnull=True
+        ).count()
+        
+        # Total gastado (solo pedidos completados)
+        total = Pedido.objects.filter(
+            cliente=cliente,
+            deleted_at__isnull=True,
+            estado_pedido='COMPLETADO'
+        ).aggregate(total=Sum('total_pedido'))['total'] or 0
+        context['total_gastado'] = float(total)
+        
+        # Último pedido
+        ultimo = Pedido.objects.filter(
+            cliente=cliente,
+            deleted_at__isnull=True
+        ).order_by('-fecha_pedido').first()
+        context['ultimo_pedido'] = ultimo.fecha_pedido.strftime('%d/%m/%y') if ultimo else None
+        
+        # Últimos 5 pedidos
+        context['ultimos_pedidos'] = Pedido.objects.filter(
+            cliente=cliente,
+            deleted_at__isnull=True
+        ).order_by('-fecha_pedido')[:5]
+        
+        return context
+
+
+class ClienteActivarView(View):
+    """Restaurar cliente eliminado"""
+    
+    def post(self, request, pk):
+        try:
+            cliente = get_object_or_404(Clientes, pk=pk)
+            cliente.restore()
+            messages.success(
+                request, 
+                f'Cliente "{cliente.get_nombre_completo()}" activado correctamente.'
+            )
+            return redirect('ventas:cliente_list')
+        except Exception as e:
+            messages.error(request, f'Error al activar: {str(e)}')
+            return redirect('ventas:cliente_list')
+
+
+class ClienteDesactivarView(View):
+    """Desactivar cliente con validaciones"""
+    
+    def post(self, request, pk):
+        try:
+            cliente = get_object_or_404(
+                Clientes, 
+                pk=pk, 
+                deleted_at__isnull=True
+            )
+            
+            cliente.desactivar()
+            messages.success(
+                request, 
+                f'Cliente "{cliente.get_nombre_completo()}" desactivado correctamente.'
+            )
+            return redirect('ventas:cliente_list')
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('ventas:cliente_list')
+        except Exception as e:
+            messages.error(request, f'Error al desactivar: {str(e)}')
+            return redirect('ventas:cliente_list')
+
+# ============================================================================
+# PEDIDOS 
+# ============================================================================
 class PedidoListView(ListView):
     model = Pedido
     template_name = 'ventas/pedido_list.html'
@@ -84,14 +260,17 @@ class PedidoListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Pedido.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('cliente', 'usuario', 'asesor')
+
         cliente = self.request.GET.get('cliente')
         estado = self.request.GET.get('estado')
         fecha_inicio = self.request.GET.get('fecha_inicio')
         fecha_fin = self.request.GET.get('fecha_fin')
-        busqueda = self.request.GET.get('busqueda')
         entrega_desde = self.request.GET.get('entrega_desde')
         entrega_hasta = self.request.GET.get('entrega_hasta')
+        busqueda = self.request.GET.get('busqueda')
 
         if cliente:
             queryset = queryset.filter(cliente_id=cliente)
@@ -108,14 +287,30 @@ class PedidoListView(ListView):
         if busqueda:
             queryset = queryset.filter(
                 Q(numero_pedido__icontains=busqueda) |
-                Q(cliente__nombre__icontains=busqueda)
+                Q(cliente__nombre__icontains=busqueda) |
+                Q(cliente__apellido__icontains=busqueda)
             )
-        return queryset.order_by('-fecha_pedido')
+
+        return queryset.order_by('-fecha_pedido', '-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['clientes'] = Clientes.objects.all()
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
         context['estados'] = ['PENDIENTE', 'CONFIRMADO', 'EN PROCESO', 'COMPLETADO', 'CANCELADO']
+        context['titulo'] = 'Pedidos'
+
+        # Estadísticas
+        context['total_pedidos'] = Pedido.objects.filter(
+            deleted_at__isnull=True
+        ).count()
+        context['pedidos_pendientes'] = Pedido.objects.filter(
+            estado_pedido='PENDIENTE',
+            deleted_at__isnull=True
+        ).count()
+
         return context
 
 
@@ -128,13 +323,45 @@ class PedidoCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Pedido'
-        context['clientes'] = Clientes.objects.all()
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
         return context
 
     def form_valid(self, form):
-        form.instance.usuario_id = 1 
-        form.instance.fecha_pedido = timezone.now()
-        return super().form_valid(form)
+        try:
+            # Validar que el cliente esté activo
+            cliente = form.cleaned_data['cliente']
+            if cliente.estado != 'ACTIVO':
+                messages.error(
+                    self.request,
+                    "El cliente seleccionado está inactivo. Active el cliente primero."
+                )
+                return self.form_invalid(form)
+            
+            # Crear pedido
+            pedido = form.save(commit=False)
+            pedido.usuario_id = self.request.user.id if hasattr(self.request, 'user') and self.request.user.is_authenticated else 1
+            pedido.fecha_pedido = timezone.now()
+            pedido.estado_pedido = 'PENDIENTE'
+            pedido.total_pedido = 0  # Se calculará con los detalles
+            pedido.save()
+            
+            messages.success(
+                self.request,
+                f"Pedido {pedido.numero_pedido} creado exitosamente. Ahora agregue los productos."
+            )
+            
+            # Redirigir al detalle para agregar productos
+            return redirect('ventas:pedido_detail', pk=pedido.pk)
+            
+        except ValidationError as e:
+            messages.error(self.request, f"Error de validación: {str(e)}")
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f"Error al crear el pedido: {str(e)}")
+            return self.form_invalid(form)
 
 
 class PedidoUpdateView(UpdateView):
@@ -143,17 +370,92 @@ class PedidoUpdateView(UpdateView):
     form_class = PedidoForm
     success_url = reverse_lazy('ventas:pedido_list')
 
+    def get_queryset(self):
+        return Pedido.objects.filter(deleted_at__isnull=True)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Pedido'
-        context['clientes'] = Clientes.objects.all()
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
+
+        # Verificar si se puede modificar
+        if not self.get_object().puede_modificarse():
+            messages.warning(
+                self.request,
+                "Este pedido no puede modificarse por su estado actual"
+            )
+
         return context
 
+    def form_valid(self, form):
+        try:
+            pedido = self.get_object()
+            
+            if not pedido.puede_modificarse():
+                messages.error(
+                    self.request,
+                    f"No se puede modificar un pedido en estado {pedido.estado_pedido}"
+                )
+                return self.form_invalid(form)
+            
+            pedido = form.save(commit=False)
+            pedido.updated_at = timezone.now()
+            pedido.save()
+            
+            messages.success(
+                self.request,
+                f"Pedido {pedido.numero_pedido} actualizado correctamente"
+            )
+            return redirect(self.success_url)
+            
+        except ValidationError as e:
+            messages.error(self.request, f"Error de validación: {str(e)}")
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f"Error al actualizar: {str(e)}")
+            return self.form_invalid(form)
 
-class PedidoDeleteView(DeleteView):
-    model = Pedido
-    template_name = 'ventas/pedido_confirm_delete.html'
-    success_url = reverse_lazy('ventas:pedido_list')
+
+class PedidoDeleteView(View):
+    """Soft delete con validaciones"""
+    
+    def post(self, request, pk):
+        try:
+            pedido = get_object_or_404(
+                Pedido,
+                pk=pk,
+                deleted_at__isnull=True
+            )
+            
+            if not pedido.puede_eliminarse():
+                if pedido.estado_pedido != 'PENDIENTE':
+                    messages.error(
+                        request,
+                        f"Solo se pueden eliminar pedidos PENDIENTE. Estado: {pedido.estado_pedido}"
+                    )
+                else:
+                    messages.error(
+                        request,
+                        "No se puede eliminar porque tiene productos agregados"
+                    )
+                return redirect('ventas:pedido_list')
+            
+            pedido.delete()
+            messages.success(
+                request,
+                f"Pedido {pedido.numero_pedido} eliminado correctamente"
+            )
+            return redirect('ventas:pedido_list')
+            
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('ventas:pedido_list')
+        except Exception as e:
+            messages.error(request, f"Error al eliminar: {str(e)}")
+            return redirect('ventas:pedido_list')
 
 
 class PedidoDetailView(DetailView):
@@ -161,7 +463,100 @@ class PedidoDetailView(DetailView):
     template_name = 'ventas/pedido_detail.html'
     context_object_name = 'pedido'
 
-# VENTAS
+    def get_queryset(self):
+        return Pedido.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('cliente', 'usuario')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pedido = self.get_object()
+        
+        context['detalles'] = pedido.detallepedido_set.filter(
+            deleted_at__isnull=True
+        ).select_related('producto')
+        
+        context['puede_modificarse'] = pedido.puede_modificarse()
+        context['puede_eliminarse'] = pedido.puede_eliminarse()
+        
+        return context
+
+
+class PedidoAgregarProductoView(View):
+    """Agregar producto al pedido"""
+    
+    def post(self, request, pk):
+        try:
+            pedido = get_object_or_404(Pedido, pk=pk, deleted_at__isnull=True)
+            
+            if not pedido.puede_modificarse():
+                return JsonResponse({
+                    'success': False,
+                    'error': f"El pedido está en estado {pedido.estado_pedido}"
+                }, status=400)
+            
+            data = json.loads(request.body)
+            producto_id = data.get('producto_id')
+            cantidad = int(data.get('cantidad', 1))
+            precio_unitario = Decimal(data.get('precio_unitario', 0))
+            
+            producto = get_object_or_404(Producto, pk=producto_id)
+            
+            # Crear o actualizar detalle
+            detalle, created = DetallePedido.objects.get_or_create(
+                pedido=pedido,
+                producto=producto,
+                defaults={
+                    'cantidad': cantidad,
+                    'precio_unitario': precio_unitario,
+                }
+            )
+            
+            if not created:
+                detalle.cantidad += cantidad
+                detalle.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Producto agregado al pedido',
+                'total': float(pedido.total_pedido)
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+
+
+class PedidoCambiarEstadoView(View):
+    """Cambiar estado del pedido"""
+    
+    def post(self, request, pk):
+        try:
+            pedido = get_object_or_404(Pedido, pk=pk, deleted_at__isnull=True)
+            data = json.loads(request.body)
+            nuevo_estado = data.get('estado')
+            
+            pedido.cambiar_estado(nuevo_estado, request.user)
+            
+            messages.success(
+                request,
+                f"Pedido {pedido.numero_pedido} cambiado a {nuevo_estado}"
+            )
+            
+            return redirect('ventas:pedido_detail', pk=pk)
+            
+        except ValidationError as e:
+            messages.error(request, str(e))
+            return redirect('ventas:pedido_detail', pk=pk)
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:pedido_detail', pk=pk)
+        
+# ============================================================================
+# VENTAS 
+# ============================================================================
 class VentaListView(ListView):
     model = Ventas
     template_name = 'ventas/venta_list.html'
@@ -169,7 +564,10 @@ class VentaListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Ventas.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('cliente', 'usuario', 'metodo_pago', 'pedido')
+
         cliente = self.request.GET.get('cliente')
         estado = self.request.GET.get('estado')
         fecha_inicio = self.request.GET.get('fecha_inicio')
@@ -183,12 +581,17 @@ class VentaListView(ListView):
             queryset = queryset.filter(fecha_venta__gte=fecha_inicio)
         if fecha_fin:
             queryset = queryset.filter(fecha_venta__lte=fecha_fin)
-        return queryset.order_by('-fecha_venta')
+
+        return queryset.order_by('-fecha_venta', '-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['clientes'] = Clientes.objects.all()
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
         context['estados'] = ['PENDIENTE', 'COMPLETADA', 'CANCELADA']
+        context['titulo'] = 'Ventas'
         return context
 
 
@@ -201,10 +604,39 @@ class VentaCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nueva Venta'
-        context['clientes'] = Clientes.objects.all()
-        context['pedido'] = Pedido.objects.filter(estado_pedido='COMPLETADO')
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
+        context['pedidos'] = Pedido.objects.filter(
+            estado_pedido='COMPLETADO',
+            deleted_at__isnull=True
+        )
         return context
 
+    def form_valid(self, form):
+        try:
+            with transaction.atomic():
+                venta = form.save(commit=False)
+                venta.usuario_id = self.request.user.id if hasattr(self.request, 'user') and self.request.user.is_authenticated else 1
+                venta.fecha_venta = timezone.now()
+                venta.estado_venta = 'PENDIENTE'
+                venta.save()
+                
+                messages.success(
+                    self.request,
+                    f"Venta {venta.numero_factura} creada. Agregue los productos."
+                )
+                
+                return redirect('ventas:venta_detail', pk=venta.pk)
+                
+        except ValidationError as e:
+            messages.error(self.request, f"Error: {str(e)}")
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f"Error al crear: {str(e)}")
+            return self.form_invalid(form)
+        
 
 class VentaUpdateView(UpdateView):
     model = Ventas
@@ -212,52 +644,126 @@ class VentaUpdateView(UpdateView):
     form_class = VentaForm
     success_url = reverse_lazy('ventas:venta_list')
 
+    def get_queryset(self):
+        return Ventas.objects.filter(deleted_at__isnull=True)
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Venta'
-        context['clientes'] = Clientes.objects.all()
-        context['pedido'] = Pedido.objects.filter(estado_pedido='COMPLETADO')
+
+        if not self.get_object().puede_modificarse():
+            messages.warning(
+                self.request,
+                "Esta venta no puede modificarse"
+            )
         return context
 
+    def form_valid(self, form):
+        try:
+            venta = self.get_object()
+            
+            if not venta.puede_modificarse():
+                messages.error(
+                    self.request,
+                    f"No se puede modificar una venta {venta.estado_venta}"
+                )
+                return self.form_invalid(form)
+            
+            venta = form.save(commit=False)
+            venta.updated_at = timezone.now()
+            venta.save()
+            
+            messages.success(self.request, "Venta actualizada correctamente")
+            return redirect(self.success_url)
+            
+        except Exception as e:
+            messages.error(self.request, f"Error: {str(e)}")
+            return self.form_invalid(form)
+        
 
-class VentaDeleteView(DeleteView):
-    model = Ventas
-    template_name = 'ventas/venta_confirm_delete.html'
-    success_url = reverse_lazy('ventas:venta_list')
+class VentaDeleteView(View):
+    def post(self, request, pk):
+        try:
+            venta = get_object_or_404(Ventas, pk=pk, deleted_at__isnull=True)
+            
+            if not venta.puede_eliminarse():
+                messages.error(
+                    request,
+                    f"Solo se pueden eliminar ventas PENDIENTE"
+                )
+                return redirect('ventas:venta_list')
+            
+            venta.delete()
+            messages.success(request, "Venta eliminada correctamente")
+            return redirect('ventas:venta_list')
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:venta_list')
+        
 
 class VentaDetailView(DetailView):
     model = Ventas
     template_name = 'ventas/venta_detail.html'
     context_object_name = 'venta'
 
-# ventas/views.py
-from .forms import VentaForm  # ← Importar
-
-class VentaCreateView(CreateView):
-    model = Ventas
-    template_name = 'ventas/venta_form.html'
-    form_class = VentaForm  # ← Cambiar fields → form_class
-    success_url = reverse_lazy('ventas:venta_list')
+    def get_queryset(self):
+        return Ventas.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('cliente', 'usuario')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo'] = 'Nueva Venta'
+        venta = self.get_object()
+        
+        context['detalles'] = venta.detalleventa_set.filter(
+            deleted_at__isnull=True
+        ).select_related('producto')
+        
         return context
 
-
-class VentaUpdateView(UpdateView):
-    model = Ventas
-    template_name = 'ventas/venta_form.html'
-    form_class = VentaForm  # ← Cambiar fields → form_class
-    success_url = reverse_lazy('ventas:venta_list')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo'] = 'Editar Venta'
-        return context
+class VentaCompletarView(View):
+    """Completar venta y actualizar inventario"""
+    
+    def post(self, request, pk):
+        try:
+            venta = get_object_or_404(Ventas, pk=pk, deleted_at__isnull=True)
+            
+            if venta.estado_venta != 'PENDIENTE':
+                messages.error(
+                    request,
+                    "Solo se pueden completar ventas pendientes"
+                )
+                return redirect('ventas:venta_detail', pk=pk)
+            
+            with transaction.atomic():
+                # Completar venta
+                venta.completar_venta()
+                
+                # TODO: Actualizar inventario aquí
+                # for detalle in venta.detalleventa_set.all():
+                #     inventario = Inventario.objects.filter(
+                #         producto=detalle.producto
+                #     ).first()
+                #     if inventario:
+                #         inventario.cantidad_disponible -= detalle.cantidad
+                #         inventario.save()
+                
+                messages.success(
+                    request,
+                    f"Venta {venta.numero_factura} completada exitosamente"
+                )
+            
+            return redirect('ventas:venta_detail', pk=pk)
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:venta_detail', pk=pk)
         
 
+# ============================================================================
 # COTIZACIONES
+# ============================================================================
 class CotizacionListView(ListView):
     model = Cotizaciones
     template_name = 'ventas/cotizacion_list.html'
@@ -265,7 +771,10 @@ class CotizacionListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Cotizaciones.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('cliente', 'usuario')
+
         cliente = self.request.GET.get('cliente')
         estado = self.request.GET.get('estado')
         fecha_inicio = self.request.GET.get('fecha_inicio')
@@ -285,11 +794,16 @@ class CotizacionListView(ListView):
                 Q(numero_cotizacion__icontains=busqueda) |
                 Q(cliente__nombre__icontains=busqueda)
             )
-        return queryset.order_by('-fecha_cotizacion')
+        return queryset.order_by('-fecha_cotizacion', '-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['clientes'] = Clientes.objects.all()
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
+        context['estados'] = ['borrador', 'enviada', 'aceptada', 'rechazada', 'vencida', 'cancelada']
+        context['titulo'] = 'Cotizaciones'
         return context
 
 
@@ -302,9 +816,31 @@ class CotizacionCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nueva Cotización'
-        context['clientes'] = Clientes.objects.all()
+        context['clientes'] = Clientes.objects.filter(
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
         return context
 
+    def form_valid(self, form):
+        try:
+            cotizacion = form.save(commit=False)
+            cotizacion.usuario_id = self.request.user.id if hasattr(self.request, 'user') and self.request.user.is_authenticated else 1
+            cotizacion.fecha_cotizacion = timezone.now().date()
+            cotizacion.estado = 'borrador'
+            cotizacion.save()
+            
+            messages.success(
+                self.request,
+                f"Cotización {cotizacion.numero_cotizacion} creada"
+            )
+            
+            return redirect('ventas:cotizacion_detail', pk=cotizacion.pk)
+            
+        except Exception as e:
+            messages.error(self.request, f"Error: {str(e)}")
+            return self.form_invalid(form)
+        
 
 class CotizacionUpdateView(UpdateView):
     model = Cotizaciones
@@ -312,17 +848,67 @@ class CotizacionUpdateView(UpdateView):
     form_class = CotizacionForm
     success_url = reverse_lazy('ventas:cotizacion_list')
 
+    def get_queryset(self):
+        return Cotizaciones.objects.filter(deleted_at__isnull=True)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Cotización'
-        context['clientes'] = Clientes.objects.all()
+        if not self.get_object().puede_modificarse():
+            messages.warning(
+                self.request,
+                "Esta cotización no puede modificarse"
+            )
+
         return context
 
+    def form_valid(self, form):
+        try:
+            cotizacion = self.get_object()
+            
+            if not cotizacion.puede_modificarse():
+                messages.error(
+                    self.request,
+                    f"No se puede modificar una cotización {cotizacion.estado}"
+                )
+                return self.form_invalid(form)
+            
+            cotizacion = form.save(commit=False)
+            cotizacion.updated_at = timezone.now()
+            cotizacion.save()
+            
+            messages.success(self.request, "Cotización actualizada")
+            return redirect(self.success_url)
+            
+        except Exception as e:
+            messages.error(self.request, f"Error: {str(e)}")
+            return self.form_invalid(form)
 
-class CotizacionDeleteView(DeleteView):
-    model = Cotizaciones
-    template_name = 'ventas/cotizacion_confirm_delete.html'
-    success_url = reverse_lazy('ventas:cotizacion_list')
+
+class CotizacionDeleteView(View):
+    def post(self, request, pk):
+        try:
+            cotizacion = get_object_or_404(
+                Cotizaciones,
+                pk=pk,
+                deleted_at__isnull=True
+            )
+            
+            if not cotizacion.puede_eliminarse():
+                messages.error(
+                    request,
+                    "Solo se pueden eliminar cotizaciones en borrador"
+                )
+                return redirect('ventas:cotizacion_list')
+            
+            cotizacion.delete()
+            messages.success(request, "Cotización eliminada")
+            return redirect('ventas:cotizacion_list')
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:cotizacion_list')
+        
 
 class CotizacionDetailView(DetailView):
     model = Cotizaciones
@@ -330,6 +916,99 @@ class CotizacionDetailView(DetailView):
     context_object_name = 'cotizacion'
     pk_url_kwarg = 'pk'
 
+    def get_queryset(self):
+        return Cotizaciones.objects.filter(
+            deleted_at__isnull=True
+        ).select_related('cliente', 'usuario')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cotizacion = self.get_object()
+        
+        context['detalles'] = cotizacion.detallecotizacion_set.filter(
+            deleted_at__isnull=True
+        ).select_related('producto')
+        
+        return context
+
+
+class CotizacionEnviarView(View):
+    """Enviar cotización al cliente"""
+    
+    def post(self, request, pk):
+        try:
+            cotizacion = get_object_or_404(Cotizaciones, pk=pk)
+            
+            if cotizacion.estado != 'borrador':
+                messages.error(request, "Solo se pueden enviar cotizaciones en borrador")
+                return redirect('ventas:cotizacion_detail', pk=pk)
+            
+            cotizacion.estado = 'enviada'
+            cotizacion.save()
+            
+            # TODO: Enviar email al cliente
+            messages.success(
+                request,
+                f"Cotización {cotizacion.numero_cotizacion} enviada"
+            )
+            
+            return redirect('ventas:cotizacion_detail', pk=pk)
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:cotizacion_detail', pk=pk)
+
+
+class CotizacionAceptarView(View):
+    """Aceptar cotización"""
+    
+    def post(self, request, pk):
+        try:
+            cotizacion = get_object_or_404(Cotizaciones, pk=pk)
+            
+            if cotizacion.estado != 'enviada':
+                messages.error(request, "Solo se pueden aceptar cotizaciones enviadas")
+                return redirect('ventas:cotizacion_detail', pk=pk)
+            
+            cotizacion.estado = 'aceptada'
+            cotizacion.save()
+            
+            messages.success(
+                request,
+                f"Cotización {cotizacion.numero_cotizacion} aceptada"
+            )
+            
+            return redirect('ventas:cotizacion_detail', pk=pk)
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:cotizacion_detail', pk=pk)
+
+class CotizacionConvertirVentaView(View):
+    """Convertir cotización en venta"""
+    
+    def post(self, request, pk):
+        try:
+            cotizacion = get_object_or_404(Cotizaciones, pk=pk)
+            
+            puede, mensaje = cotizacion.puede_convertirse_en_venta()
+            if not puede:
+                messages.error(request, mensaje)
+                return redirect('ventas:cotizacion_detail', pk=pk)
+            
+            with transaction.atomic():
+                venta = cotizacion.convertir_en_venta(request.user)
+                
+                messages.success(
+                    request,
+                    f"Cotización convertida en venta {venta.numero_factura}"
+                )
+            
+            return redirect('ventas:venta_detail', pk=venta.pk)
+            
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('ventas:cotizacion_detail', pk=pk)
 
 # Carrito
 from django.http import JsonResponse

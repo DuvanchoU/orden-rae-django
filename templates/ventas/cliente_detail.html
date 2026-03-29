@@ -1,123 +1,304 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ cliente.nombre }} {{ cliente.apellido }} - Cliente{% endblock %}
+{% block title %}{{ cliente.get_nombre_completo }} - Cliente{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+<!-- Header Ultra Compacto -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="detail-title">Información</h1>
-        <p class="detail-subtitle">Detalle del cliente</p>
+        <h1 class="detail-title mb-0">{{ cliente.get_nombre_completo }}</h1>  
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'ventas:cliente_list' %}" class="btn btn-volver">
-            <i class="bi bi-arrow-left me-2"></i>Volver
+        <a href="{% url 'ventas:cliente_list' %}" class="btn btn-volver btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
         </a>
-        <a href="{% url 'ventas:cliente_update' cliente.pk %}" class="btn btn-editar">
-            <i class="bi bi-pencil-fill me-2"></i>Editar
+        <a href="{% url 'ventas:cliente_update' cliente.pk %}" class="btn btn-editar btn-sm">
+            <i class="bi bi-pencil-fill me-1"></i>Editar
         </a>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Tarjeta Principal - Información del Cliente -->
-    <div class="col-lg-8">
-        <div class="info-card p-4">
-            <div class="row g-4">
-                <!-- Nombre Completo -->
-                <div class="col-md-6">
-                    <label class="info-label">NOMBRE COMPLETO</label>
-                    <p class="info-value fw-bold">{{ cliente.nombre }} {{ cliente.apellido|default:"" }}</p>
-                </div>
-                
-                <!-- Teléfono -->
+<div class="row g-3">
+    <!-- Columna Izquierda: Información Principal -->
+    <div class="col-lg-7">
+        <div class="info-card p-3">
+            <h6 class="section-title mb-3">
+                <i class="bi bi-person me-2"></i>Información de Contacto
+            </h6>
+            
+            <div class="row g-3">
+                <!-- Teléfono y Email -->
                 <div class="col-md-6">
                     <label class="info-label">TELÉFONO</label>
                     <p class="info-value">
                         {% if cliente.telefono %}
-                            <i class="bi bi-telephone me-2 text-muted"></i>{{ cliente.telefono }}
+                            <a href="tel:{{ cliente.telefono }}" class="text-decoration-none">
+                                <i class="bi bi-telephone me-1 text-muted"></i>{{ cliente.telefono }}
+                            </a>
                         {% else %}
-                            No especificado
+                            <span class="text-muted">No registrado</span>
                         {% endif %}
                     </p>
                 </div>
-                
-                <!-- Email -->
                 <div class="col-md-6">
                     <label class="info-label">EMAIL</label>
                     <p class="info-value">
                         {% if cliente.email %}
-                            <i class="bi bi-envelope me-2 text-muted"></i>{{ cliente.email }}
+                            <a href="mailto:{{ cliente.email }}" class="text-decoration-none">
+                                <i class="bi bi-envelope me-1 text-muted"></i>{{ cliente.email }}
+                            </a>
                         {% else %}
-                            No especificado
+                            <span class="text-muted">No registrado</span>
                         {% endif %}
                     </p>
                 </div>
-                
+
                 <!-- Dirección -->
                 <div class="col-md-6">
                     <label class="info-label">DIRECCIÓN</label>
                     <p class="info-value">
                         {% if cliente.direccion %}
-                            <i class="bi bi-geo-alt me-2 text-muted"></i>{{ cliente.direccion }}
+                            <i class="bi bi-geo-alt me-1 text-muted"></i>{{ cliente.direccion }}
                         {% else %}
-                            No especificado
+                            <span class="text-muted">No registrada</span>
                         {% endif %}
                     </p>
                 </div>
-                
-                <!-- Fecha Registro -->
-                <div class="col-md-6">
-                    <label class="info-label">FECHA REGISTRO</label>
-                    <p class="info-value">
-                        <i class="bi bi-calendar-event me-2 text-muted"></i>
-                        {{ cliente.fecha_registro|date:"d/m/Y"|default:"No registrada" }}
-                    </p>
-                </div>
-                
-                <!-- Estado -->
                 <div class="col-md-6">
                     <label class="info-label">ESTADO</label>
-                    <div>
+                    <p class="info-value">
                         {% if cliente.estado == 'ACTIVO' %}
-                            <span class="badge-estado disponible">
-                                ACTIVO
-                            </span>
+                            <span class="badge-estado disponible">Activo</span>
+                        {% elif cliente.estado == 'INACTIVO' %}
+                            <span class="badge-estado agotado">Inactivo</span>
                         {% else %}
-                            <span class="badge-estado agotado">
-                                INACTIVO
-                            </span>
+                            <span class="badge-estado neutro">{{ cliente.estado }}</span>
                         {% endif %}
+                    </p>
+                </div>
+
+
+                <!-- Fechas -->
+                <div class="col-md-6">
+                    <label class="info-label">REGISTRADO</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-plus me-1 text-muted"></i>
+                        {{ cliente.fecha_registro|date:"d/m/Y"|default:"—" }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <label class="info-label">ACTUALIZADO</label>
+                    <p class="info-value">
+                        <i class="bi bi-pencil-square me-1 text-muted"></i>
+                        {{ cliente.updated_at|date:"d/m/Y H:i"|default:"—" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas del Cliente -->
+        <div class="row g-3 mt-2">
+            <div class="col-md-4">
+                <div class="stat-card-mini">
+                    <div class="stat-icon">
+                        <i class="bi bi-cart-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Pedidos</span>
+                        <span class="stat-value">{{ total_pedidos|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card-mini">
+                    <div class="stat-icon">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Gastado</span>
+                        <span class="stat-value">${{ total_gastado|default:0|floatformat:0 }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card-mini">
+                    <div class="stat-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-label">Último Pedido</span>
+                        <span class="stat-value small">{{ ultimo_pedido|default:"—" }}</span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Últimos Pedidos (si existen) -->
+        {% if ultimos_pedidos %}
+        <div class="info-card p-3 mt-3">
+            <h6 class="section-title mb-3">
+                <i class="bi bi-receipt me-2"></i>Últimos Pedidos
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-ultra-compact mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in ultimos_pedidos %}
+                        <tr>
+                            <td><strong>#{{ pedido.id_pedido }}</strong></td>
+                            <td>{{ pedido.fecha_pedido|date:"d/m/y" }}</td>
+                            <td>${{ pedido.total|floatformat:0 }}</td>
+                            <td>
+                                <span class="badge-estado badge-sm {% if pedido.estado_pedido == 'COMPLETADO' %}disponible{% elif pedido.estado_pedido == 'CANCELADO' %}agotado{% else %}neutro{% endif %}">
+                                    {{ pedido.estado_pedido }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'ventas:pedido_detail' pedido.pk %}" class="btn-action-view btn-action-sm" title="Ver detalle">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_pedidos > 5 %}
+            <div class="text-center mt-2">
+                <a href="{% url 'ventas:pedido_list' %}?cliente={{ cliente.pk }}" class="btn btn-ghost btn-sm">
+                    Ver todos los pedidos <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
-    
-    <!-- Tarjeta Lateral - Acciones e Información -->
-    <div class="col-lg-4">
-        <div class="sidebar-card p-4">
-            <h5 class="sidebar-title">Información Adicional</h5>
-            <hr class="sidebar-divider">
-            
-            <!-- Botones de Acción -->
+
+    <!-- Columna Derecha: Acciones -->
+    <div class="col-lg-5">
+        <!-- Acciones Rápidas -->
+        <div class="sidebar-card p-3">
+            <h6 class="sidebar-title mb-3">
+                <i class="bi bi-lightning-charge me-2"></i>Acciones Rápidas
+            </h6>
             <div class="action-buttons">
                 <a href="tel:{{ cliente.telefono|default:'' }}" 
-                   class="btn-action-secondary"
-                   {% if not cliente.telefono %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+                   class="btn-action-secondary btn-sm {% if not cliente.telefono %}disabled{% endif %}">
                     <i class="bi bi-telephone me-2"></i>Llamar
                 </a>
                 <a href="mailto:{{ cliente.email|default:'' }}" 
-                   class="btn-action-secondary"
-                   {% if not cliente.email %}style="pointer-events: none; opacity: 0.5;"{% endif %}>
+                   class="btn-action-secondary btn-sm {% if not cliente.email %}disabled{% endif %}">
                     <i class="bi bi-envelope me-2"></i>Enviar Email
                 </a>
-            </div>
-            <div class="mt-4">
-                <div class="info-row">
-                    <label class="info-label-small">ID INTERNO</label>
-                    <p class="info-text fw-bold">{{ cliente.pk }}</p>
-                </div>
+                <a href="{% url 'ventas:pedido_create' %}?cliente={{ cliente.pk }}" 
+                   class="btn-action-secondary btn-sm {% if cliente.estado != 'ACTIVO' %}disabled{% endif %}">
+                    <i class="bi bi-cart-plus me-2"></i>Nuevo Pedido
+                </a>
+                <a href="{% url 'ventas:cotizacion_create' %}?cliente={{ cliente.pk }}" 
+                   class="btn-action-secondary btn-sm {% if cliente.estado != 'ACTIVO' %}disabled{% endif %}">
+                    <i class="bi bi-file-earmark-text me-2"></i>Nueva Cotización
+                </a>
             </div>
         </div>
+
+        <!-- Notas / Observaciones -->
+        {% if cliente.observaciones %}
+        <div class="sidebar-card p-3 mt-3">
+            <h6 class="sidebar-title mb-2">
+                <i class="bi bi-sticky me-2"></i>Notas
+            </h6>
+            <p class="info-text small mb-0">{{ cliente.observaciones }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CSS Adicional para estadísticas compactas -->
+<style>
+/* Stat Card Mini - Versión ultra compacta */
+.stat-card-mini {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.stat-card-mini:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-tertiary);
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+/* Botones deshabilitados */
+.btn-action-secondary.disabled,
+.btn-action-secondary[style*="pointer-events: none"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-action-secondary.disabled:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: var(--border-default);
+    color: var(--text-secondary);
+    transform: none;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .col-lg-7, .col-lg-5 {
+        width: 100%;
+    }
+    
+    .stat-card-mini {
+        padding: 0.6rem;
+    }
+    
+    .stat-value {
+        font-size: 1rem;
+    }
+}
+</style>
 {% endblock %}
