@@ -83,6 +83,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'ventas.context_processors.carrito_context',
                 'usuarios.context_processors.user_permissions', 
+                'django.template.context_processors.media', # Para usar MEDIA_URL en templates
             ],
         },
     },

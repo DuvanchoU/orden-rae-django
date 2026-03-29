@@ -259,7 +259,7 @@
     <main class="main-content">
         
         <!-- BLOQUE DE MENSAJES -->
-        {% if messages %}
+        {% if messages and 'dashboard' not in request.path %}
         <div class="container-fluid px-0 mb-3">
             <div class="row justify-content-center">
                 <div class="col-auto">

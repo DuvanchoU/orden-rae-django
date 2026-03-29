@@ -1384,14 +1384,15 @@ body.theme-dark ::-webkit-scrollbar-thumb:hover { background: var(--slate-500); 
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  padding: 1rem;
+  padding: 0.75rem;
   height: 100%;
 }
 
 .sidebar-title {
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--text-primary);
+  margin-bottom: 0.4rem !important;
 }
 
 .sidebar-divider {
@@ -1440,12 +1441,13 @@ body.theme-dark ::-webkit-scrollbar-thumb:hover { background: var(--slate-500); 
 }
 
 .btn-action-secondary.btn-sm {
-  padding: 0.4rem 0.7rem;
-  font-size: 0.775rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.7rem;
+  border-radius: 6px;
 }
 
 .btn-action-secondary i {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   width: 16px;
   text-align: center;
 }
@@ -2601,4 +2603,335 @@ code {
   .btn-action-bodega {
     min-height: 60px;
   }
+}
+
+/* ==================================================
+    13. IMAGENES DE PRODUCTO 
+   ================================================== */
+   /* Contenedor de Imagen Principal */
+.producto-imagen-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 0.75rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.imagen-principal-wrapper {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--bg-elevated);
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.imagen-principal-wrapper img {
+    max-height: 400px;
+    width: 100%;
+    object-fit: contain;
+}
+
+.imagen-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    color: white;
+    padding: 2rem 1rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Estado Sin Imagen */
+.sin-imagen-wrapper {
+    background-color: var(--bg-elevated);
+    border: 2px dashed var(--border-default);
+    border-radius: 8px;
+    padding: 3rem 1.5rem;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.sin-imagen-icon {
+    color: var(--text-tertiary);
+    opacity: 0.5;
+}
+
+/* Galería de Miniaturas */
+.galeria-miniaturas {
+    margin-top: 0.5rem;
+}
+
+.miniatura-wrapper {
+    position: relative;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: var(--bg-elevated);
+    aspect-ratio: 1;
+}
+
+.miniatura-wrapper:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.miniatura-wrapper.activo {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.miniatura-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.miniatura-badge-principal {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: var(--accent);
+    color: var(--accent-text);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .imagen-principal-wrapper {
+        min-height: 220px;
+    }
+    
+    .sin-imagen-wrapper {
+        min-height: 220px;
+        padding: 2rem 1rem;
+    }
+}
+
+/* ==================================================
+    14. FORMULARIOS - ESTILOS ADICIONALES
+   ================================================== */
+
+/* Card Modern */
+.card-modern {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-modern:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Botón Guardar - Teal */
+.btn-guardar-teal {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: var(--accent-text);
+    border: none;
+    font-weight: 700;
+    padding: 0.6rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--accent-glow);
+    transition: all 0.2s ease;
+}
+
+.btn-guardar-teal:hover {
+    background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--accent-glow);
+    color: var(--accent-text);
+}
+
+/* Form Header */
+.form-header {
+    margin-bottom: 1.5rem;
+}
+
+.form-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.form-subtitle {
+    color: var(--text-tertiary);
+    font-size: 0.825rem;
+    margin: 0;
+}
+
+/* Section Title */
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Form Labels Compact */
+.form-label-compact {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-tertiary);
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+/* Input Group Compact */
+.input-group-compact {
+    display: flex;
+    align-items: stretch;
+}
+
+.input-group-text-compact {
+    background-color: var(--input-bg);
+    border: 1.5px solid var(--input-border);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.input-group-compact .form-control {
+    border-radius: 0 6px 6px 0;
+    border-left: none;
+}
+
+/* Error Messages */
+.error-message {
+    font-size: 0.75rem;
+    color: #ef4444;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Upload Zone */
+.upload-zone {
+    border: 2px dashed var(--border-default);
+    border-radius: 8px;
+    padding: 2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-elevated);
+}
+
+.upload-zone:hover, .upload-zone.active {
+    border-color: var(--accent);
+    background-color: var(--accent-light);
+}
+
+.upload-content {
+    color: var(--text-secondary);
+}
+
+.upload-content i {
+    color: var(--accent);
+}
+
+/* Imagenes - Estilos Generales */
+.img-thumbnail-imagen {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.badge-principal {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: var(--accent);
+    color: var(--accent-text);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Preview Container */
+.preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Metadata Compacto - Versión ultra condensada */
+.metadata-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem; /* ← Espacio mínimo entre filas */
+}
+
+.metadata-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.15rem 0; /* ← Padding mínimo */
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.metadata-row:last-child {
+    border-bottom: none;
+}
+
+.metadata-row .text-muted {
+    font-size: 0.65rem !important; /* ← Más pequeño */
+    font-weight: 500;
+}
+
+.metadata-row strong {
+    font-size: 0.7rem !important;
+    text-align: right;
+    font-weight: 600;
+}
+
+.metadata-row code {
+    font-size: 0.65rem !important;
+    background-color: var(--bg-elevated);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.metadata-item:last-child {
+    border-bottom: none;
+}
+
+/* Section Title */
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }

@@ -1,10 +1,13 @@
+import uuid
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
 from django.urls import reverse_lazy
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib import messages
-from .models import Producto, Bodegas, Categorias, Proveedores, Inventario
+from django.db import transaction
+from .models import Producto, Bodegas, Categorias, Proveedores, Inventario, ImagenesProducto
 from .forms import InventarioForm, ProductoForm, BodegaForm, CategoriaForm, ProveedorForm
 from .report_services import (
     get_productos_report_data, 
@@ -12,6 +15,7 @@ from .report_services import (
     get_proveedores_report_data
 )
 from reports.generators.mixins import ReportMixin
+from django.conf import settings
 
 # ------------------------------------------------------------------
 # PRODUCTOS
@@ -64,15 +68,55 @@ class ProductoCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Producto'
+        context['modo_edicion'] = False
+        context['MEDIA_URL'] = settings.MEDIA_URL # Para mostrar imágenes en el template
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, 'Producto creado exitosamente.')
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        messages.error(self.request, 'Error al crear el producto. Verifique los datos.')
-        return super().form_invalid(form)
+        try:
+            with transaction.atomic():
+                # Guardar producto
+                producto = form.save()
+                
+                # Manejar imágenes subidas
+                imagenes = self.request.FILES.getlist('imagenes')
+                imagen_principal_index = int(self.request.POST.get('imagen_principal_index', 0))
+                
+                for i, imagen in enumerate(imagenes):
+                    # Guardar archivo
+                    ruta_relativa = self._guardar_imagen(imagen, producto)
+                    
+                    # Crear registro en BD
+                    ImagenesProducto.objects.create(
+                        producto=producto,
+                        ruta_imagen=ruta_relativa,
+                        descripcion=f"Imagen {i+1} de {producto.codigo_producto}",
+                        es_principal=1 if i == imagen_principal_index else 0
+                    )
+                
+            messages.success(self.request, f'Producto "{producto.codigo_producto}" creado exitosamente.')
+            return redirect(self.success_url)
+        except Exception as e:
+            messages.error(self.request, f'Error al crear: {str(e)}')
+            return super().form_invalid(form)
+    
+    def _guardar_imagen(self, imagen, producto):
+        """Guarda la imagen y retorna la ruta relativa"""
+        # Crear ruta: productos/[codigo_producto]/[nombre_archivo]
+        carpeta = os.path.join(settings.MEDIA_ROOT, 'productos', producto.codigo_producto)
+        os.makedirs(carpeta, exist_ok=True)
+        
+        extension = os.path.splitext(imagen.name)[1]
+        nombre_archivo = f"{producto.codigo_producto}_{uuid.uuid4().hex}{extension}"
+        ruta_completa = os.path.join(carpeta, nombre_archivo)
+        
+        # Guardar archivo
+        with open(ruta_completa, 'wb+') as destination:
+            for chunk in imagen.chunks():
+                destination.write(chunk)
+        
+        # Retornar ruta relativa para BD
+        return os.path.join('productos', producto.codigo_producto, nombre_archivo)
     
 
 class ProductoUpdateView(UpdateView):
@@ -88,15 +132,76 @@ class ProductoUpdateView(UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Producto'
+        context['modo_edicion'] = True
+        context['MEDIA_URL'] = settings.MEDIA_URL # Para mostrar imágenes en el template
+        
+        # Obtener imágenes existentes
+        context['imagenes_existentes'] = ImagenesProducto.objects.filter(
+            producto=self.object
+        ).order_by('-es_principal', '-created_at')
+        
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, 'Producto actualizado correctamente.')
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        messages.error(self.request, 'Error al actualizar. Revise los campos.')
-        return super().form_invalid(form)
+        try:
+            with transaction.atomic():
+                producto = form.save()
+                
+                # Obtener imágenes a eliminar (marcadas en el formulario)
+                imagenes_a_eliminar = self.request.POST.getlist('imagenes_a_eliminar')
+                
+                # Filtrar valores vacíos
+                imagenes_a_eliminar = [id for id in imagenes_a_eliminar if id]
+                
+                # Eliminar imágenes marcadas
+                for id_imagen in imagenes_a_eliminar:
+                    try:
+                        img = ImagenesProducto.objects.get(id_imagen=id_imagen, producto=producto)
+                        # Eliminar archivo físico
+                        if img.ruta_imagen and os.path.exists(os.path.join(settings.MEDIA_ROOT, img.ruta_imagen)):
+                            os.remove(os.path.join(settings.MEDIA_ROOT, img.ruta_imagen))
+                        img.delete()
+                    except ImagenesProducto.DoesNotExist:
+                        pass
+                
+                # Agregar nuevas imágenes
+                nuevas_imagenes = self.request.FILES.getlist('nuevas_imagenes')
+                
+                for i, imagen in enumerate(nuevas_imagenes):
+                    ruta_relativa = self._guardar_imagen(imagen, producto)
+                    
+                    # Determinar si es principal (si no hay imágenes principales existentes)
+                    hay_principal = ImagenesProducto.objects.filter(
+                        producto=producto, 
+                        es_principal=1
+                    ).exists()
+                    
+                    ImagenesProducto.objects.create(
+                        producto=producto,
+                        ruta_imagen=ruta_relativa,
+                        descripcion=f"Imagen {i+1} de {producto.codigo_producto}",
+                        es_principal=0 if hay_principal else 1
+                    )
+                
+            messages.success(self.request, f'Producto "{producto.codigo_producto}" actualizado correctamente.')
+            return redirect(self.success_url)
+        except Exception as e:
+            messages.error(self.request, f'Error al actualizar: {str(e)}')
+            return super().form_invalid(form)
+    
+    def _guardar_imagen(self, imagen, producto):
+        """Guarda la imagen y retorna la ruta relativa"""
+        carpeta = os.path.join(settings.MEDIA_ROOT, 'productos', producto.codigo_producto)
+        os.makedirs(carpeta, exist_ok=True)
+        
+        nombre_archivo = f"{producto.codigo_producto}_{imagen.name}"
+        ruta_completa = os.path.join(carpeta, nombre_archivo)
+        
+        with open(ruta_completa, 'wb+') as destination:
+            for chunk in imagen.chunks():
+                destination.write(chunk)
+        
+        return os.path.join('productos', producto.codigo_producto, nombre_archivo)
 
 # ------------------------------------------------------------------
 # ELIMINAR PRODUCTO (SOFT DELETE) 
@@ -130,7 +235,17 @@ class ProductoDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['MEDIA_URL'] = settings.MEDIA_URL # Para mostrar imágenes en el template
         
+        # Obtener todas las imágenes del producto
+        from .models import ImagenesProducto
+        imagenes = ImagenesProducto.objects.filter(
+            producto=self.object
+        ).order_by('-es_principal', '-created_at')
+        
+        context['imagenes'] = imagenes
+        context['imagen_principal'] = imagenes.first() if imagenes.exists() else None
+
         # Lógica para obtener el nombre del proveedor manualmente
         producto = self.object
         if producto.proveedor_id:

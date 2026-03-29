@@ -3,135 +3,207 @@
 {% block title %}{{ producto.codigo_producto }} - Información{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+<!-- Header Ultra Compacto -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="detail-title">Información del Producto</h1>
-        <p class="detail-subtitle">Detalles y características</p>
+        <h1 class="detail-title mb-0">Información del Producto</h1>
+        <p class="form-subtitle">Características y detalles del producto</p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'inventario:producto_list' %}" class="btn btn-volver">
-            <i class="bi bi-arrow-left me-2"></i>Volver
+        <a href="{% url 'inventario:producto_list' %}" class="btn btn-volver btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
         </a>
-        <a href="{% url 'inventario:producto_update' producto.pk %}" class="btn btn-editar">
-            <i class="bi bi-pencil-fill me-2"></i>Editar
+        <a href="{% url 'inventario:producto_update' producto.pk %}" class="btn btn-editar btn-sm">
+            <i class="bi bi-pencil-fill me-1"></i>Editar
         </a>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Tarjeta Principal -->
-    <div class="col-lg-8">
-        <div class="info-card p-4">
-            <div class="row g-4">
+<div class="row g-3">
+    <!-- Columna Izquierda: Información (más ancha) -->
+    <div class="col-lg-7">
+        <div class="info-card p-3">
+            <div class="row g-3">
+                <!-- Código, Referencia y Categoría-->
                 <div class="col-md-6">
                     <label class="info-label">CÓDIGO</label>
-                    <p class="info-value fw-bold">{{ producto.codigo_producto }}</p>
+                    <p class="info-value fw-bold text-primary">{{ producto.codigo_producto }}</p>
                 </div>
                 <div class="col-md-6">
                     <label class="info-label">REFERENCIA</label>
-                    <p class="info-value fw-bold">{{ producto.referencia_producto|default:"Sin referencia" }}</p>
+                    <p class="info-value fw-bold text-primary">{{ producto.referencia_producto }}</p>
                 </div>
                 <div class="col-md-6">
                     <label class="info-label">CATEGORÍA</label>
-                    <p class="info-value">{{ producto.categoria.nombre_categoria }}</p>
+                    <p class="info-value">
+                        <i class="bi bi-tag me-1 text-muted"></i>{{ producto.categoria.nombre_categoria }}
+                    </p>
+                </div>
+
+                <!-- Proveedor y Tipo de Madera -->
+                <div class="col-md-6">
+                    <label class="info-label">PROVEEDOR</label>
+                    <p class="info-value">
+                        {% if nombre_proveedor %}
+                            <i class="bi bi-person-badge me-1 text-muted"></i>{{ nombre_proveedor }}
+                            {% if estado_proveedor == 'ACTIVO' %}
+                                <span class="badge-estado disponible badge-sm ms-2">Activo</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">No especificado</span>
+                        {% endif %}
+                    </p>
                 </div>
                 <div class="col-md-6">
                     <label class="info-label">TIPO DE MADERA</label>
                     <p class="info-value">{{ producto.tipo_madera|default:"No especificado" }}</p>
                 </div>
+
+                <!-- Color y Precio -->
                 <div class="col-md-6">
                     <label class="info-label">COLOR</label>
                     <p class="info-value">{{ producto.color_producto|default:"No especificado" }}</p>
                 </div>
-                
-                <!-- PROVEEDOR -->
                 <div class="col-md-6">
-                    <label class="info-label">PROVEEDOR</label>
-                    <p class="info-value">
-                        {% if nombre_proveedor %}
-                            <span class="d-flex align-items-center gap-2">
-                                <i class="bi bi-person-badge-fill text-muted"></i>
-                                <strong>{{ nombre_proveedor }}</strong>
-                            </span>
-                            <!-- Opcional: Mostrar estado del proveedor en pequeño -->
-                            {% if estado_proveedor == 'ACTIVO' %}
-                                <small class="text-success d-block mt-1 ms-4">
-                                    <i class="bi bi-dot"></i>Proveedor Activo
-                                </small>
-                            {% else %}
-                                <small class="text-warning d-block mt-1 ms-4">
-                                    <i class="bi bi-dot"></i>Proveedor Inactivo
-                                </small>
-                            {% endif %}
-                        {% elif producto.proveedor_id %}
-                            <span class="text-danger small">
-                                <i class="bi bi-exclamation-triangle"></i> 
-                                ID {{ producto.proveedor_id }} no encontrado en la BD.
-                            </span>
-                        {% else %}
-                            <span class="text-muted fst-italic">No especificado</span>
-                        {% endif %}
+                    <label class="info-label">PRECIO ACTUAL</label>
+                    <p class="info-value text-success fw-bold fs-5">
+                        <i class="bi bi-currency-dollar me-1"></i>{{ producto.precio_formateado }}
                     </p>
                 </div>
 
-                <div class="col-md-6">
-                    <label class="info-label">PRECIO ACTUAL</label>
-                    <p class="info-price text-success fw-bold fs-4">${{ producto.precio_formateado }}</p>
-                </div>
+                <!-- Estado -->
                 <div class="col-md-6">
                     <label class="info-label">ESTADO</label>
                     <div>
                         {% if producto.estado == 'DISPONIBLE' %}
                             <span class="badge-estado disponible">
-                                <span class="dot"></span>DISPONIBLE
+                                <i class="bi bi-check-circle me-1"></i>DISPONIBLE
                             </span>
                         {% else %}
                             <span class="badge-estado agotado">
-                                <span class="dot"></span>AGOTADO
+                                <i class="bi bi-x-circle me-1"></i>AGOTADO
                             </span>
                         {% endif %}
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Sidebar -->
-    <div class="col-lg-4">
-        <div class="sidebar-card p-4">
-            <h5 class="sidebar-title">Gestión Rápida</h5>
-            <hr class="sidebar-divider">
-            
-            <div class="action-buttons d-grid gap-2">
-                <a href="{% url 'inventario:inventario_list' %}?producto={{ producto.pk }}" 
-                   class="btn-action-secondary text-start">
-                    <i class="bi bi-box-seam me-2"></i>Ver Stock en Bodegas
-                </a>
-                <!-- Enlace a producción (asegúrate de tener esta URL configurada) -->
-                {% comment %}
-                <a href="{% url 'produccion:produccion_list' %}?producto={{ producto.pk }}" 
-                   class="btn-action-secondary text-start">
-                    <i class="bi bi-gear-wide-connected me-2"></i>Ver Producción
-                </a>
-                {% endcomment %}
+
+        <!-- Acciones Rápidas y Metadatos  -->
+        <div class="row g-2 mt-2">
+            <div class="col-md-7">
+                <div class="sidebar-card p-2 h-100">
+                    <h6 class="sidebar-title mb-2">
+                        <i class="bi bi-lightning-charge me-1"></i>Acción Rápida
+                    </h6>
+                    <a href="{% url 'inventario:inventario_list' %}?producto={{ producto.pk }}" 
+                    class="btn-action-secondary btn-sm">
+                        <i class="bi bi-box-seam me-2"></i>Ver Stock
+                    </a>
+                </div>
             </div>
-            
-            <div class="mt-4 pt-3 border-top">
-                <div class="info-row mb-2">
-                    <label class="info-label-small text-muted">CREADO EL</label>
-                    <p class="info-text mb-0 small">{{ producto.created_at|date:"d/m/Y H:i" }}</p>
-                </div>
-                <div class="info-row mb-2">
-                    <label class="info-label-small text-muted">ACTUALIZADO EL</label>
-                    <p class="info-text mb-0 small">{{ producto.updated_at|date:"d/m/Y H:i" }}</p>
-                </div>
-                <div class="info-row">
-                    <label class="info-label-small text-muted">ID INTERNO</label>
-                    <p class="info-text mb-0 small fw-monospace">{{ producto.pk }}</p>
+            <div class="col-md-5">
+                <div class="sidebar-card p-2 h-100">
+                    <h6 class="sidebar-title mb-2">
+                        <i class="bi bi-info-circle me-1"></i>Metadatos
+                    </h6>
+                    <div class="metadata-compact">
+                        <div class="metadata-row">
+                            <span class="text-muted">Creado:</span>
+                            <strong>{{ producto.created_at|date:"d/m/Y H:i" }}</strong>
+                        </div>
+                        <div class="metadata-row">
+                            <span class="text-muted">Actualizado:</span>
+                            <strong>{{ producto.updated_at|date:"d/m/Y H:i" }}</strong>
+                        </div>
+                        <div class="metadata-row">
+                            <span class="text-muted">ID:</span>
+                            <code>{{ producto.pk }}</code>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Columna Derecha: Imágenes -->
+    <div class="col-lg-5">
+        <div class="producto-imagen-container">
+            {% if imagen_principal and imagen_principal.ruta_imagen %}
+                <div class="imagen-principal-wrapper">
+                    <img src="{{ MEDIA_URL }}{{ imagen_principal.ruta_imagen }}" 
+                         alt="{{ imagen_principal.descripcion|default:producto.codigo_producto }}"
+                         class="img-fluid rounded-3"
+                         id="imagen-principal-display"
+                         style="width: 100%; height: auto; object-fit: contain;">
+                    
+                    {% if imagen_principal.descripcion %}
+                        <div class="imagen-badge">
+                            <i class="bi bi-image me-1"></i>{{ imagen_principal.descripcion }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Galería de Miniaturas (si hay más de 1 imagen) -->
+                {% if imagenes.count > 1 %}
+                <div class="galeria-miniaturas mt-2">
+                    <div class="row g-2">
+                        {% for imagen in imagenes %}
+                        {% if imagen.ruta_imagen %}
+                        <div class="col-3">
+                            <div class="miniatura-wrapper {% if imagen.id_imagen == imagen_principal.id_imagen %}activo{% endif %}"
+                                 onclick="cambiarImagenPrincipal('{{ MEDIA_URL }}{{ imagen.ruta_imagen }}', this)">
+                                <img src="{{ MEDIA_URL }}{{ imagen.ruta_imagen }}" 
+                                     alt="Imagen {{ forloop.counter }}"
+                                     class="img-fluid rounded-2"
+                                     onerror="this.parentElement.style.display='none'">
+                                {% if imagen.es_principal %}
+                                    <span class="miniatura-badge-principal">
+                                        <i class="bi bi-star-fill"></i>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% else %}
+                <!-- Estado Sin Imagen -->
+                <div class="sin-imagen-wrapper text-center">
+                    <div class="sin-imagen-icon">
+                        <i class="bi bi-image display-4"></i>
+                    </div>
+                    <p class="text-muted mb-2 mt-2">Sin imágenes disponibles</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<!-- JavaScript para cambiar imagen -->
+<script>
+function cambiarImagenPrincipal(nuevaRuta, elemento) {
+    const imgPrincipal = document.getElementById('imagen-principal-display');
+    imgPrincipal.style.opacity = '0';
+    
+    setTimeout(() => {
+        imgPrincipal.src = nuevaRuta;
+        imgPrincipal.style.opacity = '1';
+    }, 150);
+    
+    document.querySelectorAll('.miniatura-wrapper').forEach(el => {
+        el.classList.remove('activo');
+    });
+    elemento.classList.add('activo');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const imgPrincipal = document.getElementById('imagen-principal-display');
+    if (imgPrincipal) {
+        imgPrincipal.style.transition = 'opacity 0.15s ease-in-out';
+    }
+});
+</script>
 {% endblock %}
