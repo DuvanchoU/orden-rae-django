@@ -9,6 +9,7 @@ from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
+from ventas.models import Clientes
 from usuarios.models import Usuarios, RolesOld
 from inventario.models import Producto, Categorias, ImagenesProducto, Inventario
 import hashlib
@@ -805,47 +806,76 @@ def api_cotiza_enviar(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def login_view(request):
-    """Vista de login compatible con el template Django"""
+    """Vista de login para clientes"""
     
-    if request.user.is_authenticated:
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        next_url = request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect('pagina:home')
     
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        correo = request.POST.get('correo', '').strip().lower()
+        contrasena = request.POST.get('contrasena', '')
+        remember = request.POST.get('remember')
         
-        user = authenticate(request, username=username, password=password)
+        if not correo or not contrasena:
+            messages.error(request, 'Por favor ingresa correo y contraseña')
+            return render(request, 'pagina/login.html')
         
-        if user is not None:
-            login(request, user)
+        # Autenticar
+        from django.contrib.auth import authenticate, login as auth_login
+        
+        cliente = authenticate(
+            request, 
+            correo=correo, 
+            contrasena=contrasena
+        )
+        
+        if cliente is not None:
+            # Login exitoso
+            auth_login(request, cliente)
             
-            if request.POST.get('remember'):
+            # Configurar sesión
+            request.session['cliente_id'] = cliente.id_cliente
+            request.session['cliente_nombre'] = cliente.get_nombre_completo()
+            request.session['cliente_email'] = cliente.email
+            
+            # Recordarme
+            if remember:
                 request.session.set_expiry(1209600)
             else:
                 request.session.set_expiry(0)
             
-            user_rol = getattr(user, 'rol', '')
-            if user.is_superuser or user.is_staff or user_rol in ['ADMIN', 'Gerente', 'Asesor Comercial', 'Jefe Logistico']:
-                return redirect('dashboard:dashboard_home')
-            else:
-                return redirect('pagina:home')
+            # Registrar último login
+            cliente.last_login = timezone.now()
+            cliente.ultimo_login = timezone.now()
+            cliente.save(update_fields=['last_login', 'ultimo_login'])
+            
+            messages.success(request, f'¡Bienvenido, {cliente.nombres}!')
+            
+            # Redirigir
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect('pagina:home')
         else:
-            messages.error(request, 'Usuario o contraseña incorrectos')
+            messages.error(request, 'Correo o contraseña incorrectos')
     
     return render(request, 'pagina/login.html')
 
 
 def registro_view(request):
-    """Vista de registro de usuarios - Usa modelo Usuarios personalizado"""
+    """Vista de registro de clientes - Guarda en tabla CLIENTES"""
     
-    if hasattr(request.user, 'id_usuario'):
+    if hasattr(request, 'user') and request.user.is_authenticated:
         return redirect('pagina:home')
     
     if request.method == 'POST':
         nombre = request.POST.get('nombre', '').strip()
-        apellidos = request.POST.get('apellidos', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
         documento = request.POST.get('documento', '').strip()
-        correo = request.POST.get('correo', '').strip().lower()
+        email = request.POST.get('email', '').strip().lower()
         telefono = request.POST.get('telefono', '').strip()
         genero = request.POST.get('genero', '')
         password = request.POST.get('password', '')
@@ -853,10 +883,11 @@ def registro_view(request):
         
         errores = []
         
-        if not all([nombre, apellidos, documento, correo, password, password2]):
+        # Validaciones
+        if not all([nombre, apellido, documento, email, password, password2]):
             errores.append('Todos los campos marcados con * son obligatorios')
         
-        if correo and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', correo):
+        if email and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             errores.append('El formato del correo electrónico no es válido')
         
         if password and len(password) < 8:
@@ -865,8 +896,15 @@ def registro_view(request):
         if password != password2:
             errores.append('Las contraseñas no coinciden')
         
-        if correo and Usuarios.objects.filter(correo_usuario=correo).exists():
+        if documento and len(documento) < 5:
+            errores.append('El documento debe tener al menos 5 dígitos')
+        
+        # Verificar duplicados
+        if email and Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
             errores.append('Este correo electrónico ya está registrado')
+        
+        if documento and Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
+            errores.append('Este documento ya está registrado')
         
         if errores:
             return render(request, 'pagina/registro.html', {
@@ -875,78 +913,54 @@ def registro_view(request):
             })
         
         try:
-            print(f"🔍 DEBUG: Iniciando creación de usuario para {correo}")
+            print(f"🔍 DEBUG: Iniciando creación de CLIENTE para {email}")
             
-            # Obtener rol CLIENTE por defecto
-            rol_cliente = RolesOld.objects.get(nombre_rol='CLIENTE')
-            print(f"Rol CLIENTE encontrado: {rol_cliente.id_rol}")
-            
-            # Encriptar contraseña con SHA256
-            contrasena_hash = hashlib.sha256(password.encode()).hexdigest()
-            
-            # Convertir género a formato de 1 carácter
+            # Convertir género
             genero_abreviado = None
             if genero:
-                if genero.lower() in ['masculino', 'm', 'hombre', 'varon']:
+                if genero.lower() in ['masculino', 'm', 'hombre']:
                     genero_abreviado = 'M'
                 elif genero.lower() in ['femenino', 'f', 'mujer']:
                     genero_abreviado = 'F'
                 else:
-                    genero_abreviado = None
+                    genero_abreviado = 'O'
             
-            # Crear usuario en TU modelo Usuarios
-            nuevo_usuario = Usuarios.objects.create(
-                nombres=nombre,
-                apellidos=apellidos,
+            # Hashear contraseña
+            from django.contrib.auth.hashers import make_password
+            
+            # Crear cliente
+            nuevo_cliente = Clientes.objects.create(
+                nombre=nombre,
+                apellido=apellido,
                 documento=documento,
-                correo_usuario=correo,
-                contrasena_usuario=contrasena_hash,
+                email=email,
+                contrasena_cliente=make_password(password),
+                telefono=telefono if telefono else None,
                 estado='ACTIVO',
                 fecha_registro=timezone.now(),
-                id_rol=rol_cliente,
-                telefono=telefono if telefono else None,
                 genero=genero_abreviado,
             )
-            print(f"Usuario creado con ID: {nuevo_usuario.id_usuario}")
             
-            # Login con backend especificado
+            print(f"✅ Cliente creado con ID: {nuevo_cliente.id_cliente}")
+            
+            # Auto-login
             from django.contrib.auth import login as auth_login
-            try:
-                auth_login(
-                    request, 
-                    nuevo_usuario, 
-                    backend='usuarios.backends.UsuariosAuthBackend'
-                )
-                print(f"Login de Django completado")
-            except Exception as login_error:
-                print(f"⚠️  Error en login de Django: {login_error}")
-                # Si falla el login de Django, al menos guarda en sesión personalizada
+            auth_login(request, nuevo_cliente, backend='ventas.backends.ClientesAuthBackend')
             
-            # Guardar en sesión personalizada
-            request.session['usuario_id'] = nuevo_usuario.id_usuario
-            request.session['usuario_nombre'] = f"{nombre} {apellidos}"
-            request.session['usuario_rol'] = 'CLIENTE'
-            print(f"Sesión personalizada guardada")
+            # Guardar en sesión
+            request.session['cliente_id'] = nuevo_cliente.id_cliente
+            request.session['cliente_nombre'] = f"{nombre} {apellido}"
+            request.session['cliente_email'] = email
             
             messages.success(request, f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.')
-            print(f"Redirigiendo a dashboard:dashboard_home")
             
-            # REDIRECCIÓN - Probar primero al home si dashboard falla
-            try:
-                return redirect('dashboard:dashboard_home')
-            except Exception as redirect_error:
-                print(f"Error redirigiendo a dashboard: {redirect_error}")
-                print(f"Redirigiendo a home como fallback")
-                return redirect('pagina:home')
+            return redirect('pagina:home')
             
-        except RolesOld.DoesNotExist:
-            print("ERROR: Rol CLIENTE no existe")
-            messages.error(request, 'Error de configuración: Rol CLIENTE no encontrado')
         except IntegrityError as e:
-            print(f"ERROR de integridad: {e}")
-            messages.error(request, 'Ocurrió un error al crear tu cuenta. Intenta nuevamente.')
+            print(f"❌ ERROR de integridad: {e}")
+            messages.error(request, 'Ocurrió un error. Intenta nuevamente.')
         except Exception as e:
-            print(f"ERROR inesperado: {type(e).__name__}: {str(e)}")
+            print(f"❌ ERROR: {type(e).__name__}: {str(e)}")
             import traceback
             traceback.print_exc()
             messages.error(request, f'Error: {str(e)}')
@@ -957,14 +971,19 @@ def registro_view(request):
     
     return render(request, 'pagina/registro.html')
 
+
 def logout_view(request):
-    """Cerrar sesión y redirigir al home"""
+    """Cerrar sesión de cliente"""
     from django.contrib.auth import logout
-    logout(request)
-    if 'carrito' in request.session:
-        del request.session['carrito']
-    if 'carrito_cantidad' in request.session:
-        del request.session['carrito_cantidad']
+    logout(request)  # Cierra sesión de Django
+    
+    # Limpiar variables de sesión personalizadas
+    keys_to_delete = ['cliente_id', 'cliente_nombre', 'cliente_email', 
+                      'carrito', 'carrito_cantidad', 'cupon_activo']
+    for key in keys_to_delete:
+        if key in request.session:
+            del request.session[key]
+    
     return redirect('pagina:home')
 
 

@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.db.models import Sum, F, Q
+from django.db.models import Sum
 from django.db import transaction
 from datetime import timedelta
 import re
@@ -14,9 +14,18 @@ class Clientes(models.Model):
         ('INACTIVO', 'Inactivo'),
     ]
 
+    GENEROS = [
+        ('M', 'Masculino'),
+        ('F', 'Femenino'),
+        ('O', 'Otro'),
+    ]
+
     id_cliente = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100, blank=True, null=True)
+    documento = models.CharField(max_length=50, null=True, blank=True)
+    genero = models.CharField(max_length=1, choices=GENEROS, blank=True, null=True)
+    contrasena_cliente = models.CharField(max_length=255, blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     email = models.CharField(max_length=100, blank=True, null=True)
     direccion = models.CharField(max_length=255, blank=True, null=True)
@@ -28,14 +37,11 @@ class Clientes(models.Model):
         blank=True, 
         null=True
     )
+    last_login = models.DateTimeField(blank=True, null=True)
+    ultimo_login = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted_at = models.DateTimeField(blank=True, null=True)
-    
-    def __str__(self):
-        if self.apellido:
-            return f"{self.nombre} {self.apellido}"
-        return self.nombre
     
     class Meta:
         managed = True
@@ -44,8 +50,14 @@ class Clientes(models.Model):
         indexes = [
             models.Index(fields=['email']),
             models.Index(fields=['telefono']),
+            models.Index(fields=['documento']),
             models.Index(fields=['estado']),
         ]
+    
+    def __str__(self):
+        if self.apellido:
+            return f"{self.nombre} {self.apellido}"
+        return self.nombre
 
     def clean(self):
         """Validaciones del modelo"""
@@ -55,6 +67,27 @@ class Clientes(models.Model):
         
         if len(self.nombre.strip()) < 2:
             raise ValidationError("El nombre debe tener al menos 2 caracteres")
+        
+        # Validar documento si existe
+        if self.documento:
+            self.documento = self.documento.strip()
+            if len(self.documento) < 5:
+                raise ValidationError("El documento debe tener al menos 5 caracteres")
+            
+            # Validar que solo sean números
+            doc_limpio = re.sub(r'[^\d]', '', self.documento)
+            if not doc_limpio:
+                raise ValidationError("El documento solo debe contener números")
+            
+            # Validar unicidad
+            clientes_con_doc = Clientes.objects.filter(
+                documento=self.documento,
+                deleted_at__isnull=True
+            )
+            if self.pk:
+                clientes_con_doc = clientes_con_doc.exclude(pk=self.pk)
+            if clientes_con_doc.exists():
+                raise ValidationError(f"El documento '{self.documento}' ya está registrado")
         
         # Validar email si existe
         if self.email:
@@ -193,12 +226,40 @@ class Clientes(models.Model):
             'email': self.email or 'No registrado',
             'telefono': self.telefono or 'No registrado',
             'direccion': self.direccion or 'No registrada',
+            'documento': self.documento or 'No registrado',
         }
         return info
 
     def __str__(self):
         estado_icon = "✓" if self.esta_activo() else "✗"
         return f"{estado_icon} {self.get_nombre_completo()} ({self.email or 'Sin email'})"
+    
+    # =====================================================================
+    # MÉTODOS DE COMPATIBILIDAD CON DJANGO AUTH
+    # =====================================================================
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    @property
+    def is_active(self):
+        return self.estado == 'ACTIVO' and self.deleted_at is None
+    
+    def get_username(self):
+        return self.email
+    
+    def get_full_name(self):
+        if self.apellido:
+            return f"{self.nombre} {self.apellido}".strip()
+        return self.nombre.strip()
+    
+    def get_short_name(self):
+        return self.nombre
 
 class MetodosPago(models.Model):
     id_metodo = models.AutoField(primary_key=True)

@@ -5,6 +5,8 @@ from django.db.models import Q
 from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.views.generic import View
 import hashlib
 import time
 
@@ -252,34 +254,84 @@ class UsuarioCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Usuario'
-        context['roles'] = RolesOld.objects.all()
+        context['roles'] = RolesOld.objects.filter(deleted_at__isnull=True)
         return context
 
     def form_valid(self, form):
-        form.instance.fecha_registro = timezone.now()
-        response = super().form_valid(form)
-        messages.success(self.request, 'Usuario creado exitosamente')
-        return response
+        try:
+            usuario = form.save(commit=False)
+            usuario.fecha_registro = timezone.now()
+            usuario.save()
+            
+            messages.success(
+                self.request, 
+                f'Usuario "{usuario.get_full_name()}" creado exitosamente'
+            )
+            return redirect(self.success_url)
+        except Exception as e:
+            messages.error(self.request, f'Error al crear: {str(e)}')
+            return self.form_invalid(form)
 
 
 @method_decorator(never_cache, name='dispatch')
 class UsuarioUpdateView(UpdateView):
     model = Usuarios
     template_name = 'usuarios/usuario_form.html'
-    form_class = UsuarioForm
+    form_class = UsuarioUpdateForm
     success_url = reverse_lazy('usuarios:usuario_list')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Usuario'
-        context['roles'] = RolesOld.objects.all()
+        context['roles'] = RolesOld.objects.filter(deleted_at__isnull=True)
         return context
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Usuario actualizado exitosamente')
-        return response
+        try:
+            usuario = form.save(commit=False)
+            usuario.updated_at = timezone.now()
+            usuario.save()
+            
+            messages.success(
+                self.request, 
+                f'Usuario "{usuario.get_full_name()}" actualizado correctamente'
+            )
+            return redirect(self.success_url)
+        except Exception as e:
+            messages.error(self.request, f'Error al actualizar: {str(e)}')
+            return self.form_invalid(form)
 
+# Agregar vista para cambio de contraseña
+class UsuarioChangePasswordView(View):
+    """Vista para que el usuario cambie su propia contraseña"""
+    
+    def post(self, request, pk):
+        try:
+            usuario = get_object_or_404(Usuarios, pk=pk, deleted_at__isnull=True)
+            
+            old_password = request.POST.get('old_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            
+            if not usuario.check_password(old_password):
+                messages.error(request, "La contraseña actual es incorrecta")
+                return redirect('usuarios:usuario_detail', pk=pk)
+            
+            if new_password != confirm_password:
+                messages.error(request, "Las nuevas contraseñas no coinciden")
+                return redirect('usuarios:usuario_detail', pk=pk)
+            
+            usuario.cambiar_contrasena(old_password, new_password)
+            messages.success(request, "✓ Contraseña cambiada exitosamente")
+            return redirect('usuarios:usuario_detail', pk=pk)
+            
+        except ValidationError as e:
+            messages.error(request, f"⚠️ {str(e)}")
+            return redirect('usuarios:usuario_detail', pk=pk)
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+            return redirect('usuarios:usuario_detail', pk=pk)
+        
 
 @method_decorator(never_cache, name='dispatch')
 class UsuarioDeleteView(DeleteView):

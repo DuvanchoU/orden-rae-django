@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'pagina.middleware.ClientesAuthMiddleware',
     'usuarios.middleware.NoCacheMiddleware',  
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -166,6 +167,7 @@ LOGOUT_REDIRECT_URL = 'usuarios:login'
 
 AUTHENTICATION_BACKENDS = [
     'usuarios.backends.UsuariosAuthBackend',  # Backend personalizado (PRIORITARIO)
+    'ventas.backends.ClientesAuthBackend',  # Para clientes
     'django.contrib.auth.backends.ModelBackend',  # Backend por defecto (fallback)
 ]
 
