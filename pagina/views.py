@@ -17,6 +17,8 @@ import json
 import re
 import random
 import string
+import logging
+logger = logging.getLogger('auth.debug')
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -806,69 +808,61 @@ def api_cotiza_enviar(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def login_view(request):
-    """Vista de login para clientes"""
+    """Login de clientes"""
     
-    if hasattr(request, 'user') and request.user.is_authenticated:
-        next_url = request.GET.get('next')
-        if next_url:
-            return redirect(next_url)
-        return redirect('pagina:home')
+    if request.session.get('cliente_auth'):
+        return redirect(request.GET.get('next', 'pagina:home'))
     
     if request.method == 'POST':
         correo = request.POST.get('correo', '').strip().lower()
         contrasena = request.POST.get('contrasena', '')
         remember = request.POST.get('remember')
         
+        logger.debug(f"🔐 [login_view] Intento login: {correo}")
+        
         if not correo or not contrasena:
-            messages.error(request, 'Por favor ingresa correo y contraseña')
+            messages.error(request, 'Ingresa correo y contraseña')
             return render(request, 'pagina/login.html')
         
-        # Autenticar
-        from django.contrib.auth import authenticate, login as auth_login
+        # Autenticar con el backend
+        from django.contrib.auth import authenticate, login
+        cliente = authenticate(request, correo=correo, contrasena=contrasena)
         
-        cliente = authenticate(
-            request, 
-            correo=correo, 
-            contrasena=contrasena
-        )
+        logger.debug(f"🔐 [login_view] authenticate() retornó: {cliente}")
         
         if cliente is not None:
-            # Login exitoso
-            auth_login(request, cliente)
+            logger.debug(f"✅ [login_view] Login exitoso, ejecutando login()")
+            login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
             
-            # Configurar sesión
             request.session['cliente_id'] = cliente.id_cliente
             request.session['cliente_nombre'] = cliente.get_nombre_completo()
             request.session['cliente_email'] = cliente.email
+            request.session['cliente_auth'] = True
             
-            # Recordarme
             if remember:
                 request.session.set_expiry(1209600)
             else:
                 request.session.set_expiry(0)
             
-            # Registrar último login
             cliente.last_login = timezone.now()
             cliente.ultimo_login = timezone.now()
             cliente.save(update_fields=['last_login', 'ultimo_login'])
             
-            messages.success(request, f'¡Bienvenido, {cliente.nombres}!')
+            logger.debug(f"🔍 [login_view] Session después de login: {dict(request.session)}")
             
-            # Redirigir
-            next_url = request.GET.get('next')
-            if next_url:
-                return redirect(next_url)
-            return redirect('pagina:home')
+            messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
+            return redirect(request.GET.get('next', 'pagina:home'))
         else:
-            messages.error(request, 'Correo o contraseña incorrectos')
+            logger.warning(f"❌ [login_view] Credenciales inválidas para: {correo}")
+            messages.error(request, 'Credenciales incorrectas')
     
     return render(request, 'pagina/login.html')
 
 
 def registro_view(request):
-    """Vista de registro de clientes - Guarda en tabla CLIENTES"""
+    """Registro de clientes"""
     
-    if hasattr(request, 'user') and request.user.is_authenticated:
+    if request.session.get('cliente_auth'):
         return redirect('pagina:home')
     
     if request.method == 'POST':
@@ -881,30 +875,19 @@ def registro_view(request):
         password = request.POST.get('password', '')
         password2 = request.POST.get('password2', '')
         
-        errores = []
-        
         # Validaciones
+        errores = []
         if not all([nombre, apellido, documento, email, password, password2]):
-            errores.append('Todos los campos marcados con * son obligatorios')
-        
-        if email and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            errores.append('El formato del correo electrónico no es válido')
-        
-        if password and len(password) < 8:
-            errores.append('La contraseña debe tener al menos 8 caracteres')
-        
+            errores.append('Todos los campos obligatorios')
         if password != password2:
             errores.append('Las contraseñas no coinciden')
+        if len(password) < 8:
+            errores.append('Mínimo 8 caracteres')
         
-        if documento and len(documento) < 5:
-            errores.append('El documento debe tener al menos 5 dígitos')
-        
-        # Verificar duplicados
-        if email and Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
-            errores.append('Este correo electrónico ya está registrado')
-        
-        if documento and Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
-            errores.append('Este documento ya está registrado')
+        if Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
+            errores.append('Email ya registrado')
+        if Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
+            errores.append('Documento ya registrado')
         
         if errores:
             return render(request, 'pagina/registro.html', {
@@ -913,20 +896,13 @@ def registro_view(request):
             })
         
         try:
-            print(f"🔍 DEBUG: Iniciando creación de CLIENTE para {email}")
+            from django.contrib.auth.hashers import make_password
             
             # Convertir género
-            genero_abreviado = None
-            if genero:
-                if genero.lower() in ['masculino', 'm', 'hombre']:
-                    genero_abreviado = 'M'
-                elif genero.lower() in ['femenino', 'f', 'mujer']:
-                    genero_abreviado = 'F'
-                else:
-                    genero_abreviado = 'O'
+            genero_map = {'masculino': 'M', 'femenino': 'F', 'hombre': 'M', 'mujer': 'F'}
+            genero_abrev = genero_map.get(genero.lower(), 'O')
             
-            # Hashear contraseña
-            from django.contrib.auth.hashers import make_password
+            logger.debug(f"🔧 [registro_view] Creando cliente: {email}")
             
             # Crear cliente
             nuevo_cliente = Clientes.objects.create(
@@ -934,40 +910,34 @@ def registro_view(request):
                 apellido=apellido,
                 documento=documento,
                 email=email,
-                contrasena_cliente=make_password(password),
-                telefono=telefono if telefono else None,
+                contrasena_cliente=make_password(password),  # ← HASH DE DJANGO
+                telefono=telefono or None,
                 estado='ACTIVO',
                 fecha_registro=timezone.now(),
-                genero=genero_abreviado,
+                genero=genero_abrev,
             )
             
-            print(f"✅ Cliente creado con ID: {nuevo_cliente.id_cliente}")
+            logger.debug(f"✅ [registro_view] Cliente creado ID: {nuevo_cliente.id_cliente}")
+            logger.debug(f"🔐 [registro_view] Hash: {nuevo_cliente.contrasena_cliente[:50]}...")
             
             # Auto-login
-            from django.contrib.auth import login as auth_login
-            auth_login(request, nuevo_cliente, backend='ventas.backends.ClientesAuthBackend')
+            from django.contrib.auth import login
+            login(request, nuevo_cliente, backend='ventas.backends.ClientesAuthBackend')
             
-            # Guardar en sesión
             request.session['cliente_id'] = nuevo_cliente.id_cliente
             request.session['cliente_nombre'] = f"{nombre} {apellido}"
             request.session['cliente_email'] = email
+            request.session['cliente_auth'] = True
             
-            messages.success(request, f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.')
+            logger.debug(f"🔍 [registro_view] Session después de registro: {dict(request.session)}")
             
+            messages.success(request, f'¡Bienvenido, {nombre}!')
             return redirect('pagina:home')
             
-        except IntegrityError as e:
-            print(f"❌ ERROR de integridad: {e}")
-            messages.error(request, 'Ocurrió un error. Intenta nuevamente.')
         except Exception as e:
-            print(f"❌ ERROR: {type(e).__name__}: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"❌ [registro_view] ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
             messages.error(request, f'Error: {str(e)}')
-        
-        return render(request, 'pagina/registro.html', {
-            'form_data': request.POST
-        })
+            return render(request, 'pagina/registro.html', {'form_data': request.POST})
     
     return render(request, 'pagina/registro.html')
 

@@ -4,7 +4,7 @@ from ventas.models import Clientes
 
 class ClientesAuthBackend(BaseBackend):
     """
-    Backend de autenticación personalizado para el modelo Clientes.
+    Backend de autenticación personalizado para Clientes
     """
     
     def authenticate(self, request, correo=None, contrasena=None, **kwargs):
@@ -12,23 +12,28 @@ class ClientesAuthBackend(BaseBackend):
             return None
         
         try:
+            # Buscar por email (case-insensitive)
             cliente = Clientes.objects.get(
                 email__iexact=correo.strip(),
+                estado='ACTIVO',
                 deleted_at__isnull=True
             )
         except Clientes.DoesNotExist:
+            # Evitar timing attacks
             check_password(contrasena, 'pbkdf2_sha256$dummy$dummy$dummy')
             return None
         
+        # Verificar contraseña
         if check_password(contrasena, cliente.contrasena_cliente):
-            if cliente.estado == 'ACTIVO':
-                return cliente
-            return None
+            return cliente
         
         return None
     
     def get_user(self, cliente_id):
         try:
-            return Clientes.objects.get(pk=cliente_id, deleted_at__isnull=True)
+            return Clientes.objects.get(
+                pk=cliente_id,
+                deleted_at__isnull=True
+            )
         except Clientes.DoesNotExist:
             return None

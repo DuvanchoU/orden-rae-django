@@ -59,13 +59,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'pagina.middleware.ClientesAuthMiddleware',
     'usuarios.middleware.NoCacheMiddleware',  
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'usuarios.middleware.SessionIdleTimeoutMiddleware',
-    'usuarios.middleware.CustomAuthMiddleware',      
+    'django.contrib.auth.middleware.AuthenticationMiddleware', # Auth de Django (base)
+    'ventas.middleware.ClientesAuthMiddleware', # Middleware para clientes (establece request.user si es cliente)
+    'usuarios.middleware.CustomAuthMiddleware', #  Middleware para staff (NO sobrescribe si ya hay cliente)
+    'usuarios.middleware.SessionIdleTimeoutMiddleware', # Timeout aplica a ambos    
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -161,7 +161,7 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # CONFIGURACIÓN DE AUTENTICACIÓN
 
-LOGIN_URL = 'usuarios:login'
+LOGIN_URL = 'pagina:login'
 LOGIN_REDIRECT_URL = 'dashboard:dashboard_home'
 LOGOUT_REDIRECT_URL = 'usuarios:login'
 
@@ -175,7 +175,7 @@ AUTHENTICATION_BACKENDS = [
 # CONFIGURACIÓN DE TIMEOUT DE SESIÓN (10 MINUTOS)
 
 # Tiempo de vida de la sesión para usuarios normales (10 minutos = 600 segundos)
-SESSION_COOKIE_AGE = 600
+SESSION_COOKIE_AGE = 86400 # 24 horas
 
 # Tiempo de vida de la sesión para el admin (5 minutos = 300 segundos)
 ADMIN_SESSION_TIMEOUT = 300  # 5 minutos
