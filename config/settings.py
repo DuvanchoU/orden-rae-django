@@ -57,17 +57,17 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'usuarios.middleware.NoCacheMiddleware',  
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware', # Auth de Django (base)
-    'ventas.middleware.ClientesAuthMiddleware', # Middleware para clientes (establece request.user si es cliente)
-    'usuarios.middleware.CustomAuthMiddleware', #  Middleware para staff (NO sobrescribe si ya hay cliente)
-    'usuarios.middleware.SessionIdleTimeoutMiddleware', # Timeout aplica a ambos    
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.security.SecurityMiddleware', # Middleware de seguridad para HTTPS, HSTS, etc.
+    'django.contrib.sessions.middleware.SessionMiddleware', # Middleware para manejo de sesiones
+    'usuarios.middleware.NoCacheMiddleware', # Middleware para evitar cache en páginas sensibles
+    'django.middleware.common.CommonMiddleware',  # Middleware para manejo de URLs, redirecciones, etc.
+    'django.middleware.csrf.CsrfViewMiddleware',  # Middleware para protección CSRF
+    'django.contrib.auth.middleware.AuthenticationMiddleware', # Middleware de autenticación por defecto (Django)
+    'ventas.middleware.ClientesAuthMiddleware',  # Clientes primero (prioridad máxima)
+    'usuarios.middleware.CustomAuthMiddleware',   # Usuarios STAFF después (prioridad secundaria)
+    'usuarios.middleware.SessionIdleTimeoutMiddleware',  # Middleware para timeout de sesión
+    'django.contrib.messages.middleware.MessageMiddleware', # Middleware para mensajes flash
+    'django.middleware.clickjacking.XFrameOptionsMiddleware', # Middleware para protección contra clickjacking
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -161,10 +161,9 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # CONFIGURACIÓN DE AUTENTICACIÓN
 
-LOGIN_URL = 'pagina:login'
-LOGIN_REDIRECT_URL = 'dashboard:dashboard_home'
-LOGOUT_REDIRECT_URL = 'usuarios:login'
-
+LOGIN_URL = '/pagina/login/' # Redirige al login si no está autenticado (clientes → /pagina/login/, staff → /usuarios/login/)
+LOGIN_REDIRECT_URL = 'dashboard:dashboard_home' # Redirige al dashboard después de login exitoso (ajusta según tu vista principal)
+LOGOUT_REDIRECT_URL = '/pagina/login/' # Redirige al login después de logout
 AUTHENTICATION_BACKENDS = [
     'usuarios.backends.UsuariosAuthBackend',  # Backend personalizado (PRIORITARIO)
     'ventas.backends.ClientesAuthBackend',  # Para clientes
@@ -184,10 +183,10 @@ ADMIN_SESSION_TIMEOUT = 300  # 5 minutos
 SESSION_SAVE_EVERY_REQUEST = True
 
 # Expirar la sesión al cerrar el navegador (recomendado)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-# Usar cookies firmadas para sesiones (más seguro)
-SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+# Usar la base de datos para almacenar sesiones (más seguro que cookies)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # Cookies solo para HTTP (no accesibles desde JavaScript)
 SESSION_COOKIE_HTTPONLY = True
@@ -319,3 +318,9 @@ CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost,http:
 
 # Versión de la aplicación (útil para debugging y monitoreo)
 APP_VERSION = os.getenv('APP_VERSION', '1.0.0')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}

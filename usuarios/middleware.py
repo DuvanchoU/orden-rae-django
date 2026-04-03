@@ -18,47 +18,41 @@ class CustomAuthMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # === EXCLUIR rutas de admin y auth nativo de Django ===
         if request.path.startswith('/admin/') or request.path.startswith('/accounts/'):
             return self.get_response(request)
-        
-        # === VERIFICAR PRIORIDAD: ¿Es un cliente? ===
+
+        # Si ya hay un cliente autenticado, no interferir
         if request.session.get('cliente_auth'):
-            # Cliente autenticado - no interferir
-            if hasattr(request, 'cliente'):
-                request.user = request.cliente
             return self.get_response(request)
-        
-        # === LÓGICA PARA USUARIOS STAFF ===
+
         usuario_id = request.session.get('usuario_id')
 
         if usuario_id:
             try:
-                usuario = Usuarios.objects.get(
-                    id_usuario=usuario_id, 
+                usuario = Usuarios.objects.select_related('id_rol').get(
+                    id_usuario=usuario_id,
                     estado='ACTIVO',
                     deleted_at__isnull=True
                 )
-                # Establecer usuario en request
                 request.user = usuario
-                request.usuario = usuario  # Para compatibilidad
+                request.usuario = usuario
                 request.session['last_activity_timestamp'] = time.time()
-                
+
             except Usuarios.DoesNotExist:
-                # Usuario no encontrado o inactivo
-                if 'usuario_id' in request.session:
-                    del request.session['usuario_id']
-                request.user = AnonymousUser()
+                request.session.pop('usuario_id', None)
+                # Solo poner AnonymousUser si no hay cliente
+                if not request.session.get('cliente_auth'):
+                    request.user = AnonymousUser()
                 if hasattr(request, 'usuario'):
                     delattr(request, 'usuario')
         else:
-            # No hay usuario en sesión
-            request.user = AnonymousUser()
+            # Solo poner AnonymousUser si no hay cliente autenticado
+            if not request.session.get('cliente_auth'):
+                request.user = AnonymousUser()
             if hasattr(request, 'usuario'):
                 delattr(request, 'usuario')
-        
-        response = self.get_response(request)
-        return response
+
+        return self.get_response(request)
 
 
 class NoCacheMiddleware:
@@ -118,19 +112,16 @@ class SessionIdleTimeoutMiddleware:
                 is_cliente = cliente_auth is True
                 
                 # Logout
-                logout(request)
                 request.session.flush()
                 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     login_url = reverse('pagina:login') if is_cliente else reverse('usuarios:login')
                     return JsonResponse(
-                        {'error': 'session_expired', 'redirect': str(login_url)}, 
+                        {'error': 'session_expired', 'redirect': str(login_url)},
                         status=401
                     )
                 else:
-                    # Redirigir al login apropiado
                     login_url = reverse('pagina:login') if is_cliente else reverse('usuarios:login')
-                    request.session['next_after_login'] = request.get_full_path()
                     return redirect(f"{login_url}?timeout=1")
             
             # Actualizar timestamp de actividad

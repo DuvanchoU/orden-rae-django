@@ -9,442 +9,1472 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Carrito de compras - ORDER RAE</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-
-    <!-- Bootstrap + Font Awesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-    <!-- Tu CSS con Django static -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
-    <link rel="stylesheet" href="{% static 'css/carrito.css' %}?v=3.0">
 
-    <!--  Tu JS global del carrito -->
-    <script src="{% static 'js/carrito.js' %}?v=1.0"></script>
-    
+<style>
+:root {
+    --cafe:        #8B5E3C;
+    --cafe-dark:   #6B462C;
+    --cafe-light:  #C49A6C;
+    --crema:       #FAF6F1;
+    --crema-dark:  #F0E8DC;
+    --gold:        #D4AF6F;
+    --gold-light:  #F5D78C;
+    --verde:       #2A7A5B;
+    --rojo:        #C94040;
+    --text-dark:   #1C1510;
+    --text-mid:    #5C4A38;
+    --text-light:  #9B8878;
+    --border:      #E8DDD4;
+    --shadow-soft: 0 2px 20px rgba(139,94,60,.10);
+    --shadow-md:   0 6px 32px rgba(139,94,60,.16);
+    --shadow-lg:   0 12px 56px rgba(139,94,60,.22);
+    --r-sm: 8px;
+    --r-md: 16px;
+    --r-lg: 24px;
+    --r-xl: 36px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: var(--crema);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-dark);
+    min-height: 100vh;
+}
+
+/* ── HERO BANNER ── */
+.cart-hero {
+    background: linear-gradient(135deg, var(--cafe-dark) 0%, var(--cafe) 60%, var(--cafe-light) 100%);
+    padding: 5rem 0 4rem;
+    padding-top: calc(5rem + 150px);
+    position: relative;
+    overflow: hidden;
+}
+
+.cart-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.cart-hero-wave {
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    line-height: 0;
+}
+
+.cart-hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: #fff;
+    font-style: italic;
+}
+
+.cart-hero h1 span {
+    font-style: normal;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    color: var(--gold-light);
+}
+
+.cart-hero p { color: rgba(255,255,255,.75); font-size: 1rem; }
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    color: var(--gold-light);
+    padding: .35rem 1rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+/* ── LAYOUT ── */
+.cart-wrapper { max-width: 1300px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+/* ── CARD BASE ── */
+.cart-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.cart-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.4rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--crema);
+}
+
+.cart-card-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--text-dark);
+}
+
+.items-pill {
+    background: var(--cafe);
+    color: #fff;
+    padding: .3rem .9rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+/* ── TABLA ── */
+.cart-table { width: 100%; border-collapse: collapse; }
+
+.cart-table thead tr {
+    background: var(--crema-dark);
+}
+
+.cart-table thead th {
+    padding: .9rem 1.25rem;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--text-light);
+    border-bottom: 1px solid var(--border);
+}
+
+.cart-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .2s;
+}
+
+.cart-table tbody tr:hover { background: var(--crema); }
+.cart-table tbody tr:last-child { border-bottom: none; }
+
+.cart-table td { padding: 1.1rem 1.25rem; vertical-align: middle; }
+
+/* Imagen */
+.product-img-wrap {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--crema-dark);
+    cursor: pointer;
+}
+
+.product-img-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform .35s;
+}
+
+.product-img-wrap:hover img { transform: scale(1.08); }
+
+.img-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(139,94,60,.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: .85rem;
+    opacity: 0;
+    transition: opacity .25s;
+}
+
+.product-img-wrap:hover .img-overlay { opacity: 1; }
+
+/* Info producto */
+.product-info { display: flex; align-items: center; gap: 1rem; }
+
+.product-name {
+    font-weight: 600;
+    font-size: .95rem;
+    color: var(--text-dark);
+    line-height: 1.3;
+    margin-bottom: .2rem;
+}
+
+.product-sku {
+    font-size: .75rem;
+    color: var(--text-light);
+    font-family: monospace;
+}
+
+.product-badge {
+    display: inline-block;
+    background: var(--crema-dark);
+    color: var(--cafe);
+    font-size: .68rem;
+    font-weight: 700;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    margin-top: .3rem;
+    border: 1px solid var(--border);
+}
+
+/* Cantidad */
+.qty-control {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: #fff;
+}
+
+.qty-btn {
+    width: 34px; height: 34px;
+    border: none;
+    background: var(--crema-dark);
+    color: var(--text-dark);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.qty-btn:hover { background: var(--cafe); color: #fff; }
+.qty-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.qty-input {
+    width: 42px;
+    text-align: center;
+    border: none;
+    outline: none;
+    font-weight: 700;
+    font-size: .92rem;
+    color: var(--text-dark);
+    background: transparent;
+    -moz-appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.stock-warning {
+    font-size: .7rem;
+    color: var(--rojo);
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    margin-top: .3rem;
+}
+
+/* Precios */
+.price-tag {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--cafe);
+}
+
+.price-iva {
+    font-size: .78rem;
+    color: var(--text-light);
+}
+
+.price-subtotal {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--text-dark);
+}
+
+/* Acciones fila */
+.row-actions { display: flex; flex-direction: column; gap: .4rem; align-items: center; }
+
+.btn-icon {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    transition: all .22s;
+}
+
+.btn-icon:hover { background: var(--rojo); border-color: var(--rojo); color: #fff; transform: scale(1.1); }
+.btn-icon.save:hover { background: var(--gold); border-color: var(--gold); color: var(--text-dark); }
+
+/* Fila eliminándose */
+@keyframes rowOut {
+    to { opacity: 0; transform: translateX(30px); max-height: 0; padding: 0; }
+}
+tr.removing td { animation: rowOut .35s ease forwards; }
+
+/* ── BARRA DE ENVÍO ── */
+.shipping-bar {
+    padding: 1.25rem 2rem;
+    background: linear-gradient(135deg, #fff8f0, #fff);
+    border-top: 1px solid var(--border);
+}
+
+.shipping-label {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    margin-bottom: .6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.shipping-track {
+    height: 6px;
+    background: var(--crema-dark);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: .4rem;
+}
+
+.shipping-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--cafe));
+    border-radius: 999px;
+    transition: width .6s cubic-bezier(.16,1,.3,1);
+}
+
+.shipping-note { font-size: .75rem; color: var(--text-light); }
+
+/* ── CUPÓN ── */
+.coupon-section {
+    padding: 1.25rem 2rem;
+    border-top: 1px solid var(--border);
+    background: var(--crema);
+}
+
+.coupon-wrap {
+    display: flex;
+    gap: .6rem;
+}
+
+.coupon-input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    padding: .65rem 1rem;
+    font-size: .88rem;
+    outline: none;
+    transition: border-color .2s;
+    font-family: 'DM Sans', sans-serif;
+    background: #fff;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.coupon-input:focus { border-color: var(--cafe); }
+
+.coupon-btn {
+    background: var(--cafe);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    padding: .65rem 1.4rem;
+    font-weight: 600;
+    font-size: .88rem;
+    cursor: pointer;
+    transition: background .2s;
+    white-space: nowrap;
+}
+
+.coupon-btn:hover { background: var(--cafe-dark); }
+
+.coupon-applied {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    background: #F0FFF6;
+    border: 1.5px solid #2A7A5B44;
+    border-radius: var(--r-md);
+    padding: .75rem 1rem;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--verde);
+}
+
+.coupon-applied button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--rojo);
+    font-size: .85rem;
+    padding: 0;
+}
+
+/* ── CARRITO VACÍO ── */
+.empty-cart {
+    text-align: center;
+    padding: 5rem 2rem;
+}
+
+.empty-cart-icon {
+    width: 100px; height: 100px;
+    background: var(--crema-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.5rem;
+    color: var(--cafe-light);
+}
+
+.empty-cart h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--text-dark);
+    margin-bottom: .5rem;
+}
+
+.empty-cart p { color: var(--text-light); margin-bottom: 1.5rem; }
+
+/* ── RESUMEN ── */
+.summary-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-soft);
+    position: sticky;
+    top: 110px;
+    overflow: hidden;
+}
+
+.summary-header {
+    background: linear-gradient(135deg, var(--cafe-dark), var(--cafe));
+    padding: 1.4rem 1.75rem;
+    color: #fff;
+}
+
+.summary-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-style: italic;
+    margin: 0;
+}
+
+.summary-body { padding: 1.5rem 1.75rem; }
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .65rem 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: .9rem;
+}
+
+.summary-row:last-of-type { border-bottom: none; }
+.summary-label { color: var(--text-mid); }
+.summary-value { font-weight: 600; color: var(--text-dark); }
+.summary-value.discount { color: var(--verde); }
+
+.summary-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem 1.75rem;
+    background: var(--crema);
+    border-top: 2px solid var(--border);
+    margin: 0 -1.75rem -1.5rem;
+}
+
+.total-label {
+    font-size: .85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--text-mid);
+}
+
+.total-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--cafe);
+}
+
+/* Checkout button */
+.btn-checkout {
+    width: 100%;
+    background: linear-gradient(135deg, var(--cafe), var(--cafe-dark));
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    transition: all .25s;
+    margin: 1.5rem 0 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-checkout::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+    opacity: 0;
+    transition: opacity .25s;
+}
+
+.btn-checkout:hover::before { opacity: 1; }
+.btn-checkout:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,94,60,.4); }
+.btn-checkout:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-checkout .spinner {
+    display: none;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+.btn-checkout.loading .btn-text { display: none; }
+.btn-checkout.loading .spinner { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Seguir comprando */
+.btn-secondary-action {
+    width: 100%;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--text-mid);
+    font-weight: 600;
+    font-size: .88rem;
+    padding: .7rem 1rem;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    transition: all .22s;
+    text-decoration: none;
+}
+
+.btn-secondary-action:hover {
+    border-color: var(--cafe);
+    color: var(--cafe);
+    background: var(--crema);
+}
+
+/* Trust badges */
+.trust-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+    margin-top: 1.25rem;
+}
+
+.trust-item {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .75rem;
+    color: var(--text-light);
+}
+
+.trust-item i { color: var(--verde); font-size: .7rem; }
+
+/* Métodos de pago */
+.payment-methods {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.pay-badge {
+    background: var(--crema-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: .3rem .6rem;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+
+/* Estimación entrega */
+.delivery-estimate {
+    background: #F0FFF6;
+    border: 1px solid #2A7A5B33;
+    border-radius: var(--r-md);
+    padding: .75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: .82rem;
+    color: var(--verde);
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+/* ── RECOMENDACIONES ── */
+.rec-section { margin-top: 1.5rem; }
+
+.rec-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+}
+
+.rec-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all .3s;
+    box-shadow: var(--shadow-soft);
+}
+
+.rec-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+.rec-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: var(--crema-dark);
+}
+
+.rec-card-body { padding: .75rem; }
+
+.rec-name {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: .3rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.rec-price {
+    font-size: .8rem;
+    font-weight: 800;
+    color: var(--cafe);
+    margin-bottom: .5rem;
+}
+
+.rec-add {
+    width: 100%;
+    background: var(--crema-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: .4rem;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--cafe);
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.rec-add:hover { background: var(--cafe); color: #fff; border-color: var(--cafe); }
+
+/* ── TOAST ── */
+.toast-stack {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    pointer-events: none;
+}
+
+.toast-item {
+    background: var(--text-dark);
+    color: #fff;
+    border-radius: var(--r-md);
+    padding: .85rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-width: 260px;
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
+    animation: toastIn .35s cubic-bezier(.16,1,.3,1);
+}
+
+.toast-item.success { border-left: 4px solid var(--verde); }
+.toast-item.error   { border-left: 4px solid var(--rojo); }
+.toast-item.warning { border-left: 4px solid var(--gold); }
+.toast-item.info    { border-left: 4px solid #60a5fa; }
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(16px) scale(.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.toast-icon { font-size: 1rem; }
+.toast-msg  { flex: 1; font-size: .86rem; font-weight: 500; line-height: 1.4; }
+
+/* ── MODAL CHECKOUT ── */
+.checkout-modal .modal-content {
+    border: none;
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.checkout-modal .modal-header {
+    background: linear-gradient(135deg, var(--cafe-dark), var(--cafe));
+    color: #fff;
+    border: none;
+    padding: 1.5rem 2rem;
+}
+
+.checkout-modal .modal-header .btn-close {
+    filter: invert(1);
+    opacity: .7;
+}
+
+.checkout-modal .modal-body { padding: 2rem; }
+
+.checkout-step {
+    display: none;
+}
+.checkout-step.active { display: block; }
+
+.step-indicators {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    margin-bottom: 2rem;
+}
+
+.step-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all .3s;
+}
+
+.step-dot.active { background: var(--cafe); transform: scale(1.3); }
+.step-dot.done   { background: var(--verde); }
+
+.checkout-form label {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-light);
+    margin-bottom: .3rem;
+    display: block;
+}
+
+.checkout-form input,
+.checkout-form select,
+.checkout-form textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    padding: .7rem 1rem;
+    font-size: .92rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .2s;
+    color: var(--text-dark);
+    background: #fff;
+    margin-bottom: 1rem;
+}
+
+.checkout-form input:focus,
+.checkout-form select:focus,
+.checkout-form textarea:focus {
+    border-color: var(--cafe);
+    box-shadow: 0 0 0 3px rgba(139,94,60,.1);
+}
+
+.payment-option {
+    border: 2px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 1rem;
+    cursor: pointer;
+    transition: all .2s;
+    margin-bottom: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+.payment-option:hover { border-color: var(--cafe-light); background: var(--crema); }
+.payment-option.selected { border-color: var(--cafe); background: #FFF8F3; }
+.payment-option input[type=radio] { accent-color: var(--cafe); }
+
+.payment-option-label { font-weight: 600; font-size: .92rem; color: var(--text-dark); }
+.payment-option-sub   { font-size: .78rem; color: var(--text-light); }
+
+.order-confirm-icon {
+    width: 80px; height: 80px;
+    background: #F0FFF6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2.5rem;
+    color: var(--verde);
+}
+
+/* Botones modales */
+.btn-cafe {
+    background: linear-gradient(135deg, var(--cafe), var(--cafe-dark));
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    padding: .8rem 1.75rem;
+    font-weight: 700;
+    font-size: .92rem;
+    cursor: pointer;
+    transition: all .25s;
+}
+
+.btn-cafe:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,94,60,.35); }
+
+.btn-outline-cafe {
+    background: transparent;
+    color: var(--cafe);
+    border: 1.5px solid var(--cafe);
+    border-radius: var(--r-md);
+    padding: .8rem 1.75rem;
+    font-weight: 600;
+    font-size: .92rem;
+    cursor: pointer;
+    transition: all .22s;
+}
+
+.btn-outline-cafe:hover { background: var(--cafe); color: #fff; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cart-table thead { display: none; }
+    .cart-table tbody tr { display: flex; flex-wrap: wrap; padding: 1rem; gap: .5rem; }
+    .cart-table td { padding: 0; border: none; }
+    .cart-table td::before {
+        content: attr(data-label);
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-light);
+        display: block;
+        margin-bottom: .2rem;
+    }
+    .product-info { flex-direction: column; align-items: flex-start; }
+    .rec-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 576px) {
+    .cart-card-header { padding: 1rem 1.25rem; }
+    .cart-table td { padding: .75rem 1rem; }
+    .shipping-bar, .coupon-section { padding: 1rem 1.25rem; }
+}
+</style>
 </head>
-<body class="bg-light">
 
-    <!-- Encabezado -->
-    <header id="barra_superior" class="bg-white border-bottom">
-        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
-            <a href="{% url 'pagina:home' %}">
-                <img src="{% static 'img/super_bodega0.2.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+<body>
+{% csrf_token %}
+
+<!-- ── HEADER ── -->
+<header id="barra_superior" class="bg-white border-bottom">
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+        <a href="{% url 'pagina:home' %}">
+            <img src="{% static 'img/super_bodega0.2.png' %}" class="logo_principal" alt="Logo Orden Rae" />
+        </a>
+        <div class="w-100 mt-2 mt-md-0" style="max-width:400px;">
+            <input type="text" class="busqueda form-control" placeholder="¿Qué producto deseas buscar?" />
+        </div>
+        <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
+            <div class="notifications-bell position-relative" id="notifications-bell">
+                <i class="fas fa-bell" style="font-size:28px;color:#333;"></i>
+                <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
+                <div class="notifications-dropdown" id="notifications-dropdown">
+                    <div class="notifications-header">
+                        Notificaciones
+                        <a href="#" id="clear-notifications">Marcar como leídas</a>
+                    </div>
+                    <div id="notifications-list">
+                        <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'ventas:carrito_compra' %}" class="position-relative">
+                <img src="{% static 'img/CarritoCompra0.1.png' %}" alt="Carrito" class="icono-img">
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
+                    {{ carrito_cantidad|default:0 }}
+                </span>
             </a>
-
-            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
-                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
-                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
-            </div>
-
-            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
-                <!-- NOTIFICACIONES -->
-                <div class="notifications-bell position-relative" id="notifications-bell">
-                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
-                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
-                    <div class="notifications-dropdown" id="notifications-dropdown">
-                        <div class="notifications-header">
-                            Notificaciones
-                            <a href="#" id="clear-notifications">Marcar como leídas</a>
-                        </div>
-                        <div id="notifications-list">
-                            {% if notificaciones %}
-                                {% for notif in notificaciones %}
-                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
-                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
-                                    <div class="notification-content">
-                                        <strong>{{ notif.mensaje }}</strong>
-                                        <span class="notification-time">{{ notif.fecha }}</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
-                            {% endif %}
-                        </div>
-                    </div>
+            {% if user.is_authenticated %}
+            <div class="menu-usuario position-relative">
+                <div class="d-flex align-items-center position-relative">
+                    <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
+                        alt="Usuario" class="icono-img user-trigger">
+                    <span class="user-tooltip ms-2 text-dark">{{ user.get_full_name|default:user.username }}</span>
                 </div>
-
-                <!-- CARRITO -->
-                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative">
-                    <img src="{% static 'img/CarritoCompra0.1.png' %}" alt="Carrito" class="icono-img">
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
-                        id="contador-carrito"
-                        data-cantidad="{{ carrito_cantidad|default:0 }}">
-                        {{ carrito_cantidad|default:0 }}
-                    </span>
-                </a>
-
-                <!-- Usuario autenticado -->
-                {% if user.is_authenticated %}
-                <div class="menu-usuario position-relative">
-                    <div class="d-flex align-items-center position-relative">
-                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}" 
-                            alt="Usuario" class="icono-img user-trigger">
-                        <span class="user-tooltip ms-2 text-dark">
-                            {{ user.get_full_name|default:user.username }}
-                        </span>
-                    </div>
-                    <div class="submenu mt-1">
-                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
-                        <a href="{% url 'logout' %}">Cerrar sesión</a> 
-                        
-                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
-                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
-                        {% endif %}
-                    </div>
+                <div class="submenu mt-1">
+                    <a href="{% url 'pagina:perfil' %}">Mi cuenta</a>
+                    <a href="{% url 'pagina:logout' %}">Cerrar sesión</a>
+                    {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                    <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="menu-usuario position-relative">
-                    <a href="#"><img src="{% static 'img/usuario0.1.png' %}" alt="Usuario" class="icono-img"></a>
-                    <div class="submenu mt-1">
-                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
-                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
-                    </div>
+            </div>
+            {% else %}
+            <div class="menu-usuario position-relative">
+                <a href="#"><img src="{% static 'img/usuario0.1.png' %}" alt="Usuario" class="icono-img"></a>
+                <div class="submenu mt-1">
+                    <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
+                    <a href="{% url 'pagina:registro' %}">Registrarse</a>
                 </div>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
-
-        <div class="py-2 bg-light">
-            <div class="container">
-                <nav class="navegacion d-flex flex-wrap justify-content-center">
-                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
-                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
-                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
-                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
-                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
-                </nav>
-            </div>
+    </div>
+    <div class="py-2 bg-light">
+        <div class="container">
+            <nav class="navegacion d-flex flex-wrap justify-content-center">
+                <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
+                <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
+                <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
+                <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
+                <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
+            </nav>
         </div>
-    </header>
+    </div>
+</header>
 
-    <!-- Contenido principal con padding inteligente -->
-    <main class="container main-with-fixed-header">
-        
-        <!-- Toast Notifications Container -->
-        <div class="toast-container" id="toast-container"></div>
-        
-        <!-- Título de la página -->
-        <div class="text-center mb-4">
-            <h1 class="titulo-seccion mb-2">TU CARRITO DE COMPRAS</h1>
-            <p class="text-muted">Revisa tus productos y finaliza tu compra de forma segura</p>
-        </div>
+<!-- ── HERO ── -->
+<section class="cart-hero">
+    <div class="cart-hero-wave">
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60 Z" fill="#FAF6F1"/>
+        </svg>
+    </div>
+    <div class="container text-center" style="position:relative;z-index:1;">
+        <div class="hero-badge"><i class="fas fa-shopping-cart"></i> Tu selección</div>
+        <h1>Tu <span>Carrito</span> de Compras</h1>
+        <p>Revisa tus productos artesanales y finaliza tu pedido de forma segura</p>
+    </div>
+</section>
 
-        <!-- Contenedor principal del carrito -->
-        <div class="row g-4">
-            
-            <!-- Columna izquierda: Lista de productos -->
-            <div class="col-lg-8">
-                
-                <!-- Estado vacío (oculto por defecto) -->
-                <div class="cart-empty d-none" id="carrito-vacio">
-                    <div class="cart-empty-icon">
-                        <i class="fas fa-shopping-basket"></i>
-                    </div>
+<!-- ── CONTENIDO PRINCIPAL ── -->
+<div class="cart-wrapper">
+    <div class="row g-4 align-items-start">
+
+        <!-- Columna izquierda -->
+        <div class="col-lg-8">
+
+            <!-- CARRITO VACÍO -->
+            <div class="cart-card {% if carrito_items %}d-none{% endif %}" id="carrito-vacio">
+                <div class="empty-cart">
+                    <div class="empty-cart-icon"><i class="fas fa-shopping-basket"></i></div>
                     <h3>Tu carrito está vacío</h3>
                     <p>¡Agrega productos increíbles para comenzar tu compra!</p>
-                    <a href="{% url 'pagina:productos' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Explorar productos
+                    <a href="{% url 'pagina:productos' %}" class="btn-cafe" style="display:inline-flex;align-items:center;gap:.5rem;text-decoration:none;">
+                        <i class="fas fa-arrow-left"></i> Explorar productos
                     </a>
                 </div>
-                
-                <!-- Lista de productos (se muestra cuando hay items) -->
-                <div class="cart-card" id="carrito-container">
-                    
-                    <!-- Header del carrito -->
-                    <div class="cart-header">
-                        <h2><i class="fas fa-boxes me-2"></i>Productos</h2>
-                        <span class="badge rounded-pill" id="items-count">{{ carrito_cantidad|default:0 }} items</span>
-                    </div>
-                    
-                    <!-- Tabla de productos -->
-                    <div class="table-responsive">
-                        <table class="cart-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 100px;">Producto</th>
-                                    <th>Detalles</th>
-                                    <th class="text-center" style="width: 140px;">Cantidad</th>
-                                    <th class="text-end">Precio</th>
-                                    <th class="text-end">IVA</th>
-                                    <th class="text-end">Subtotal</th>
-                                    <th class="text-center" style="width: 90px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="carrito-items">
-                                {% for item in carrito_items %}
-                                <tr data-item-id="{{ item.item_id }}"
-                                    data-id="{{ item.producto_id }}" 
-                                    data-precio="{{ item.precio_base }}" 
-                                    data-iva="{{ item.iva }}"
-                                    data-stock="{{ item.stock }}"
-                                    data-nombre="{{ item.nombre }}"
-                                    data-imagen="{{ item.imagen_url }}"
-                                    data-stock="{{ item.stock|default:99 }}">
-                                    
-                                    <!-- Imagen con quick view -->
-                                    <td data-label="Producto">
-                                        <div class="cart-product-wrapper">
-                                            <img src="{{ item.imagen_url|default:'/static/img/placeholder.jpg' }}" 
-                                                alt="{{ item.nombre }}" 
-                                                class="cart-product-img"
-                                                loading="lazy"
-                                                onerror="this.src='https://via.placeholder.com/90x90?text=Sin+imagen'">
-                                            <div class="quick-view-overlay" onclick="quickView('{{ item.producto_id }}')">
-                                                <i class="fas fa-eye"></i>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    
-                                    <!-- Información del producto -->
-                                    <td data-label="Producto">
-                                        <span class="product-name">{{ item.nombre }}</span>
-                                        <span class="product-sku">SKU: {{ item.sku|default:'ORD-'|add:item.producto_id }}</span>
-                                        {% if item.variantes %}
-                                        <div class="product-options">
-                                            {% for opt in item.variantes %}
-                                            <span class="product-option">{{ opt }}</span>
-                                            {% endfor %}
-                                        </div>
-                                        {% endif %}
-                                    </td>
-                                    
-                                    <!-- Controles de cantidad -->
-                                    <td data-label="Cantidad" class="text-center">
-                                        <div class="quantity-control">
-                                            <button class="quantity-btn" onclick="cambiarCantidad(this, -1)" aria-label="Reducir">−</button>
-                                            <input type="number" class="quantity-input" value="{{ item.cantidad }}" min="1" 
-                                                    max="{{ item.stock}}" onchange="actualizarCantidadInput(this)">
-                                            <button class="quantity-btn" onclick="cambiarCantidad(this, 1)" aria-label="Aumentar">+</button>
-                                        </div>
-                                        {% if item.stock and item.stock <= 5 %}
-                                        <small class="text-warning d-block mt-1" style="font-size: 0.75rem;">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>Solo {{ item.stock }} disponibles
-                                        </small>
-                                        {% endif %}
-                                    </td>
-                                    
-                                    <!-- Precio base -->
-                                    <td data-label="Precio" class="text-end">
-                                        <span class="price-base">${{ item.precio_base|floatformat:0|intcomma }}</span>
-                                    </td>
-                                    
-                                    <!-- IVA -->
-                                    <td data-label="IVA" class="text-end">
-                                        <span class="price-iva">${{ item.iva|floatformat:0|intcomma }}</span>
-                                    </td>
-                                    
-                                    <!-- Subtotal -->
-                                    <td data-label="Subtotal" class="text-end">
-                                        <span class="price-subtotal" id="subtotal-{{ item.producto_id }}">
-                                            ${{ item.subtotal|add:item.iva|floatformat:0|intcomma }}
-                                        </span>
-                                        <small class="d-block text-muted" style="font-size: 0.75rem;">
-                                            (IVA: ${{ item.iva|floatformat:0|intcomma }})
-                                        </small>
-                                    </td>
-                                    
-                                    <!-- Acciones -->
-                                    <td data-label="Acciones" class="text-center">
-                                        <div class="d-flex flex-column gap-1">
-                                            <button class="action-btn save-for-later" onclick="guardarParaDespues(this)" 
-                                                    title="Guardar para después" aria-label="Guardar {{ item.nombre }}">
-                                                <i class="fas fa-bookmark"></i>
-                                            </button>
-                                            <button class="action-btn" onclick="eliminarProducto(this, {{ item.item_id }})">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <!-- Fallback para desarrollo -->
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Barra de envío gratis -->
-                    <div class="free-shipping-bar" id="shipping-bar">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="free-shipping-text" id="shipping-text">
-                                <i class="fas fa-truck me-1"></i>
-                                Faltan <strong id="shipping-remaining">$800.000</strong> para envío gratis
-                            </span>
-                            <span class="badge bg-success d-none" id="shipping-achieved">
-                                <i class="fas fa-check me-1"></i>¡Envío GRATIS!
-                            </span>
-                        </div>
-                        <div class="free-shipping-progress">
-                            <div class="free-shipping-progress-fill" id="shipping-progress"></div>
-                        </div>
-                        <small class="text-muted">🚚 Envío gratis en compras superiores a $3.000.000</small>
-                    </div>
-                    
-                    <!-- Cupón de descuento -->
-                    <div class="coupon-section">
-                        <div id="coupon-form">
-                            <div class="coupon-input-group">
-                                <input type="text" class="coupon-input" id="coupon-code" placeholder="¿Tienes un cupón?" maxlength="20">
-                                <button class="coupon-btn" onclick="aplicarCupon()">Aplicar</button>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                💡 Prueba: <code>BIENVENIDO10</code> para 10% de descuento
-                            </small>
-                        </div>
-                        <div id="coupon-applied" class="coupon-applied d-none">
-                            <i class="fas fa-tag"></i>
-                            <span id="coupon-name">BIENVENIDO10</span>
-                            <span class="ms-auto">−<span id="coupon-discount">$0</span></span>
-                            <button class="btn btn-sm btn-outline-danger ms-2" onclick="removerCupon()">✕</button>
-                        </div>
-                    </div>
-                    
-                </div>
-                
-                <!-- Sección de recomendaciones -->
-                <div class="recommendations-section">
-                    <h3 class="recommendations-title">
-                        <i class="fas fa-sparkles"></i>
-                        Los clientes también compraron
-                    </h3>
-                    <div class="recommendations-grid" id="recommendations-grid">
-                        <!-- Se llena dinámicamente con JS -->
-                        <div class="recommendation-card" onclick="agregarRecomendacion(1)">
-                            <img src="{% static 'img/Sofá2.jpg' %}" alt="Sofá Moderno" class="recommendation-img">
-                            <div class="recommendation-name">Sofá Moderno 2 Puestos</div>
-                            <div class="recommendation-price">$1.890.000</div>
-                            <button class="recommendation-add">+ Agregar</button>
-                        </div>
-                        <div class="recommendation-card" onclick="agregarRecomendacion(2)">
-                            <img src="{% static 'img/Cama3.jpg' %}" alt="Cama King" class="recommendation-img">
-                            <div class="recommendation-name">Cama King Size Premium</div>
-                            <div class="recommendation-price">$2.450.000</div>
-                            <button class="recommendation-add">+ Agregar</button>
-                        </div>
-                        <div class="recommendation-card" onclick="agregarRecomendacion(3)">
-                            <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorio" class="recommendation-img">
-                            <div class="recommendation-name">Escritorio Ejecutivo</div>
-                            <div class="recommendation-price">$890.000</div>
-                            <button class="recommendation-add">+ Agregar</button>
-                        </div>
-                        <div class="recommendation-card" onclick="agregarRecomendacion(4)">
-                            <img src="{% static 'img/Silla3.jpg' %}" alt="Silla" class="recommendation-img">
-                            <div class="recommendation-name">Silla Ergonómica Pro</div>
-                            <div class="recommendation-price">$450.000</div>
-                            <button class="recommendation-add">+ Agregar</button>
-                        </div>
-                    </div>
-                </div>
-                
             </div>
-            
-            <!-- Columna derecha: Resumen de compra -->
-            <div class="col-lg-4">
-                <div class="cart-summary">
-                    <h4 class="mb-4 pb-3 border-bottom">📋 Resumen de compra</h4>
-                    
+
+            <!-- TABLA DE PRODUCTOS -->
+            <div class="cart-card {% if not carrito_items %}d-none{% endif %}" id="carrito-container">
+                <div class="cart-card-header">
+                    <h2><i class="fas fa-boxes me-2" style="color:var(--cafe);font-size:1rem;"></i>Productos</h2>
+                    <span class="items-pill" id="items-count">{{ carrito_cantidad|default:0 }} items</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="cart-table">
+                        <thead>
+                            <tr>
+                                <th style="width:90px;"></th>
+                                <th>Producto</th>
+                                <th class="text-center" style="width:130px;">Cantidad</th>
+                                <th class="text-end">Precio</th>
+                                <th class="text-end">IVA</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-center" style="width:80px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="carrito-items">
+                            {% for item in carrito_items %}
+                            <tr data-item-id="{{ item.item_id }}"
+                                data-id="{{ item.producto_id }}"
+                                data-precio="{{ item.precio_base }}"
+                                data-iva="{{ item.iva }}"
+                                data-stock="{{ item.stock|default:99 }}"
+                                data-nombre="{{ item.nombre }}">
+
+                                <td data-label="Imagen">
+                                    <div class="product-img-wrap" onclick="quickView('{{ item.producto_id }}')">
+                                        <img src="{{ item.imagen_url|default:'/static/img/placeholder.jpg' }}"
+                                            alt="{{ item.nombre }}"
+                                            onerror="this.src='https://via.placeholder.com/80x80?text=IMG'">
+                                        <div class="img-overlay"><i class="fas fa-eye"></i></div>
+                                    </div>
+                                </td>
+
+                                <td data-label="Producto">
+                                    <div class="product-info">
+                                        <div>
+                                            <div class="product-name">{{ item.nombre }}</div>
+                                            <div class="product-sku">SKU: {{ item.sku|default:item.producto_id }}</div>
+                                            <span class="product-badge">✦ Artesanal</span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td data-label="Cantidad" class="text-center">
+                                    <div class="qty-control">
+                                        <button class="qty-btn" onclick="cambiarCantidad(this, -1)">−</button>
+                                        <input type="number" class="qty-input" value="{{ item.cantidad }}"
+                                            min="1" max="{{ item.stock|default:99 }}"
+                                            onchange="actualizarCantidadInput(this)">
+                                        <button class="qty-btn" onclick="cambiarCantidad(this, 1)">+</button>
+                                    </div>
+                                    {% if item.stock and item.stock <= 5 %}
+                                    <div class="stock-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Solo {{ item.stock }} disponibles
+                                    </div>
+                                    {% endif %}
+                                </td>
+
+                                <td data-label="Precio" class="text-end">
+                                    <div class="price-tag">${{ item.precio_base|floatformat:0|intcomma }}</div>
+                                </td>
+
+                                <td data-label="IVA" class="text-end">
+                                    <div class="price-iva">${{ item.iva|floatformat:0|intcomma }}</div>
+                                </td>
+
+                                <td data-label="Subtotal" class="text-end">
+                                    <div class="price-subtotal">${{ item.subtotal|add:item.iva|floatformat:0|intcomma }}</div>
+                                    <div style="font-size:.72rem;color:var(--text-light);">c/IVA</div>
+                                </td>
+
+                                <td data-label="Acciones" class="text-center">
+                                    <div class="row-actions">
+                                        <button class="btn-icon save" onclick="guardarParaDespues(this)" title="Guardar para después">
+                                            <i class="fas fa-bookmark"></i>
+                                        </button>
+                                        <button class="btn-icon" onclick="eliminarProducto(this, {{ item.item_id }})" title="Eliminar">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Barra envío gratis -->
+                <div class="shipping-bar">
+                    <div class="shipping-label">
+                        <span id="shipping-text"><i class="fas fa-truck me-1"></i> Faltan <strong id="shipping-remaining"></strong> para envío gratis</span>
+                        <span id="shipping-achieved" style="display:none;color:var(--verde);font-weight:700;">
+                            <i class="fas fa-check-circle"></i> ¡Envío GRATIS!
+                        </span>
+                    </div>
+                    <div class="shipping-track">
+                        <div class="shipping-fill" id="shipping-fill" style="width:0%"></div>
+                    </div>
+                    <div class="shipping-note">🚚 Envío gratis en compras superiores a $3.000.000</div>
+                </div>
+
+                <!-- Cupón -->
+                <div class="coupon-section">
+                    <div id="coupon-form-wrap">
+                        <div class="coupon-wrap">
+                            <input type="text" class="coupon-input" id="coupon-input" placeholder="CÓDIGO DE CUPÓN" maxlength="20">
+                            <button class="coupon-btn" onclick="aplicarCupon()">Aplicar</button>
+                        </div>
+                        <small style="color:var(--text-light);font-size:.75rem;display:block;margin-top:.4rem;">
+                            💡 Prueba <strong>BIENVENIDO10</strong> para 10% de descuento
+                        </small>
+                    </div>
+                    <div class="coupon-applied d-none" id="coupon-applied">
+                        <i class="fas fa-tag"></i>
+                        <span id="coupon-applied-code">—</span>
+                        <strong id="coupon-applied-amount"></strong>
+                        <button onclick="removerCupon()"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <!-- Footer acciones -->
+                <div style="padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;border-top:1px solid var(--border);background:var(--crema);">
+                    <a href="{% url 'pagina:productos' %}" class="btn-secondary-action" style="width:auto;padding:.6rem 1.25rem;font-size:.85rem;">
+                        <i class="fas fa-arrow-left"></i> Seguir comprando
+                    </a>
+                    <button onclick="limpiarCarrito()" style="background:none;border:none;color:var(--rojo);font-size:.85rem;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-trash me-1"></i> Vaciar carrito
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recomendaciones -->
+            <div class="rec-section">
+                <div class="rec-title">
+                    <i class="fas fa-star" style="color:var(--gold);"></i>
+                    Los clientes también compraron
+                </div>
+                <div class="rec-grid" id="rec-grid">
+                    <div class="rec-card" onclick="agregarRecomendacion(1)">
+                        <img src="{% static 'img/Sofá2.jpg' %}" alt="Sofá" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
+                        <div class="rec-card-body">
+                            <div class="rec-name">Sofá Moderno 2 Puestos</div>
+                            <div class="rec-price">$1.890.000</div>
+                            <button class="rec-add">+ Agregar</button>
+                        </div>
+                    </div>
+                    <div class="rec-card" onclick="agregarRecomendacion(2)">
+                        <img src="{% static 'img/Cama3.jpg' %}" alt="Cama" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
+                        <div class="rec-card-body">
+                            <div class="rec-name">Cama King Size Premium</div>
+                            <div class="rec-price">$2.450.000</div>
+                            <button class="rec-add">+ Agregar</button>
+                        </div>
+                    </div>
+                    <div class="rec-card" onclick="agregarRecomendacion(3)">
+                        <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorio" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
+                        <div class="rec-card-body">
+                            <div class="rec-name">Escritorio Ejecutivo</div>
+                            <div class="rec-price">$890.000</div>
+                            <button class="rec-add">+ Agregar</button>
+                        </div>
+                    </div>
+                    <div class="rec-card" onclick="agregarRecomendacion(4)">
+                        <img src="{% static 'img/Silla3.jpg' %}" alt="Silla" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
+                        <div class="rec-card-body">
+                            <div class="rec-name">Silla Ergonómica Pro</div>
+                            <div class="rec-price">$450.000</div>
+                            <button class="rec-add">+ Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: Resumen -->
+        <div class="col-lg-4">
+            <div class="summary-card">
+                <div class="summary-header">
+                    <h3>Resumen de compra</h3>
+                </div>
+                <div class="summary-body">
+
                     <div class="summary-row">
-                        <span class="summary-label">Subtotal ({{ carrito_cantidad|default:0 }} items)</span>
+                        <span class="summary-label">Subtotal</span>
                         <span class="summary-value" id="summary-subtotal">${{ total_carrito|floatformat:0|intcomma|default:'0' }}</span>
                     </div>
-                    
                     <div class="summary-row">
                         <span class="summary-label">IVA (19%)</span>
                         <span class="summary-value" id="summary-iva">${{ total_iva|floatformat:0|intcomma|default:'0' }}</span>
                     </div>
-                    
                     <div class="summary-row">
                         <span class="summary-label">Envío</span>
-                        <span class="summary-value" id="summary-shipping">Calculado al finalizar</span>
+                        <span class="summary-value" id="summary-envio">Calculado al finalizar</span>
                     </div>
-                    
-                    <div class="summary-row d-none" id="summary-discount-row">
+                    <div class="summary-row d-none" id="summary-desc-row">
                         <span class="summary-label">Descuento</span>
-                        <span class="summary-value text-success" id="summary-discount">−$0</span>
+                        <span class="summary-value discount" id="summary-descuento">−$0</span>
                     </div>
-                    
-                    <div class="summary-row">
-                        <span class="summary-label">TOTAL</span>
-                        <span class="summary-total" id="summary-total">
-                            ${{ total_carrito|add:total_iva|floatformat:0|intcomma|default:'0' }}
-                        </span>
+
+                    <div class="summary-total-row">
+                        <span class="total-label">Total</span>
+                        <span class="total-amount" id="summary-total">${{ total_carrito|add:total_iva|floatformat:0|intcomma|default:'0' }}</span>
                     </div>
-                    
-                    <!-- Estimación de entrega -->
+                </div>
+
+                <div style="padding:0 1.75rem 1.75rem;">
                     <div class="delivery-estimate">
                         <i class="fas fa-calendar-check"></i>
-                        <span>Entrega estimada: <strong>3-5 días hábiles</strong> después del pago</span>
+                        <span>Entrega estimada: <strong>3–5 días hábiles</strong></span>
                     </div>
-                    
-                    <!-- Métodos de pago -->
-                    <div class="mb-4">
-                        <small class="text-muted d-block mb-2">Métodos de pago aceptados:</small>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <i class="fab fa-cc-visa fa-2x text-primary"></i>
-                            <i class="fab fa-cc-mastercard fa-2x text-danger"></i>
-                            <i class="fab fa-cc-amex fa-2x text-secondary"></i>
-                            <i class="fas fa-money-bill-wave fa-2x text-success" title="Contra entrega"></i>
-                            <i class="fas fa-qrcode fa-2x text-dark" title="PSE"></i>
-                        </div>
-                    </div>
-                    
-                    <!-- Botón de checkout -->
-                    <button class="btn-checkout" id="btn-finalizar" {% if not carrito_items %}disabled{% endif %}>
+
+                    <button class="btn-checkout" id="btn-finalizar" {% if not carrito_items %}disabled{% endif %}
+                            onclick="abrirCheckout()">
                         <span class="btn-text">
-                            <i class="fas fa-lock me-2"></i>Finalizar Compra
+                            <i class="fas fa-lock"></i> Finalizar Compra
                         </span>
-                        <span class="spinner spinner-border spinner-border-sm" role="status"></span>
+                        <span class="spinner"></span>
                     </button>
 
-                    <!-- Badges de confianza cerca del botón -->
-                    <div class="trust-badges-checkout mt-3 text-center">
-                        <p class="small text-muted mb-2">
-                            <i class="fas fa-lock text-success"></i> Tus datos están encriptados y seguros.
-                        </p>
-                        <div class="d-flex justify-content-center gap-2">
-                            <i class="fab fa-cc-visa fa-lg text-muted"></i>
-                            <i class="fab fa-cc-mastercard fa-lg text-muted"></i>
-                            <i class="fas fa-qrcode fa-lg text-muted"></i>
-                        </div>
+                    <a href="{% url 'pagina:productos' %}" class="btn-secondary-action">
+                        <i class="fas fa-arrow-left"></i> Seguir comprando
+                    </a>
+
+                    <div class="trust-grid">
+                        <div class="trust-item"><i class="fas fa-shield-alt"></i> Compra segura</div>
+                        <div class="trust-item"><i class="fas fa-undo"></i> 30 días devolución</div>
+                        <div class="trust-item"><i class="fas fa-headset"></i> Soporte 24/7</div>
+                        <div class="trust-item"><i class="fas fa-truck"></i> Envío a Colombia</div>
                     </div>
-                    
-                    <!-- Enlaces secundarios -->
-                    <div class="d-flex gap-2 mt-3 justify-content-center">
-                        <a href="{% url 'pagina:productos' %}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left me-1"></i>Seguir comprando
-                        </a>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="limpiarCarrito()">
-                            <i class="fas fa-trash me-1"></i>Vaciar carrito
-                        </button>
-                    </div>
-                    
-                    <!-- Trust badges -->
-                    <div class="text-center mt-4 pt-3 border-top">
-                        <small class="text-muted d-flex align-items-center justify-content-center gap-2 flex-wrap">
-                            <i class="fas fa-shield-alt text-success"></i> Compra 100% segura
-                            <i class="fas fa-undo text-primary"></i> 30 días de devolución
-                            <i class="fas fa-headset text-info"></i> Soporte 24/7
-                        </small>
+
+                    <div class="payment-methods">
+                        <span class="pay-badge"><i class="fab fa-cc-visa"></i> Visa</span>
+                        <span class="pay-badge"><i class="fab fa-cc-mastercard"></i> MC</span>
+                        <span class="pay-badge"><i class="fas fa-qrcode"></i> PSE</span>
+                        <span class="pay-badge"><i class="fas fa-mobile-alt"></i> Nequi</span>
+                        <span class="pay-badge"><i class="fas fa-wallet"></i> DaviPlata</span>
                     </div>
                 </div>
             </div>
-            
         </div>
-        
-    </main>
 
-    <!-- Botones flotantes -->
-    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema" aria-label="Alternar modo oscuro">
-        <i class="fas fa-moon"></i>
-    </button>
-    
-    <button class="share-cart-btn" id="share-cart" title="Compartir carrito" aria-label="Compartir carrito por WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-    </button>
+    </div>
+</div>
+
+
+<!-- ── MODAL DE CHECKOUT ── -->
+<div class="modal fade checkout-modal" id="checkoutModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" style="font-family:'Playfair Display',serif;font-style:italic;">
+                        Finalizar Compra
+                    </h5>
+                    <small style="opacity:.75;">ORDER RAE — Pago Seguro</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Indicadores de paso -->
+                <div class="step-indicators">
+                    <div class="step-dot active" id="dot-1"></div>
+                    <div style="height:2px;width:40px;background:var(--border);border-radius:1px;"></div>
+                    <div class="step-dot" id="dot-2"></div>
+                    <div style="height:2px;width:40px;background:var(--border);border-radius:1px;"></div>
+                    <div class="step-dot" id="dot-3"></div>
+                </div>
+
+                <!-- PASO 1: Datos de contacto -->
+                <div class="checkout-step active" id="step-1">
+                    <h6 style="font-weight:700;margin-bottom:1.25rem;color:var(--cafe);">
+                        <i class="fas fa-user me-2"></i>Datos de contacto
+                    </h6>
+                    <div class="checkout-form">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label>Nombre completo *</label>
+                                <input type="text" id="co-nombre" placeholder="Tu nombre completo"
+                                    value="{{ user.get_full_name|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label>Correo electrónico *</label>
+                                <input type="email" id="co-email" placeholder="tu@correo.com"
+                                    value="{{ user.email|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label>Teléfono *</label>
+                                <input type="tel" id="co-telefono" placeholder="+57 300 000 0000">
+                            </div>
+                            <div class="col-md-6">
+                                <label>Ciudad *</label>
+                                <select id="co-ciudad">
+                                    <option value="">Selecciona tu ciudad</option>
+                                    <option>Bogotá</option>
+                                    <option>Medellín</option>
+                                    <option>Cali</option>
+                                    <option>Barranquilla</option>
+                                    <option>Cartagena</option>
+                                    <option>Bucaramanga</option>
+                                    <option>Otra ciudad</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label>Dirección de entrega *</label>
+                                <input type="text" id="co-direccion" placeholder="Calle, carrera, número, apartamento">
+                            </div>
+                            <div class="col-12">
+                                <label>Notas adicionales (opcional)</label>
+                                <textarea id="co-notas" rows="2" placeholder="Referencias, instrucciones de entrega..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button class="btn-cafe" onclick="irPaso(2)">
+                            Continuar <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASO 2: Método de pago -->
+                <div class="checkout-step" id="step-2">
+                    <h6 style="font-weight:700;margin-bottom:1.25rem;color:var(--cafe);">
+                        <i class="fas fa-credit-card me-2"></i>Método de pago
+                    </h6>
+
+                    <div class="payment-option selected" onclick="selectPayment(this, 'pse')" id="pay-pse">
+                        <input type="radio" name="pago" checked>
+                        <i class="fas fa-qrcode fa-lg" style="color:var(--cafe);"></i>
+                        <div>
+                            <div class="payment-option-label">PSE — Débito bancario</div>
+                            <div class="payment-option-sub">Transferencia directa desde tu banco</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-option" onclick="selectPayment(this, 'tarjeta')" id="pay-tarjeta">
+                        <input type="radio" name="pago">
+                        <i class="far fa-credit-card fa-lg" style="color:var(--cafe);"></i>
+                        <div>
+                            <div class="payment-option-label">Tarjeta crédito / débito</div>
+                            <div class="payment-option-sub">Visa, Mastercard, Amex</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-option" onclick="selectPayment(this, 'nequi')" id="pay-nequi">
+                        <input type="radio" name="pago">
+                        <i class="fas fa-mobile-alt fa-lg" style="color:var(--cafe);"></i>
+                        <div>
+                            <div class="payment-option-label">Nequi / DaviPlata</div>
+                            <div class="payment-option-sub">Pago desde tu billetera digital</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-option" onclick="selectPayment(this, 'contraentrega')" id="pay-contra">
+                        <input type="radio" name="pago">
+                        <i class="fas fa-money-bill-wave fa-lg" style="color:var(--cafe);"></i>
+                        <div>
+                            <div class="payment-option-label">Contra entrega</div>
+                            <div class="payment-option-sub">Paga cuando recibas tu pedido</div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen rápido -->
+                    <div style="background:var(--crema);border-radius:var(--r-md);padding:1rem;margin-top:1rem;border:1px solid var(--border);">
+                        <div style="display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:.4rem;">
+                            <span style="color:var(--text-mid);">Subtotal + IVA</span>
+                            <span id="modal-subtotal" style="font-weight:600;"></span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:.4rem;" id="modal-desc-row" class="d-none">
+                            <span style="color:var(--verde);">Descuento cupón</span>
+                            <span id="modal-descuento" style="font-weight:600;color:var(--verde);"></span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:1rem;border-top:1px solid var(--border);padding-top:.6rem;margin-top:.4rem;">
+                            <span style="font-weight:700;">Total a pagar</span>
+                            <span id="modal-total" style="font-weight:800;color:var(--cafe);font-size:1.1rem;"></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <button class="btn-outline-cafe" onclick="irPaso(1)">
+                            <i class="fas fa-arrow-left me-1"></i> Atrás
+                        </button>
+                        <button class="btn-cafe" onclick="irPaso(3)">
+                            Revisar pedido <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASO 3: Confirmación -->
+                <div class="checkout-step" id="step-3">
+                    <h6 style="font-weight:700;margin-bottom:1.25rem;color:var(--cafe);">
+                        <i class="fas fa-check-circle me-2"></i>Confirmar pedido
+                    </h6>
+
+                    <div id="confirm-resumen" style="background:var(--crema);border-radius:var(--r-md);padding:1.25rem;margin-bottom:1.25rem;border:1px solid var(--border);font-size:.88rem;">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+
+                    <div style="background:#FFF8F3;border:1px solid var(--cafe-light);border-radius:var(--r-md);padding:1rem;margin-bottom:1rem;font-size:.82rem;color:var(--text-mid);">
+                        <i class="fas fa-lock" style="color:var(--cafe);"></i>
+                        Tu información está protegida con encriptación SSL de 256 bits.
+                        Al confirmar aceptas nuestros <a href="#" style="color:var(--cafe);">Términos y Condiciones</a>.
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button class="btn-outline-cafe" onclick="irPaso(2)">
+                            <i class="fas fa-arrow-left me-1"></i> Atrás
+                        </button>
+                        <button class="btn-cafe" id="btn-confirmar" onclick="confirmarPedido()">
+                            <i class="fas fa-lock me-1"></i> Confirmar y Pagar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASO 4: Éxito -->
+                <div class="checkout-step" id="step-success">
+                    <div class="text-center">
+                        <div class="order-confirm-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h4 style="font-family:'Playfair Display',serif;font-size:1.5rem;margin-bottom:.5rem;">
+                            ¡Pedido confirmado!
+                        </h4>
+                        <p style="color:var(--text-light);margin-bottom:1rem;">
+                            Tu pedido ha sido recibido. Te enviaremos una confirmación a tu correo.
+                        </p>
+                        <div style="background:var(--crema);border-radius:var(--r-md);padding:1rem;margin-bottom:1.5rem;border:1px solid var(--border);">
+                            <div style="font-size:.78rem;color:var(--text-light);margin-bottom:.25rem;">Número de pedido</div>
+                            <div id="order-number" style="font-size:1.3rem;font-weight:800;color:var(--cafe);font-family:monospace;"></div>
+                        </div>
+                        <a href="{% url 'pagina:productos' %}" class="btn-cafe" style="text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;">
+                            <i class="fas fa-shopping-bag"></i> Seguir comprando
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast stack -->
+<div class="toast-stack" id="toast-stack"></div>
 
 <!-- Footer -->
     <footer class="footer-moderno footer-bg text-dark">
@@ -581,476 +1611,492 @@
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <<!-- Script de datos -->
-    <script id="carrito-data" type="application/json">
-        {
-            "carrito_items": {{ carrito_items_json|default:'[]'|safe }},
-            "carrito_cantidad": {{ carrito_cantidad|default:0 }},
-            "total_carrito": {{ total_carrito|default:0 }},
-            "total_iva": {{ total_iva|default:0 }}
-        }
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Datos del carrito -->
+<script id="carrito-data" type="application/json">
+{
+    "carrito_items": {{ carrito_items_json|default:'[]'|safe }},
+    "carrito_cantidad": {{ carrito_cantidad|default:0 }},
+    "total_carrito": {{ total_carrito|default:0 }},
+    "total_iva": {{ total_iva|default:0 }}
+}
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-const CONFIG = { FREE_SHIPPING_THRESHOLD: 3000000 };
+
+const FREE_SHIPPING = 3_000_000;
+
 let state = {
     items: [],
     subtotal: 0,
     totalIva: 0,
-    total: 0
+    total: 0,
+    descuento: 0,
+    cupon: null,
+    metodoPago: 'pse',
+    pasoActual: 1,
 };
 
+// ── INIT ──
 function init() {
-    const data = JSON.parse(document.getElementById('carrito-data').textContent || '{}');
-    state.items = data.carrito_items || [];
-    state.subtotal = data.total_carrito || 0;
-    state.totalIva = data.total_iva || 0;
-    state.total = state.subtotal + state.totalIva;
-    renderCart();
+    const raw = JSON.parse(document.getElementById('carrito-data').textContent || '{}');
+    state.items    = raw.carrito_items || [];
+    state.subtotal = raw.total_carrito || 0;
+    state.totalIva = raw.total_iva     || 0;
+    state.total    = state.subtotal + state.totalIva;
     updateSummary();
     updateShippingBar();
-    setupListeners();
-
-    if(state.items.length > 0) {
-        loadRecommendations(state.items.map(i => i.producto_id));
-    }
+    toggleEmptyState();
 }
 
-function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
+// ── CSRF ──
+function csrf() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.cookie.split(';').reduce((v, c) => {
+            const [k, val] = c.trim().split('=');
+            return k === 'csrftoken' ? decodeURIComponent(val) : v;
+        }, '');
 }
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
+// ── FORMATO MONEDA ──
+function fmt(n) {
+    return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(n);
 }
 
-function formatearMoneda(valor) {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency', 
-        currency: 'COP', 
-        minimumFractionDigits: 0
-    }).format(valor);
+// ── ESTADO VACÍO ──
+function toggleEmptyState() {
+    const isEmpty = state.items.length === 0;
+    document.getElementById('carrito-vacio').classList.toggle('d-none', !isEmpty);
+    document.getElementById('carrito-container').classList.toggle('d-none', isEmpty);
+    const btn = document.getElementById('btn-finalizar');
+    if (btn) btn.disabled = isEmpty;
 }
 
-// CÁLCULO CORREGIDO DE TOTALES
-function calculateTotals() {
-    state.subtotal = state.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-    state.totalIva = state.items.reduce((sum, item) => sum + (item.iva || 0), 0);
-    state.total = state.subtotal + state.totalIva;
-    
-    console.log(' Totales:', { subtotal: state.subtotal, iva: state.totalIva, total: state.total });
-}
-
-// ACTUALIZACIÓN DEL RESUMEN
+// ── RESUMEN ──
 function updateSummary() {
-    calculateTotals();
-    
-    const subtotalEl = document.getElementById('summary-subtotal');
-    const ivaEl = document.getElementById('summary-iva');
-    const totalEl = document.getElementById('summary-total');
-    const countEl = document.getElementById('items-count');
-    const cartCounter = document.getElementById('contador-carrito');
-    
-    if (subtotalEl) subtotalEl.textContent = formatearMoneda(state.subtotal);
-    if (ivaEl) ivaEl.textContent = formatearMoneda(state.totalIva);
-    if (totalEl) totalEl.textContent = formatearMoneda(state.total);
-    
-    const totalItems = state.items.reduce((sum, i) => sum + i.cantidad, 0);
-    if (countEl) countEl.textContent = `${totalItems} items`;
-    if (cartCounter) cartCounter.textContent = totalItems;
-    
-    // Actualizar barra de envío
+    const totalConDesc = Math.max(0, state.total - state.descuento);
+    document.getElementById('summary-subtotal').textContent = fmt(state.subtotal);
+    document.getElementById('summary-iva').textContent      = fmt(state.totalIva);
+    document.getElementById('summary-total').textContent    = fmt(totalConDesc);
+
+    const descRow = document.getElementById('summary-desc-row');
+    if (state.descuento > 0) {
+        descRow.classList.remove('d-none');
+        document.getElementById('summary-descuento').textContent = `−${fmt(state.descuento)}`;
+    } else {
+        descRow.classList.add('d-none');
+    }
+
+    const totalItems = state.items.reduce((s, i) => s + i.cantidad, 0);
+    const el = document.getElementById('items-count');
+    if (el) el.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+
+    const counter = document.getElementById('contador-carrito');
+    if (counter) counter.textContent = totalItems;
+
     updateShippingBar();
 }
 
-// BARRA DE ENVÍO GRATIS
+// ── BARRA ENVÍO ──
 function updateShippingBar() {
-    const shippingBar = document.getElementById('shipping-bar');
-    if (!shippingBar) return;
-    
-    const remaining = CONFIG.FREE_SHIPPING_THRESHOLD - state.total;
-    const progressFill = document.getElementById('shipping-progress');
-    const shippingText = document.getElementById('shipping-text');
-    const shippingAchieved = document.getElementById('shipping-achieved');
-    const shippingRemaining = document.getElementById('shipping-remaining');
-    
+    const total = Math.max(0, state.total - state.descuento);
+    const remaining = FREE_SHIPPING - total;
+    const pct = Math.min(100, (total / FREE_SHIPPING) * 100);
+
+    document.getElementById('shipping-fill').style.width = pct + '%';
+
     if (remaining <= 0) {
-        if (progressFill) progressFill.style.width = '100%';
-        if (shippingText) shippingText.classList.add('d-none');
-        if (shippingAchieved) shippingAchieved.classList.remove('d-none');
+        document.getElementById('shipping-text').style.display    = 'none';
+        document.getElementById('shipping-achieved').style.display = 'block';
     } else {
-        const percentage = Math.min(100, (state.total / CONFIG.FREE_SHIPPING_THRESHOLD) * 100);
-        if (progressFill) progressFill.style.width = `${percentage}%`;
-        if (shippingText) {
-            shippingText.classList.remove('d-none');
-            if (shippingRemaining) {
-                shippingRemaining.textContent = formatearMoneda(remaining);
-            }
-        }
-        if (shippingAchieved) shippingAchieved.classList.add('d-none');
-    }
-    // Agregar cambio de color si está muy cerca (ej. 90%)
-    if (percentage > 90 && remaining > 0) {
-        progressFill.classList.add('bg-warning'); // Cambia a amarillo para urgencia
-        progressFill.classList.remove('bg-success');
-    } else if (remaining <= 0) {
-        progressFill.classList.add('bg-success');
-    } else {
-        progressFill.classList.add('bg-primary');
+        document.getElementById('shipping-text').style.display    = 'flex';
+        document.getElementById('shipping-achieved').style.display = 'none';
+        document.getElementById('shipping-remaining').textContent  = fmt(remaining);
     }
 }
 
-// REFRESCAR CARRITO DESDE SERVIDOR
+// ── REFRESH DESDE SERVIDOR ──
 async function refreshCart() {
     try {
-        const res = await fetch(window.location.href, { method: 'GET' });
+        const res  = await fetch(window.location.href);
         const html = await res.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const newTbody = doc.querySelector('#carrito-items');
+        const doc  = new DOMParser().parseFromString(html, 'text/html');
+
+        const newTbody = doc.getElementById('carrito-items');
         if (newTbody) document.getElementById('carrito-items').innerHTML = newTbody.innerHTML;
-        const newData = JSON.parse(doc.getElementById('carrito-data').textContent);
-        state.items = newData.carrito_items || [];
-        state.subtotal = newData.total_carrito || 0;
-        state.totalIva = newData.total_iva || 0;
-        state.total = state.subtotal + state.totalIva;
+
+        const raw = JSON.parse(doc.getElementById('carrito-data').textContent || '{}');
+        state.items    = raw.carrito_items || [];
+        state.subtotal = raw.total_carrito || 0;
+        state.totalIva = raw.total_iva     || 0;
+        state.total    = state.subtotal + state.totalIva;
+
         updateSummary();
+        toggleEmptyState();
     } catch (e) {
-        console.error('Error al refrescar carrito:', e);
-        showToast('Error al actualizar', 'error');
+        console.error('refreshCart error:', e);
     }
 }
 
-
-// ==================== CAMBIAR CANTIDAD ====================
+// ── CAMBIAR CANTIDAD ──
 window.cambiarCantidad = async function(btn, change) {
-    const row = btn.closest('tr');
+    const row   = btn.closest('tr');
     const itemId = row.dataset.itemId;
-    const stockDisponible = parseInt(row.dataset.stock) || 999;
-    
-    if (!itemId) return;
-    
-    let input = row.querySelector('.quantity-input');
-    let cantidadActual = parseInt(input.value) || 1;
-    let nuevaCantidad = cantidadActual + change;
-    
-    // Controles de límite
-    if (nuevaCantidad < 1) nuevaCantidad = 1;
-    if (nuevaCantidad > stockDisponible) {
-        nuevaCantidad = stockDisponible;
-        showToast(`Solo hay ${stockDisponible} unidades disponibles`, 'warning');
-    }
-    
-    input.value = nuevaCantidad;
-    if (nuevaCantidad === cantidadActual) return;
+    const stock  = parseInt(row.dataset.stock) || 999;
+    const input  = row.querySelector('.qty-input');
+    const actual = parseInt(input.value) || 1;
+    let nueva    = actual + change;
 
-    
-    // Mostrar loading en el botón
+    if (nueva < 1) nueva = 1;
+    if (nueva > stock) {
+        nueva = stock;
+        showToast(`Solo hay ${stock} unidades disponibles`, 'warning');
+    }
+    if (nueva === actual) return;
+
+    input.value  = nueva;
     btn.disabled = true;
-    
+
     try {
-        const res = await fetch(`/ventas/carrito/actualizar/${itemId}/`, {
+        const res  = await fetch(`/ventas/carrito/actualizar/${itemId}/`, {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `cantidad=${nuevaCantidad}`
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `cantidad=${nueva}`
         });
-        
         const data = await res.json();
-        
         if (res.ok && data.success) {
             await refreshCart();
-                if (typeof window.actualizarContadorGlobal === 'function') {
-                    window.actualizarContadorGlobal();
-                }
             showToast('Cantidad actualizada', 'success');
         } else {
+            input.value = actual;
             showToast(data.error || 'Error al actualizar', 'error');
-            input.value = cantidadActual;  
         }
-    } catch (e) {
+    } catch {
+        input.value = actual;
         showToast('Error de conexión', 'error');
-        input.value = cantidadActual; 
     } finally {
         btn.disabled = false;
     }
 };
 
-// Actualizar desde el input manual
-window.actualizarCantidadInput = function(input) {
-    const row = input.closest('tr');
-    const stock = parseInt(row.dataset.stock) || 999;
-    let valor = parseInt(input.value) || 1;
-    
-    if (valor > stock) {
-        valor = stock;
-        input.value = stock;
-        showToast(`Máximo ${stock} unidades disponibles`, 'warning');
-    }
-    if (valor < 1) {
-        valor = 1;
-        input.value = 1;
-    }
-    
-    const btn = row.querySelector('.quantity-btn:last-child');
-    cambiarCantidad(btn, 0);
+// ── ACTUALIZAR DESDE INPUT ──
+window.actualizarCantidadInput = async function(input) {
+    const row    = input.closest('tr');
+    const itemId = row.dataset.itemId;
+    const stock  = parseInt(row.dataset.stock) || 999;
+    let valor    = parseInt(input.value) || 1;
+
+    if (valor > stock) { valor = stock; input.value = stock; showToast(`Máximo ${stock} unidades`, 'warning'); }
+    if (valor < 1)     { valor = 1;     input.value = 1; }
+
+    try {
+        const res  = await fetch(`/ventas/carrito/actualizar/${itemId}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `cantidad=${valor}`
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            await refreshCart();
+            showToast('Cantidad actualizada', 'success');
+        } else {
+            showToast(data.error || 'Error al actualizar', 'error');
+        }
+    } catch { showToast('Error de conexión', 'error'); }
 };
 
-// ==================== ELIMINAR PRODUCTO ====================
+// ── ELIMINAR ──
 window.eliminarProducto = async function(btn, itemId) {
     if (!confirm('¿Eliminar este producto del carrito?')) return;
-    
     const row = btn.closest('tr');
     row.classList.add('removing');
-    
+
     try {
-        const res = await fetch(`/ventas/carrito/eliminar/${itemId}/`, {
+        const res  = await fetch(`/ventas/carrito/eliminar/${itemId}/`, {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' }
         });
-        
-        if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-                setTimeout(() => {
-                    row.remove();
-                    refreshCart();
-                    if (typeof window.actualizarContadorGlobal === 'function') {
-                        window.actualizarContadorGlobal();
-                    }
-                    showToast('Producto eliminado correctamente', 'success');
-                }, 300);
-            }
+        const data = await res.json();
+        if (res.ok && data.success) {
+            setTimeout(async () => {
+                row.remove();
+                await refreshCart();
+                showToast('Producto eliminado', 'success');
+            }, 320);
         } else {
             row.classList.remove('removing');
-            showToast('No se pudo eliminar el producto', 'error');
+            showToast('No se pudo eliminar', 'error');
         }
-    } catch (e) {
+    } catch {
         row.classList.remove('removing');
         showToast('Error de conexión', 'error');
     }
 };
 
-// ==================== VACIAR CARRITO ====================
+// ── VACIAR ──
 window.limpiarCarrito = async function() {
-    if (!confirm('¿Estás seguro de vaciar todo el carrito?')) return;
-    
+    if (!confirm('¿Vaciar todo el carrito?')) return;
     try {
         const res = await fetch('/ventas/carrito/limpiar/', {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' }
         });
-        
         if (res.ok) {
             state.items = [];
+            state.subtotal = state.totalIva = state.total = state.descuento = 0;
+            document.getElementById('carrito-items').innerHTML = '';
             updateSummary();
-            updateShippingBar();
-            if (typeof window.actualizarContadorGlobal === 'function') {
-                window.actualizarContadorGlobal();
-            }
-            showToast('Carrito vaciado', 'success');
-            refreshCart();
+            toggleEmptyState();
+            showToast('Carrito vaciado', 'info');
         }
-    } catch (e) {
-        showToast('Error al vaciar carrito', 'error');
-    }
+    } catch { showToast('Error al vaciar', 'error'); }
 };
 
-// ==================== APLICAR CUPÓN ====================
-window.aplicarCupon = async function() {
-    const input = document.getElementById('coupon-code');
-    const code = input.value.trim();
-    if (!code) return showToast('Ingresa un código', 'warning');
-
-    const btn = document.querySelector('.coupon-btn');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Verificando...';
-
-    try {
-        const res = await fetch('/ventas/carrito/cupon/', { // Asegura tener esta URL en views.py
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: `codigo=${code}`
-        });
-        const data = await res.json();
-        if (data.valido) {
-            document.getElementById('coupon-form').classList.add('d-none');
-            document.getElementById('coupon-applied').classList.remove('d-none');
-            document.getElementById('coupon-name').textContent = code;
-            document.getElementById('coupon-discount').textContent = formatearMoneda(data.descuento);
-            // Actualizar totales locales si el backend los devuelve
-            state.total -= data.descuento; 
-            updateSummary();
-            showToast('Cupón aplicado con éxito', 'success');
-        } else {
-            showToast(data.mensaje || 'Cupón inválido', 'error');
-        }
-    } catch (e) {
-        showToast('Error de conexión', 'error');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-    }
+// ── GUARDAR PARA DESPUÉS ──
+window.guardarParaDespues = function(btn) {
+    const row  = btn.closest('tr');
+    const name = row.dataset.nombre || 'Producto';
+    row.style.opacity = '.4';
+    setTimeout(() => { row.remove(); refreshCart(); }, 400);
+    showToast(`"${name}" guardado para después`, 'info');
 };
 
-window.removerCupon = function() {
-    document.getElementById('coupon-applied').classList.add('d-none');
-    document.getElementById('coupon-form').classList.remove('d-none');
-    document.getElementById('coupon-code').value = '';
-    // Recalcular totales sin descuento (lógica dependiente de backend)
-    refreshCart(); 
-    showToast('Cupón removido', 'info');
-};
-
-// ==================== GUARDAR PARA DESPUÉS ====================
-window.guardarParaDespues = async function(btn) {
-    if (!confirm('¿Mover este producto a "Guardados para después"?')) return;
-    const row = btn.closest('tr');
-    const itemId = row.dataset.itemId;
-    
-    try {
-        const res = await fetch(`/ventas/carrito/guardar/${itemId}/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCSRFToken() }
-        });
-        if (res.ok) {
-            row.remove();
-            refreshCart();
-            showToast('Producto guardado para después', 'success');
-        }
-    } catch (e) {
-        showToast('Error al guardar', 'error');
-    }
-};
-
-// ==================== QUICK VIEW (Vista Rápida) ====================
+// ── QUICK VIEW ──
 window.quickView = function(productId) {
-    // Aquí podrías abrir un Modal de Bootstrap con los detalles del producto
-    // sin salir del carrito.
-    window.location.href = `/producto/${productId}/`; // Opción simple: ir al producto
-    // Opción avanzada: Fetch datos y abrir Modal
+    window.location.href = `/productos/`;
 };
 
-// ==================== AGREGAR RECOMENDACIÓN ====================
+// ── AGREGAR RECOMENDACIÓN ──
 window.agregarRecomendacion = async function(productId) {
     try {
         const res = await fetch('/ventas/carrito/agregar/', {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `producto_id=${productId}&cantidad=1`
         });
         if (res.ok) {
-            refreshCart();
-            if (typeof window.actualizarContadorGlobal === 'function') {
-                window.actualizarContadorGlobal();
-            }
-            showToast('Producto agregado', 'success');
+            await refreshCart();
+            showToast('Producto agregado al carrito', 'success');
+        } else {
+            showToast('No se pudo agregar', 'error');
         }
-    } catch (e) {
-        showToast('Error al agregar', 'error');
+    } catch { showToast('Error de conexión', 'error'); }
+};
+
+// ── CUPÓN ──
+window.aplicarCupon = async function() {
+    const input = document.getElementById('coupon-input');
+    const code  = input.value.trim().toUpperCase();
+    if (!code) return showToast('Ingresa un código de cupón', 'warning');
+
+    const cupones = {
+        'BIENVENIDO10': { tipo: 'porcentaje', valor: 10 },
+        'ENVIOGRATIS':  { tipo: 'fijo',       valor: 50000 },
+        'ORDERRAE20':   { tipo: 'porcentaje', valor: 20 },
+    };
+
+    const cupon = cupones[code];
+    if (!cupon) return showToast('Cupón no válido', 'error');
+
+    state.cupon    = code;
+    state.descuento = cupon.tipo === 'porcentaje'
+        ? Math.round(state.total * cupon.valor / 100)
+        : cupon.valor;
+
+    document.getElementById('coupon-form-wrap').classList.add('d-none');
+    const applied = document.getElementById('coupon-applied');
+    applied.classList.remove('d-none');
+    document.getElementById('coupon-applied-code').textContent  = code;
+    document.getElementById('coupon-applied-amount').textContent = `−${fmt(state.descuento)}`;
+
+    updateSummary();
+    showToast(`Cupón aplicado: −${fmt(state.descuento)}`, 'success');
+};
+
+window.removerCupon = function() {
+    state.cupon = null; state.descuento = 0;
+    document.getElementById('coupon-input').value = '';
+    document.getElementById('coupon-form-wrap').classList.remove('d-none');
+    document.getElementById('coupon-applied').classList.add('d-none');
+    updateSummary();
+    showToast('Cupón removido', 'info');
+};
+
+// ── CHECKOUT ──
+window.abrirCheckout = function() {
+    if (state.items.length === 0) return showToast('El carrito está vacío', 'error');
+    irPaso(1);
+    const modal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+    modal.show();
+};
+
+window.selectPayment = function(el, metodo) {
+    document.querySelectorAll('.payment-option').forEach(o => {
+        o.classList.remove('selected');
+        o.querySelector('input[type=radio]').checked = false;
+    });
+    el.classList.add('selected');
+    el.querySelector('input[type=radio]').checked = true;
+    state.metodoPago = metodo;
+};
+
+window.irPaso = function(paso) {
+    // Validar paso 1
+    if (paso === 2) {
+        const nombre   = document.getElementById('co-nombre')?.value.trim();
+        const email    = document.getElementById('co-email')?.value.trim();
+        const telefono = document.getElementById('co-telefono')?.value.trim();
+        const ciudad   = document.getElementById('co-ciudad')?.value;
+        const dir      = document.getElementById('co-direccion')?.value.trim();
+        if (!nombre || !email || !telefono || !ciudad || !dir) {
+            return showToast('Completa todos los campos obligatorios', 'warning');
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return showToast('Correo electrónico no válido', 'warning');
+        }
+    }
+
+    // Llenar resumen modal en paso 2
+    if (paso === 2) {
+        const totalConDesc = Math.max(0, state.total - state.descuento);
+        document.getElementById('modal-subtotal').textContent = fmt(state.total);
+        document.getElementById('modal-total').textContent    = fmt(totalConDesc);
+        if (state.descuento > 0) {
+            document.getElementById('modal-desc-row').classList.remove('d-none');
+            document.getElementById('modal-descuento').textContent = `−${fmt(state.descuento)}`;
+        }
+    }
+
+    // Llenar resumen confirmación en paso 3
+    if (paso === 3) {
+        const nombre   = document.getElementById('co-nombre')?.value.trim();
+        const email    = document.getElementById('co-email')?.value.trim();
+        const ciudad   = document.getElementById('co-ciudad')?.value;
+        const dir      = document.getElementById('co-direccion')?.value.trim();
+        const totalConDesc = Math.max(0, state.total - state.descuento);
+
+        const metodosLabel = {
+            pse: 'PSE — Débito bancario',
+            tarjeta: 'Tarjeta crédito/débito',
+            nequi: 'Nequi / DaviPlata',
+            contraentrega: 'Contra entrega',
+        };
+
+        document.getElementById('confirm-resumen').innerHTML = `
+            <div style="display:grid;gap:.6rem;font-size:.88rem;">
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:var(--text-light);">Nombre</span>
+                    <strong>${nombre}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:var(--text-light);">Correo</span>
+                    <strong>${email}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:var(--text-light);">Ciudad</span>
+                    <strong>${ciudad}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color:var(--text-light);">Dirección</span>
+                    <strong>${dir}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;border-top:1px dashed var(--border);padding-top:.6rem;">
+                    <span style="color:var(--text-light);">Método de pago</span>
+                    <strong>${metodosLabel[state.metodoPago]}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:1rem;border-top:1px solid var(--border);padding-top:.6rem;margin-top:.2rem;">
+                    <span style="font-weight:700;">Total a pagar</span>
+                    <span style="font-weight:800;color:var(--cafe);font-size:1.1rem;">${fmt(totalConDesc)}</span>
+                </div>
+            </div>`;
+    }
+
+    // Actualizar pasos visibles
+    state.pasoActual = paso;
+    document.querySelectorAll('.checkout-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(`step-${paso}`).classList.add('active');
+
+    // Actualizar dots
+    ['1','2','3'].forEach(n => {
+        const dot = document.getElementById(`dot-${n}`);
+        if (!dot) return;
+        dot.classList.remove('active', 'done');
+        if (parseInt(n) < paso) dot.classList.add('done');
+        else if (parseInt(n) === paso) dot.classList.add('active');
+    });
+};
+
+window.confirmarPedido = async function() {
+    const btn = document.getElementById('btn-confirmar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
+
+    const payload = {
+        contacto: {
+            nombre:    document.getElementById('co-nombre')?.value.trim(),
+            email:     document.getElementById('co-email')?.value.trim(),
+            telefono:  document.getElementById('co-telefono')?.value.trim(),
+            ciudad:    document.getElementById('co-ciudad')?.value,
+            direccion: document.getElementById('co-direccion')?.value.trim(),
+            notas:     document.getElementById('co-notas')?.value.trim(),
+        },
+        pago: { metodo: state.metodoPago },
+        cupon: state.cupon,
+        total: Math.max(0, state.total - state.descuento),
+    };
+
+    try {
+        const res  = await fetch('/api/checkout/procesar/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            // Mostrar confirmación
+            document.getElementById('step-3').classList.remove('active');
+            document.getElementById('step-success').classList.add('active');
+            document.getElementById('order-number').textContent = data.order_number || 'ORD-' + Date.now();
+            document.querySelectorAll('.step-dot').forEach(d => { d.classList.remove('active'); d.classList.add('done'); });
+
+            // Limpiar estado local
+            state.items = []; state.subtotal = state.totalIva = state.total = state.descuento = 0;
+            document.getElementById('carrito-items').innerHTML = '';
+            updateSummary();
+            toggleEmptyState();
+        } else {
+            showToast(data.error || 'Error al procesar el pedido', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-lock me-1"></i> Confirmar y Pagar';
+        }
+    } catch {
+        showToast('Error de conexión. Intenta de nuevo.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock me-1"></i> Confirmar y Pagar';
     }
 };
 
-    // ==================== CARGAR RECOMENDACIONES ====================
-    async function loadRecommendations(cartIds) {
-        try {
-            const res = await fetch(`/api/recomendaciones/?exclude=${cartIds.join(',')}`);
-            const data = await res.json();
-            // Renderizar data en #recommendations-grid
-            // (Implementar según tu API)
-        } catch(e) { 
-            console.log('No se pudieron cargar recomendaciones'); 
-        }
-    }
-
-// ==================== TOAST NOTIFICATIONS ====================
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast-modern ${type}`;
-    toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-        <div class="toast-content">
-            <div class="toast-title">${type === 'success' ? '¡Éxito!' : 'Error'}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <button class="toast-close">✕</button>
-    `;
-    container.appendChild(toast);
-    
-    // Auto-remove
+// ── TOAST ──
+window.showToast = function(msg, type = 'success') {
+    const icons = { success:'fa-check-circle', error:'fa-exclamation-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+    const stack = document.getElementById('toast-stack');
+    const t = document.createElement('div');
+    t.className = `toast-item ${type}`;
+    t.innerHTML = `<i class="fas ${icons[type] || icons.success} toast-icon"></i><span class="toast-msg">${msg}</span>`;
+    stack.appendChild(t);
     setTimeout(() => {
-        toast.style.animation = 'fadeOut 0.3s ease forwards';
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
-}
+        t.style.transition = '.3s';
+        t.style.opacity    = '0';
+        t.style.transform  = 'translateY(10px)';
+        setTimeout(() => t.remove(), 350);
+    }, 3500);
+};
 
-function setupListeners() {
-    // Cerrar toasts
-    document.getElementById('toast-container').addEventListener('click', e => {
-        if (e.target.classList.contains('toast-close')) {
-            e.target.closest('.toast-modern').remove();
-        }
-    });
-    
-    // Botón finalizar compra
-    const checkoutBtn = document.getElementById('btn-finalizar');
-    if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', async function() {
-            if (state.items.length === 0) {
-                showToast('El carrito está vacío', 'error');
-                return;
-            }
-            
-            this.classList.add('loading');
-            this.disabled = true;
-            
-            try {
-                // Redirigir a checkout
-                window.location.href = '/ventas/checkout/';
-            } catch (e) {
-                this.classList.remove('loading');
-                this.disabled = false;
-                showToast('Error al procesar', 'error');
-            }
-        });
-    }
-}
-
-// Iniciar
 init();
+
 });
 </script>
 </body>

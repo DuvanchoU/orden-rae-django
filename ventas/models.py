@@ -240,7 +240,7 @@ class Clientes(models.Model):
     
     @property
     def is_authenticated(self):
-        return True
+        return self.esta_activo()
     
     @property
     def is_anonymous(self):
@@ -250,8 +250,13 @@ class Clientes(models.Model):
     def is_active(self):
         return self.estado == 'ACTIVO' and self.deleted_at is None
     
-    def get_username(self):
-        return self.email
+    @property
+    def username(self):
+        return self.email or f"cliente_{self.id_cliente}"
+    
+    @property
+    def foto_perfil(self):
+        return None
     
     def get_full_name(self):
         if self.apellido:

@@ -479,7 +479,7 @@
         {% endif %}
 
         <!-- Formulario de Login -->
-        <form method="post" action="{% url 'login' %}" id="loginForm" novalidate>
+        <form method="post" action="{% url 'pagina:login' %}" id="loginForm" novalidate>
             {% csrf_token %}
 
             <!-- Campo: Correo -->

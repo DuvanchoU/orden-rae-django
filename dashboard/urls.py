@@ -13,6 +13,8 @@ app_name = 'dashboard'
 
 urlpatterns = [
     path('', dashboard_redirect, name='dashboard_home'),
+    path('redirect/', dashboard_redirect, name='dashboard_redirect'),
+    
     
     # Dashboards por rol
     path('gerente/', DashboardView.as_view(), name='dashboard_gerente'),

@@ -1,38 +1,37 @@
-from django.urls import path, include
+# pagina/urls.py
+from django.urls import path
 from . import views
 
 app_name = 'pagina'
 
 urlpatterns = [
-    # --- Vistas Principales ---
     path('', views.home, name='home'),
     path('productos/', views.productos, name='productos'),
     path('productos/<slug:categoria_slug>/', views.productos_por_categoria, name='productos_por_categoria'),
-
     path('promociones/', views.promociones, name='promociones'),
     
-    # === Sobre el la empresa ===
+    # Sobre la empresa
     path('quienes-somos/', views.quienes_somos, name='quienes_somos'),
     path('nuestra-historia/', views.nuestra_historia, name='nuestra_historia'),
     path('sostenibilidad/', views.sostenibilidad, name='sostenibilidad'),
     path('trabaja-con-nosotros/', views.trabaja_con_nosotros, name='trabaja_con_nosotros'),
     path('blog-decoracion/', views.blog_decoracion, name='blog_decoracion'),   
     
-    # --- Carrito y Checkout ---
+    # Checkout
     path('checkout/', views.checkout, name='checkout'),
-    path('carrito/', include(('ventas.urls', 'ventas'), namespace='carrito')),
-    
-    # --- Usuario y Autenticación ---
+
+    # Usuario y Autenticación
     path('login/', views.login_view, name='login'),
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
     path('perfil/', views.perfil_view, name='perfil'),
 
-    # --- Formularios ---
+    # Formularios
     path('contacto/', views.contacto, name='contacto'),
     path('cotiza/', views.cotiza, name='cotiza'), 
     
-    # --- API ---
+    # API
+    path('api/carrito/agregar/', views.api_agregar_carrito, name='api_carrito_agregar'),
     path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
     path('api/cotiza/enviar/', views.api_cotiza_enviar, name='api_cotiza_enviar'),
     path('api/contacto/enviar/', views.api_contacto_enviar, name='api_contacto_enviar'),

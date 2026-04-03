@@ -1,4 +1,3 @@
-# 📁 pagina/templatetags/custom_auth.py
 from django import template
 
 register = template.Library()
@@ -19,16 +18,17 @@ def has_role(user, roles_str):
     if hasattr(user, 'rol') and user.rol in roles:
         return True
     
-    # Verificar por grupos de Django
+    # Verificar por grupos de Django (solo si el objeto los soporta)
     try:
         user_groups = user.groups.values_list('name', flat=True)
         if any(role in user_groups for role in roles):
             return True
-    except:
+    except Exception:
         pass
     
-    # Verificar ADMIN por is_superuser/is_staff
-    if 'ADMIN' in roles and (user.is_superuser or user.is_staff):
+    is_super = getattr(user, 'is_superuser', False)
+    is_staff = getattr(user, 'is_staff', False)
+    if 'ADMIN' in roles and (is_super or is_staff):
         return True
     
     return False
@@ -36,10 +36,6 @@ def has_role(user, roles_str):
 
 @register.filter(name='range')
 def make_range(value):
-    """
-    Genera un rango de números para loops.
-    Uso: {% for i in 5|range %} → 0,1,2,3,4
-    """
     try:
         return range(int(value))
     except (ValueError, TypeError, AttributeError):

@@ -105,6 +105,7 @@ class Usuarios(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted_at = models.DateTimeField(blank=True, null=True)
+    last_login = models.DateTimeField(blank=True, null=True, verbose_name='último login')
     
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"
@@ -193,7 +194,10 @@ class Usuarios(models.Model):
         if self.contrasena_usuario and not self.contrasena_usuario.startswith('pbkdf2_'):
             self.contrasena_usuario = make_password(self.contrasena_usuario)
         
-        self.full_clean()
+        update_fields = kwargs.get('update_fields')
+        if update_fields is None:
+            self.full_clean()
+        
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
@@ -263,7 +267,7 @@ class Usuarios(models.Model):
     
     @property
     def is_authenticated(self):
-        return True
+        return self.estado == 'ACTIVO' and self.deleted_at is None 
     
     @property
     def is_anonymous(self):

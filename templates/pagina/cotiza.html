@@ -953,14 +953,14 @@
                 <div class="menu-usuario position-relative">
                     <div class="d-flex align-items-center position-relative">
                         <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}" 
-                             alt="Usuario" class="icono-img user-trigger">
+                            alt="Usuario" class="icono-img user-trigger">
                         <span class="user-tooltip ms-2 text-dark">
                             {{ user.get_full_name|default:user.username }}
                         </span>
                     </div>
                     <div class="submenu mt-1">
                         <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
-                        <a href="{% url 'logout' %}">Cerrar sesión</a> 
+                        <a href="{% url 'pagina:logout' %}">Cerrar sesión</a> 
                         
                         {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
                             <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>

@@ -1,39 +1,41 @@
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.hashers import check_password
 from ventas.models import Clientes
+import logging
+
+logger = logging.getLogger('auth.debug')
 
 class ClientesAuthBackend(BaseBackend):
-    """
-    Backend de autenticación personalizado para Clientes
-    """
     
+    # Autentica clientes usando correo electrónico y contraseña
     def authenticate(self, request, correo=None, contrasena=None, **kwargs):
-        if correo is None or contrasena is None:
+        if not correo or not contrasena:
             return None
         
+        # Intentar encontrar el cliente por correo electrónico
         try:
-            # Buscar por email (case-insensitive)
             cliente = Clientes.objects.get(
-                email__iexact=correo.strip(),
-                estado='ACTIVO',
+                email=correo.lower().strip(),
                 deleted_at__isnull=True
             )
+            logger.debug(f" Cliente encontrado: {cliente.email}, estado: {cliente.estado}")
+            
+            # Verificar estado del cliente
+            if cliente.estado != 'ACTIVO':
+                logger.warning(f" Cliente inactivo: {correo}")
+                return None
+            
+            # Verificar contraseña
+            if check_password(contrasena, cliente.contrasena_cliente):
+                logger.debug(f" Contraseña correcta para: {correo}")
+                return cliente
+            else:
+                logger.warning(f" Contraseña incorrecta para: {correo}")
+                return None
+        # Manejar caso donde el cliente no existe
         except Clientes.DoesNotExist:
-            # Evitar timing attacks
-            check_password(contrasena, 'pbkdf2_sha256$dummy$dummy$dummy')
+            logger.warning(f" Cliente no existe: {correo}")
             return None
-        
-        # Verificar contraseña
-        if check_password(contrasena, cliente.contrasena_cliente):
-            return cliente
-        
-        return None
-    
-    def get_user(self, cliente_id):
-        try:
-            return Clientes.objects.get(
-                pk=cliente_id,
-                deleted_at__isnull=True
-            )
+
         except Clientes.DoesNotExist:
             return None

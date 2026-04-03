@@ -21,6 +21,7 @@ import logging
 logger = logging.getLogger('auth.debug')
 from django.core.mail import send_mail
 from django.conf import settings
+from decimal import Decimal
 
 
 def generar_avatar_url(nombre, tamaño=128):
@@ -222,43 +223,45 @@ def home(request):
     return render(request, 'pagina/index.html', context)
 
 
+from django.core.paginator import Paginator  # ← Agregar este import arriba del archivo
+
 def productos(request):
-    """Vista de página de productos con categorías dinámicas desde BD"""
-    
+    """Vista de página de productos con paginación"""
+
     categorias_principales_slugs = [
-        'bases-de-comedor', 'cama-cunas', 'butacos-de-bar', 
+        'bases-de-comedor', 'cama-cunas', 'butacos-de-bar',
         'camas-adultos', 'camas-infantiles', 'todas'
     ]
-    
+
     todas_categorias = Categorias.objects.filter(
         estado_categoria='activo',
         deleted_at__isnull=True
     ).annotate(
         productos_count=Count('productos', filter=Q(
-            productos__estado='DISPONIBLE', 
-            productos__deleted_at__isnull=True 
+            productos__estado='DISPONIBLE',
+            productos__deleted_at__isnull=True
         ))
     ).order_by('nombre_categoria')
-    
+
     categorias_principales = []
     categorias_secundarias = []
-    
+
     for cat in todas_categorias:
-        slug = cat.nombre_categoria.lower().replace(' ', '-').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
-        
+        slug = (cat.nombre_categoria.lower()
+                .replace(' ', '-').replace('á', 'a').replace('é', 'e')
+                .replace('í', 'i').replace('ó', 'o').replace('ú', 'u'))
+
         primer_producto = Producto.objects.filter(
-            categoria=cat,
-            deleted_at__isnull=True
+            categoria=cat, deleted_at__isnull=True
         ).first()
         imagen_url = '/static/img/placeholder.jpg'
         if primer_producto:
             img = ImagenesProducto.objects.filter(
-                producto=primer_producto,
-                es_principal=1
+                producto=primer_producto, es_principal=1
             ).first()
             if img:
                 imagen_url = img.ruta_imagen
-        
+
         categoria_data = {
             'id': cat.id_categorias,
             'nombre': cat.nombre_categoria,
@@ -268,35 +271,37 @@ def productos(request):
             'imagen_url': imagen_url,
             'productos_count': cat.productos_count
         }
-        
-        if slug in categorias_principales_slugs or cat.nombre_categoria.upper() in ['BASES DE COMEDOR', 'CAMA CUNAS', 'BUTACOS DE BAR', 'CAMAS ADULTOS', 'CAMAS INFANTILES']:
+
+        if (slug in categorias_principales_slugs or
+                cat.nombre_categoria.upper() in [
+                    'BASES DE COMEDOR', 'CAMA CUNAS', 'BUTACOS DE BAR',
+                    'CAMAS ADULTOS', 'CAMAS INFANTILES'
+                ]):
             categorias_principales.append(categoria_data)
         elif cat.productos_count > 0:
             categorias_secundarias.append(categoria_data)
-    
+
     if not any(c['slug'] == 'todas' for c in categorias_principales):
         categorias_principales.insert(0, {
             'id': 0,
             'nombre': 'Todas',
             'slug': 'todas',
             'descripcion_corta': 'Ver todos los productos',
-            'descripcion_larga': 'Explora todo nuestro catálogo de muebles artesanales',
+            'descripcion_larga': 'Explora todo nuestro catálogo',
             'imagen_url': '/static/img/placeholder.jpg',
-            'productos_count': Producto.objects.filter(estado='DISPONIBLE', deleted_at__isnull=True).count()
+            'productos_count': Producto.objects.filter(
+                estado='DISPONIBLE', deleted_at__isnull=True
+            ).count()
         })
-    
+
     # === PRODUCTOS DESTACADOS ===
     productos_destacados_qs = Producto.objects.filter(
-        estado='DISPONIBLE',
-        deleted_at__isnull=True
+        estado='DISPONIBLE', deleted_at__isnull=True
     ).select_related('categoria')[:4]
-    
+
     productos_destacados = []
     for prod in productos_destacados_qs:
-        img = ImagenesProducto.objects.filter(
-            producto=prod,
-            es_principal=1
-        ).first()
+        img = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
         productos_destacados.append({
             'id': prod.id_producto,
             'nombre': prod.referencia_producto or prod.codigo_producto,
@@ -305,47 +310,79 @@ def productos(request):
             'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg'
         })
 
-    # === PRODUCTOS PARA EL GRID PRINCIPAL ===
-    todos_productos = Producto.objects.filter(
-        estado='DISPONIBLE',
-        deleted_at__isnull=True
-    ).select_related('categoria')[:50]
+    # === BADGES: 5 más nuevos y 5 más antiguos ===
+    ids_nuevos = list(
+        Producto.objects.filter(estado='DISPONIBLE', deleted_at__isnull=True)
+        .order_by('-created_at')
+        .values_list('id_producto', flat=True)[:5]
+    )
+    ids_oferta = list(
+        Producto.objects.filter(estado='DISPONIBLE', deleted_at__isnull=True)
+        .order_by('created_at')
+        .values_list('id_producto', flat=True)[:5]
+    )
 
-    productos_list = []
-    for prod in todos_productos:
+    # === TODOS LOS PRODUCTOS (sin límite, el paginator lo maneja) ===
+    todos_productos_qs = Producto.objects.filter(
+        estado='DISPONIBLE', deleted_at__isnull=True
+    ).select_related('categoria').order_by('-created_at')
+
+    productos_list_completa = []
+    for prod in todos_productos_qs:
         img = prod.get_imagen_principal()
-        # Generar slug consistente con el de las categorías
-        cat_slug = prod.categoria.nombre_categoria.lower().replace(' ', '-').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u') if prod.categoria else 'sin-categoria'
-        
-        productos_list.append({
-            'id_producto': prod.id_producto,
-            'nombre': prod.referencia_producto or prod.codigo_producto,
+        cat_slug = (
+            prod.categoria.nombre_categoria.lower()
+            .replace(' ', '-').replace('á', 'a').replace('é', 'e')
+            .replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
+            if prod.categoria else 'sin-categoria'
+        )
+        productos_list_completa.append({
+            'id_producto':         prod.id_producto,
+            'nombre':              prod.referencia_producto or prod.codigo_producto,
             'referencia_producto': prod.referencia_producto or prod.codigo_producto,
-            'codigo_producto': prod.codigo_producto,
-            'precio_actual': prod.precio_actual,
-            'precio_numeric': float(prod.precio_actual),
-            'categoria_slug': cat_slug,
-            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
-            'created_at': prod.created_at.isoformat() if prod.created_at else '',  # ← Formato ISO para JS
+            'codigo_producto':     prod.codigo_producto,
+            'precio_actual':       prod.precio_actual,
+            'precio_numeric':      float(prod.precio_actual),
+            'categoria_slug':      cat_slug,
+            'imagen_url':          img.ruta_imagen if img else '/static/img/placeholder.jpg',
+            'created_at':          prod.created_at.isoformat() if prod.created_at else '',
+            'es_nuevo':            prod.id_producto in ids_nuevos,
+            'es_oferta':           prod.id_producto in ids_oferta,
         })
-    
+
+    # === PAGINACIÓN: 20 productos por página ===
+    paginator = Paginator(productos_list_completa, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    sort_options = [
+        ("Relevancia", "relevancia"),
+        ("Precio ↑", "precio-asc"),
+        ("Precio ↓", "precio-desc"),
+        ("Más nuevos", "mas-nuevos"),
+        ("A – Z", "nombre-asc"),
+    ]
+
     context = {
-        'categorias_principales': categorias_principales,
-        'categorias_secundarias': categorias_secundarias,
-        'productos_destacados': productos_destacados,
-        'productos': productos_list,
+        'categorias_principales':  categorias_principales,
+        'categorias_secundarias':  categorias_secundarias,
+        'productos_destacados':    productos_destacados,
+        'productos':               page_obj,          # ← page_obj en lugar de lista
+        'page_obj':                page_obj,
+        'paginator':               paginator,
+        'sort_options':            sort_options,
         'categorias_json': json.dumps([
-            {'nombre': c['nombre'], 'slug': c['slug'], 'productos_count': c['productos_count']} 
+            {'nombre': c['nombre'], 'slug': c['slug'], 'productos_count': c['productos_count']}
             for c in categorias_principales + categorias_secundarias
         ]),
         'destacados_json': json.dumps([
             {'nombre': p['nombre'], 'slug': p['slug'], 'precio': p['precio']}
             for p in productos_destacados
         ]),
-        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'carrito_cantidad':     request.session.get('carrito_cantidad', 0),
         'notificaciones_nuevas': 0,
     }
-    
+
     return render(request, 'pagina/productos.html', context)
 
 def productos_por_categoria(request, categoria_slug):
@@ -413,7 +450,7 @@ def promociones(request):
     for prod in promociones_qs:
         img = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
         # Calcular descuento simulado (puedes agregar un campo descuento en el modelo)
-        precio_original = int(prod.precio_actual * 1.2)  # 20% más
+        precio_original = int(prod.precio_actual * Decimal('1.2'))  # 20% más
         precio_promo = int(prod.precio_actual)
         descuento = int(((precio_original - precio_promo) / precio_original) * 100)
         
@@ -424,7 +461,7 @@ def promociones(request):
             'precio_original': precio_original,
             'precio_promo': precio_promo,
             'porcentaje_descuento': descuento,
-            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+            'imagen_url': f"/media/{img.ruta_imagen}" if img else '/static/img/placeholder.jpg',
         })
     
     context = {
@@ -439,27 +476,117 @@ def promociones(request):
 
 
 @require_http_methods(["POST"])
+@require_http_methods(["POST"])
 def api_agregar_carrito(request):
-    """Agregar producto al carrito"""
+    """Agregar producto al carrito — guarda en sesión Y en BD (Carritos/ItemsCarrito)"""
     try:
-        data = json.loads(request.body)
-        carrito = request.session.get('carrito', {})
+        data        = json.loads(request.body)
         producto_id = str(data.get('producto_id'))
-        cantidad = data.get('cantidad', 1)
-        
+        cantidad    = int(data.get('cantidad', 1))
+
+        # ── 1. Verificar que el producto existe ──
+        try:
+            prod = Producto.objects.get(
+                id_producto=producto_id,
+                estado='DISPONIBLE',
+                deleted_at__isnull=True
+            )
+        except Producto.DoesNotExist:
+            return JsonResponse(
+                {'success': False, 'error': 'Producto no encontrado'}, status=404
+            )
+
+        precio     = prod.precio_actual
+        nombre     = prod.referencia_producto or prod.codigo_producto
+        img        = ImagenesProducto.objects.filter(
+                         producto=prod, es_principal=1
+                     ).first()
+        imagen_url = img.ruta_imagen if img else '/static/img/placeholder.jpg'
+
+        # ── 2. Guardar en sesión ──
+        if not request.session.session_key:
+            request.session.create()
+
+        carrito = request.session.get('carrito', {})
+
         if producto_id in carrito:
-            carrito[producto_id] += cantidad
+            carrito[producto_id]['cantidad'] += cantidad
         else:
-            carrito[producto_id] = cantidad
-        
-        request.session['carrito'] = carrito
-        request.session['carrito_cantidad'] = sum(carrito.values())
+            carrito[producto_id] = {
+                'producto_id': producto_id,
+                'nombre':      nombre,
+                'precio':      float(precio),
+                'cantidad':    cantidad,
+                'imagen_url':  imagen_url,
+            }
+
+        request.session['carrito']          = carrito
+        request.session['carrito_cantidad'] = sum(
+            item['cantidad'] for item in carrito.values()
+        )
         request.session.modified = True
-        
+
+        # ── 3. Guardar en BD usando Carritos / ItemsCarrito ──
+        try:
+            from ventas.models import Carritos, ItemsCarrito
+
+            # Obtener o crear el carrito en BD
+            # Si el cliente está autenticado, asociarlo; si no, usar session_id
+            cliente = None
+            if request.user.is_authenticated:
+                from ventas.models import Clientes
+                try:
+                    cliente = Clientes.objects.get(
+                        email=request.user.email,
+                        deleted_at__isnull=True
+                    )
+                except Exception:
+                    pass
+
+            carrito_bd, _ = Carritos.objects.get_or_create(
+                session_id=request.session.session_key,
+                deleted_at__isnull=True,
+                defaults={
+                    'cliente':    cliente,
+                    'created_at': timezone.now(),
+                    'updated_at': timezone.now(),
+                }
+            )
+
+            # Si se encontró el carrito y el cliente no estaba asociado, asociarlo
+            if cliente and not carrito_bd.cliente:
+                carrito_bd.cliente = cliente
+                carrito_bd.updated_at = timezone.now()
+                carrito_bd.save()
+
+            # Agregar o actualizar el item
+            item_bd, created = ItemsCarrito.objects.get_or_create(
+                carrito=carrito_bd,
+                producto=prod,
+                defaults={
+                    'cantidad':        cantidad,
+                    'precio_unitario': precio,
+                    'created_at':      timezone.now(),
+                    'updated_at':      timezone.now(),
+                }
+            )
+            if not created:
+                item_bd.cantidad       += cantidad
+                item_bd.precio_unitario = precio
+                item_bd.updated_at      = timezone.now()
+                item_bd.save()
+
+        except Exception as e:
+            # Si falla BD, la sesión igual funciona
+            print(f"⚠️ Error BD carrito: {e}")
+
         return JsonResponse({
-            'success': True,
+            'success':        True,
             'cantidad_total': request.session['carrito_cantidad'],
+            'nombre':         nombre,
+            'precio':         float(precio),
         })
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -808,54 +935,88 @@ def api_cotiza_enviar(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 def login_view(request):
-    """Login de clientes"""
+    """Login unificado para clientes y staff"""
     
+    # Si ya está autenticado redirigir según tipo
     if request.session.get('cliente_auth'):
-        return redirect(request.GET.get('next', 'pagina:home'))
+        return redirect('pagina:home')
+    if request.session.get('usuario_id'):
+        return redirect('dashboard:dashboard_home')
     
     if request.method == 'POST':
         correo = request.POST.get('correo', '').strip().lower()
         contrasena = request.POST.get('contrasena', '')
         remember = request.POST.get('remember')
-        
-        logger.debug(f"🔐 [login_view] Intento login: {correo}")
-        
+
         if not correo or not contrasena:
             messages.error(request, 'Ingresa correo y contraseña')
             return render(request, 'pagina/login.html')
-        
-        # Autenticar con el backend
+
+        # Buscar primero en Usuarios (staff)
+        from usuarios.models import Usuarios
+        try:
+            usuario = Usuarios.objects.select_related('id_rol').get(
+                correo_usuario=correo,
+                deleted_at__isnull=True
+            )
+            if usuario.check_password(contrasena):
+                if usuario.estado != 'ACTIVO':
+                    messages.error(request, 'Usuario inactivo. Contacte al administrador.')
+                    return render(request, 'pagina/login.html')
+                
+                # Autenticación exitosa, iniciar sesión
+                from django.contrib.auth import login
+                login(request, usuario, backend='usuarios.backends.UsuariosAuthBackend')
+
+                import time
+                request.session['usuario_id'] = usuario.id_usuario
+                request.session['usuario_nombre'] = f"{usuario.nombres} {usuario.apellidos}"
+                request.session['usuario_rol'] = usuario.id_rol.nombre_rol if usuario.id_rol else 'SIN_ROL'
+                request.session['last_activity_timestamp'] = time.time()
+
+                if remember:
+                    request.session.set_expiry(1209600)
+
+                messages.success(request, f'Bienvenido {usuario.nombres}')
+                return redirect('dashboard:dashboard_home')
+            else:
+                messages.error(request, 'Contraseña incorrecta')
+                return render(request, 'pagina/login.html')
+
+        except Usuarios.DoesNotExist:
+            pass  # No es staff, buscar en clientes
+
+        # Buscar en Clientes
         from django.contrib.auth import authenticate, login
         cliente = authenticate(request, correo=correo, contrasena=contrasena)
-        
-        logger.debug(f"🔐 [login_view] authenticate() retornó: {cliente}")
-        
+
         if cliente is not None:
-            logger.debug(f"✅ [login_view] Login exitoso, ejecutando login()")
             login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
-            
+
             request.session['cliente_id'] = cliente.id_cliente
             request.session['cliente_nombre'] = cliente.get_nombre_completo()
             request.session['cliente_email'] = cliente.email
             request.session['cliente_auth'] = True
-            
+
             if remember:
                 request.session.set_expiry(1209600)
             else:
                 request.session.set_expiry(0)
-            
+
             cliente.last_login = timezone.now()
             cliente.ultimo_login = timezone.now()
             cliente.save(update_fields=['last_login', 'ultimo_login'])
-            
-            logger.debug(f"🔍 [login_view] Session después de login: {dict(request.session)}")
-            
+
             messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
             return redirect(request.GET.get('next', 'pagina:home'))
-        else:
-            logger.warning(f"❌ [login_view] Credenciales inválidas para: {correo}")
-            messages.error(request, 'Credenciales incorrectas')
-    
+
+        messages.error(request, 'Correo o contraseña incorrectos')
+
+    if request.GET.get('timeout') == '1':
+        messages.warning(request, 'Tu sesión expiró. Inicia sesión nuevamente.')
+    if request.GET.get('logged_out') == '1':
+        messages.info(request, 'Sesión cerrada correctamente.')
+
     return render(request, 'pagina/login.html')
 
 
@@ -866,28 +1027,28 @@ def registro_view(request):
         return redirect('pagina:home')
     
     if request.method == 'POST':
-        nombre = request.POST.get('nombre', '').strip()
-        apellido = request.POST.get('apellido', '').strip()
+        nombre    = request.POST.get('nombre', '').strip()
+        apellido  = request.POST.get('apellidos', '').strip()   # era 'apellido'
         documento = request.POST.get('documento', '').strip()
-        email = request.POST.get('email', '').strip().lower()
-        telefono = request.POST.get('telefono', '').strip()
-        genero = request.POST.get('genero', '')
-        password = request.POST.get('password', '')
+        email     = request.POST.get('correo', '').strip().lower()  # era 'email'
+        telefono  = request.POST.get('telefono', '').strip()
+        genero    = request.POST.get('genero', '')
+        password  = request.POST.get('password', '')
         password2 = request.POST.get('password2', '')
         
         # Validaciones
         errores = []
         if not all([nombre, apellido, documento, email, password, password2]):
-            errores.append('Todos los campos obligatorios')
+            errores.append('Todos los campos obligatorios son requeridos')
         if password != password2:
             errores.append('Las contraseñas no coinciden')
         if len(password) < 8:
-            errores.append('Mínimo 8 caracteres')
+            errores.append('La contraseña debe tener mínimo 8 caracteres')
         
-        if Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
-            errores.append('Email ya registrado')
-        if Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
-            errores.append('Documento ya registrado')
+        if email and Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
+            errores.append('El email ya está registrado')
+        if documento and Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
+            errores.append('El documento ya está registrado')
         
         if errores:
             return render(request, 'pagina/registro.html', {
@@ -897,46 +1058,43 @@ def registro_view(request):
         
         try:
             from django.contrib.auth.hashers import make_password
+
+            #  Mapa de género corregido para los valores del HTML
+            genero_map = {
+                'masculino': 'M',
+                'femenino':  'F',
+                'otro':      'O',
+            }
+            genero_abrev = genero_map.get(genero.lower(), 'O') if genero else 'O'
             
-            # Convertir género
-            genero_map = {'masculino': 'M', 'femenino': 'F', 'hombre': 'M', 'mujer': 'F'}
-            genero_abrev = genero_map.get(genero.lower(), 'O')
-            
-            logger.debug(f"🔧 [registro_view] Creando cliente: {email}")
-            
-            # Crear cliente
+            #  Guardar directo en tabla clientes
             nuevo_cliente = Clientes.objects.create(
                 nombre=nombre,
                 apellido=apellido,
                 documento=documento,
                 email=email,
-                contrasena_cliente=make_password(password),  # ← HASH DE DJANGO
+                contrasena_cliente=make_password(password),
                 telefono=telefono or None,
                 estado='ACTIVO',
                 fecha_registro=timezone.now(),
                 genero=genero_abrev,
             )
             
-            logger.debug(f"✅ [registro_view] Cliente creado ID: {nuevo_cliente.id_cliente}")
-            logger.debug(f"🔐 [registro_view] Hash: {nuevo_cliente.contrasena_cliente[:50]}...")
-            
-            # Auto-login
+            # Auto-login con el backend de clientes
             from django.contrib.auth import login
             login(request, nuevo_cliente, backend='ventas.backends.ClientesAuthBackend')
             
-            request.session['cliente_id'] = nuevo_cliente.id_cliente
+            request.session['cliente_id']     = nuevo_cliente.id_cliente
             request.session['cliente_nombre'] = f"{nombre} {apellido}"
-            request.session['cliente_email'] = email
-            request.session['cliente_auth'] = True
+            request.session['cliente_email']  = email
+            request.session['cliente_auth']   = True
             
-            logger.debug(f"🔍 [registro_view] Session después de registro: {dict(request.session)}")
-            
-            messages.success(request, f'¡Bienvenido, {nombre}!')
+            messages.success(request, f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.')
             return redirect('pagina:home')
             
         except Exception as e:
-            logger.error(f"❌ [registro_view] ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
-            messages.error(request, f'Error: {str(e)}')
+            logger.error(f" [registro_view] ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
+            messages.error(request, f'Error al crear la cuenta: {str(e)}')
             return render(request, 'pagina/registro.html', {'form_data': request.POST})
     
     return render(request, 'pagina/registro.html')
@@ -948,26 +1106,12 @@ def logout_view(request):
     logout(request)  # Cierra sesión de Django
     
     # Limpiar variables de sesión personalizadas
-    keys_to_delete = ['cliente_id', 'cliente_nombre', 'cliente_email', 
-                      'carrito', 'carrito_cantidad', 'cupon_activo']
+    keys_to_delete = ['cliente_id', 'cliente_nombre', 'cliente_email', 'cliente_auth', 'carrito', 'carrito_cantidad', 'cupon_activo']
     for key in keys_to_delete:
         if key in request.session:
             del request.session[key]
     
     return redirect('pagina:home')
-
-
-def promociones(request):
-    return render(request, 'pagina/promociones.html')
-
-
-def contacto(request):
-    return render(request, 'pagina/contacto.html')
-
-
-def cotiza(request):
-    return render(request, 'pagina/cotiza.html')
-
 
 def perfil_view(request):
     """Vista de perfil de usuario"""

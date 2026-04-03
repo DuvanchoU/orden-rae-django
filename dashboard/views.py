@@ -29,7 +29,7 @@ def dashboard_redirect(request):
     """
     # Verificar que el usuario tenga un rol asignado
     if not hasattr(request.user, 'id_rol') or not request.user.id_rol:
-        return redirect('usuarios:login')
+        return redirect('pagina:login')
     
     rol = request.user.id_rol.nombre_rol
     
@@ -112,7 +112,7 @@ class DashboardView(TemplateView):
         context['pedidos_estado_data'] = self._get_pedidos_por_estado()
         
         # === INFORMACIÓN DEL USUARIO ACTUAL ===
-        # ✅ CORREGIDO: usa self.request en lugar de request
+        #  CORREGIDO: usa self.request en lugar de request
         if hasattr(self.request, 'user') and hasattr(self.request.user, 'id_rol') and self.request.user.id_rol:
             context['user_rol'] = self.request.user.id_rol.nombre_rol
             context['user_nombre'] = f"{self.request.user.nombres} {self.request.user.apellidos}"
@@ -340,4 +340,4 @@ def logout_view(request):
     if next_url:
         return redirect(next_url)
     
-    return redirect('usuarios:login')
+    return redirect('pagina:login')

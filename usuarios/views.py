@@ -7,7 +7,6 @@ from django.utils.decorators import method_decorator
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.views.generic import View
-import hashlib
 import time
 
 # Importar modelos y formularios
@@ -27,80 +26,9 @@ from .utils import (
 
 # Vistas de Autenticación Personalizada con Rate Limiting y Protección de Caché
 
-@never_cache  # Previene que el navegador guarde esta página en caché
+@never_cache
 def login_view(request):
-    """
-    Vista de login con Rate Limiting y Protección de Caché.
-    """
-    # Si ya está autenticado (según tu middleware), redirigir al dashboard
-    if hasattr(request, 'user') and request.user.is_authenticated:
-        return redirect('dashboard:dashboard_home')
-    
-    # 1. Verificar si la IP está bloqueada por muchos intentos
-    if is_login_blocked(request):
-        messages.error(request, 'Demasiados intentos fallidos. Intente nuevamente en 15 minutos.')
-        return render(request, 'pagina/login.html')
-    
-    if request.method == 'POST':
-        correo = request.POST.get('correo')
-        contrasena = request.POST.get('contrasena')
-        
-        # 2. Verificar límite de intentos antes de procesar
-        attempts = get_login_attempts(request)
-        if attempts >= 5:
-            block_login(request)
-            messages.error(request, 'Demasiados intentos fallidos. Intente en 15 minutos.')
-            return render(request, 'pagina/login.html')
-        
-        try:
-            usuario = Usuarios.objects.get(correo_usuario=correo)
-            
-            # Encriptar contraseña con SHA256
-            contrasena_hash = hashlib.sha256(contrasena.encode()).hexdigest()
-            
-            if usuario.contrasena_usuario == contrasena_hash:
-                
-                if usuario.estado != 'ACTIVO':
-                    messages.error(request, 'Usuario inactivo. Contacte al administrador.')
-                    return render(request, 'pagina/login.html')
-                
-                # LOGIN EXITOSO
-                # Guardar en sesión para tu middleware personalizado
-                request.session['usuario_id'] = usuario.id_usuario
-                request.session['usuario_nombre'] = f"{usuario.nombres} {usuario.apellidos}"
-                request.session['usuario_rol'] = usuario.id_rol.nombre_rol if usuario.id_rol else 'SIN_ROL'
-                request.session['last_activity_timestamp'] = time.time()  # Para timeout
-                
-                # Resetear contador de intentos fallidos
-                reset_login_attempts(request)
-                
-                messages.success(request, f'Bienvenido {usuario.nombres}')
-                return redirect('dashboard:dashboard_home')
-            else:
-                # CONTRASEÑA INCORRECTA
-                increment_login_attempts(request)
-                attempts_remaining = 5 - get_login_attempts(request)
-                
-                if attempts_remaining <= 0:
-                    messages.error(request, 'Demasiados intentos fallidos. Cuenta bloqueada temporalmente.')
-                else:
-                    messages.error(request, f'Contraseña incorrecta. Intentos restantes: {attempts_remaining}')
-                
-        except Usuarios.DoesNotExist:
-            # USUARIO NO ENCONTRADO (También cuenta como intento fallido)
-            increment_login_attempts(request)
-            messages.error(request, 'Credenciales inválidas')
-        
-        return render(request, 'pagina/login.html')
-    
-    # Mensajes informativos para GET
-    if request.GET.get('timeout') == '1':
-        messages.warning(request, 'Tu sesión expiró por inactividad. Por favor, inicia sesión nuevamente.')
-    
-    if request.GET.get('logged_out') == '1':
-        messages.info(request, 'Sesión cerrada correctamente.')
-    
-    return render(request, 'pagina/login.html')
+    return redirect('/pagina/login/')
 
 
 @never_cache  # Previene caché en logout
@@ -110,10 +38,7 @@ def logout_view(request):
     """
     # Limpiar TODA la sesión
     request.session.flush()
-    
-    # Redirigir al login Construye URL con query params de forma segura
-    login_url = reverse_lazy('login')
-    return redirect(f"{login_url}?logged_out=1")
+    return redirect('/pagina/login/?logged_out=1')
 
 # =============================================================================
 # === VISTAS DE ROLES ===
