@@ -171,7 +171,7 @@ def home(request):
                 productos__deleted_at__isnull=True
             )
         )
-    ).order_by('nombre_categoria')[:6]
+    ).order_by('nombre_categoria')[:7]
     
     categorias = []
     for cat in categorias_qs:
