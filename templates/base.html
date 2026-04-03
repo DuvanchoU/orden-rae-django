@@ -62,7 +62,10 @@
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark w-100 shadow-lg border-0 mt-2">
-                        <li><a class="dropdown-item py-2" href="#"><i class="bi bi-person me-2"></i> Mi Perfil</a></li>
+                        <li><a class="dropdown-item py-2" href="{% url 'dashboard:perfil' %}"><i class="bi bi-person me-2"></i> Mi Perfil</a></li>
+                        <li><hr class="dropdown-divider bg-secondary"></li>
+                        <!-- boton para ir a pagina de logout -->
+                        <li><a class="dropdown-item py-2" href="{% url 'pagina:home' %}"><i class="bi bi-box-arrow-in-left""></i> Pagina Web</a></li>
                         <li><hr class="dropdown-divider bg-secondary"></li>
                         <li>
                             <a class="dropdown-item py-2 text-danger" href="#" 
@@ -318,6 +321,24 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('theme', newTheme);
     });
 });
+(function() {
+    // Al cargar la página (incluso desde caché del navegador),
+    // verifica con el servidor si la sesión sigue viva.
+    fetch('/dashboard/session-check/', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store'
+    })
+    .then(function(res) {
+        if (res.status === 401 || res.redirected) {
+            // Sesión expirada o no autenticado → limpiar historial y redirigir
+            window.location.replace('/pagina/login/');
+        }
+    })
+    .catch(function() {
+        // Si falla la petición, no hacer nada (puede ser offline)
+    });
+})();
 </script>
 
 {% block extra_js %}{% endblock %}

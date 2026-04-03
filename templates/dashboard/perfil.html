@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil | ORDEN R.A.E{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/perfil_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <p class="text-muted small mb-1">
+            <i class="bi bi-house me-1"></i> Dashboard
+            <i class="bi bi-chevron-right mx-1" style="font-size:0.65rem;"></i>
+            Mi Perfil
+        </p>
+        <h1 class="page-title mb-0">Mi Perfil</h1>
+    </div>
+    <a href="{% url 'dashboard:dashboard_home' %}" class="btn-volver btn-sm">
+        <i class="bi bi-arrow-left"></i> Volver
+    </a>
+</div>
+
+<div class="row g-3">
+
+    <!-- ===================== COLUMNA IZQUIERDA - TARJETA DE PERFIL ===================== -->
+    <div class="col-12 col-lg-4 col-xl-3">
+
+        <!-- Tarjeta principal del usuario -->
+        <div class="perfil-card mb-3">
+            <!-- Header con avatar -->
+            <div class="perfil-card-header">
+                <div class="avatar-ring">
+                    {{ user_nombre|default:'U'|slice:':1'|upper }}{% if user_apellido %}{{ user_apellido|slice:':1'|upper }}{% endif %}
+                </div>
+                <h2 class="perfil-nombre">{{ user_nombre|default:'Usuario' }} {{ user_apellido|default:'' }}</h2>
+                <div class="perfil-rol-badge">
+                    <span class="perfil-rol-dot"></span>
+                    {{ user_rol|default:'Sin rol' }}
+                </div>
+            </div>
+
+            <!-- Info compacta -->
+            <div class="perfil-info-body">
+                <div class="perfil-info-row">
+                    <span class="perfil-info-key"><i class="bi bi-person me-1"></i>Usuario</span>
+                    <span class="perfil-info-val">{{ perfil_usuario.username|default:'-' }}</span>
+                </div>
+                <div class="perfil-info-row">
+                    <span class="perfil-info-key"><i class="bi bi-envelope me-1"></i>Correo</span>
+                    <span class="perfil-info-val accent">{{ perfil_usuario.email|default:'-' }}</span>
+                </div>
+                <div class="perfil-info-row">
+                    <span class="perfil-info-key"><i class="bi bi-telephone me-1"></i>Teléfono</span>
+                    <span class="perfil-info-val">{{ perfil_usuario.telefono|default:'No registrado' }}</span>
+                </div>
+                <div class="perfil-info-row">
+                    <span class="perfil-info-key"><i class="bi bi-calendar me-1"></i>Ingreso</span>
+                    <span class="perfil-info-val">{{ perfil_usuario.date_joined|date:"d M Y"|default:'-' }}</span>
+                </div>
+                <div class="perfil-info-row">
+                    <span class="perfil-info-key"><i class="bi bi-clock me-1"></i>Último acceso</span>
+                    <span class="perfil-info-val">{{ perfil_usuario.last_login|timesince|default:'Nunca' }} atrás</span>
+                </div>
+                <div class="perfil-info-row">
+                    <span class="perfil-info-key"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem; color:#10b981;"></i>Estado</span>
+                    <span class="perfil-info-val" style="color:#10b981;">Activo</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="perfil-stats-row">
+                <div class="perfil-stat-box">
+                    <span class="perfil-stat-num">{{ stats.ventas|default:'0' }}</span>
+                    <span class="perfil-stat-lbl">Ventas</span>
+                </div>
+                <div class="perfil-stat-box">
+                    <span class="perfil-stat-num">{{ stats.pedidos|default:'0' }}</span>
+                    <span class="perfil-stat-lbl">Pedidos</span>
+                </div>
+                <div class="perfil-stat-box">
+                    <span class="perfil-stat-num">{{ stats.cotizaciones|default:'0' }}</span>
+                    <span class="perfil-stat-lbl">Cotiz.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permisos del rol -->
+        <div class="info-card">
+            <div class="perfil-section-head">
+                <span class="perfil-section-title">
+                    <i class="bi bi-shield-lock me-2"></i>Permisos del rol
+                </span>
+            </div>
+            <div class="p-3">
+                {% if user_permissions.can_view_dashboard %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Dashboard</span>
+                {% endif %}
+                {% if user_permissions.can_view_inventario %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Inventario</span>
+                {% endif %}
+                {% if user_permissions.can_view_ventas %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Ventas</span>
+                {% endif %}
+                {% if user_permissions.can_view_pedidos %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Pedidos</span>
+                {% endif %}
+                {% if user_permissions.can_view_clientes %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Clientes</span>
+                {% endif %}
+                {% if user_permissions.can_view_cotizaciones %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Cotizaciones</span>
+                {% endif %}
+                {% if user_permissions.can_view_produccion %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Producción</span>
+                {% endif %}
+                {% if user_permissions.can_view_compras %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Compras</span>
+                {% endif %}
+                {% if user_permissions.can_view_usuarios %}
+                <span class="badge-permiso"><i class="bi bi-check-lg"></i> Administración</span>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== COLUMNA DERECHA - FORMULARIOS ===================== -->
+    <div class="col-12 col-lg-8 col-xl-9">
+        <div class="d-flex flex-column gap-3">
+
+            <!-- Información personal -->
+            <div class="info-card">
+                <div class="perfil-section-head">
+                    <span class="perfil-section-title">
+                        <i class="bi bi-person-lines-fill me-2"></i>Información personal
+                    </span>
+                </div>
+                <div class="p-3">
+                    <form method="post" action="{% url 'dashboard:perfil_update' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_info">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label-compact">Nombre</label>
+                                <input type="text" name="first_name" class="form-control form-control-sm"
+                                       value="{{ perfil_usuario.nombres|default:'' }}"
+                                       placeholder="Tu nombre">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-compact">Apellido</label>
+                                <input type="text" name="last_name" class="form-control form-control-sm"
+                                       value="{{ perfil_usuario.apellidos|default:'' }}"    
+                                       placeholder="Tu apellido">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-compact">Correo electrónico</label>
+                                <input type="email" name="email" class="form-control form-control-sm"
+                                       value="{{ perfil_usuario.email|default:'' }}"
+                                       placeholder="correo@ejemplo.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-compact">Teléfono</label>
+                                <input type="tel" name="telefono" class="form-control form-control-sm"
+                                       value="{{ perfil_usuario.telefono|default:'' }}"
+                                       placeholder="+57 300 000 0000">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="submit" class="btn btn-nuevo btn-sm">
+                                <i class="bi bi-check-lg"></i> Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cambiar contraseña -->
+            <div class="info-card">
+                <div class="perfil-section-head">
+                    <span class="perfil-section-title">
+                        <i class="bi bi-key me-2"></i>Cambiar contraseña
+                    </span>
+                </div>
+                <div class="p-3">
+                    <form method="post" action="{% url 'dashboard:perfil_update' %}" id="form-password">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="change_password">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label-compact">Contraseña actual</label>
+                                <div class="input-group-pwd">
+                                    <input type="password" name="current_password"
+                                           class="form-control form-control-sm"
+                                           id="current_password"
+                                           placeholder="Tu contraseña actual">
+                                    <button type="button" class="btn-eye" onclick="togglePwd('current_password', this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-compact">Nueva contraseña</label>
+                                <div class="input-group-pwd">
+                                    <input type="password" name="new_password"
+                                           class="form-control form-control-sm"
+                                           id="new_password"
+                                           placeholder="Mínimo 8 caracteres">
+                                    <button type="button" class="btn-eye" onclick="togglePwd('new_password', this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label-compact">Confirmar contraseña</label>
+                                <div class="input-group-pwd">
+                                    <input type="password" name="confirm_password"
+                                           class="form-control form-control-sm"
+                                           id="confirm_password"
+                                           placeholder="Repite la contraseña">
+                                    <button type="button" class="btn-eye" onclick="togglePwd('confirm_password', this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Indicador de fortaleza -->
+                            <div class="col-12" id="pwd-strength-wrapper" style="display:none;">
+                                <div class="pwd-strength-bar">
+                                    <div class="pwd-strength-fill" id="pwd-strength-fill"></div>
+                                </div>
+                                <small id="pwd-strength-text" class="text-muted" style="font-size:0.7rem;"></small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="submit" class="btn btn-nuevo btn-sm">
+                                <i class="bi bi-shield-check"></i> Actualizar contraseña
+                            </button>
+                            <button type="button" class="btn btn-cancelar btn-sm"
+                                    onclick="document.getElementById('form-password').reset(); document.getElementById('pwd-strength-wrapper').style.display='none';">
+                                <i class="bi bi-x"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Actividad reciente -->
+            <div class="info-card">
+                <div class="perfil-section-head">
+                    <span class="perfil-section-title">
+                        <i class="bi bi-activity me-2"></i>Actividad reciente
+                    </span>
+                </div>
+                <div class="p-3">
+                    {% if actividad_reciente %}
+                    <div class="actividad-list">
+                        {% for item in actividad_reciente %}
+                        <div class="actividad-item">
+                            <div class="act-dot act-{{ item.tipo }}"></div>
+                            <span class="act-text">{{ item.descripcion }}</span>
+                            <span class="act-time">{{ item.fecha|timesince }} atrás</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Actividad de ejemplo cuando no hay datos reales -->
+                    <div class="actividad-list">
+                        <div class="actividad-item">
+                            <div class="act-dot act-green"></div>
+                            <span class="act-text">Inicio de sesión exitoso</span>
+                            <span class="act-time">Hoy</span>
+                        </div>
+                        <div class="actividad-item">
+                            <div class="act-dot act-blue"></div>
+                            <span class="act-text">Perfil actualizado</span>
+                            <span class="act-time">Hace 3 días</span>
+                        </div>
+                        <div class="actividad-item">
+                            <div class="act-dot act-amber"></div>
+                            <span class="act-text">Contraseña cambiada</span>
+                            <span class="act-time">Hace 1 semana</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePwd(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+document.getElementById('new_password').addEventListener('input', function() {
+    const pwd = this.value;
+    const wrapper = document.getElementById('pwd-strength-wrapper');
+    const fill = document.getElementById('pwd-strength-fill');
+    const text = document.getElementById('pwd-strength-text');
+
+    if (pwd.length === 0) {
+        wrapper.style.display = 'none';
+        return;
+    }
+    wrapper.style.display = 'block';
+
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    const levels = [
+        { color: '#ef4444', label: 'Muy débil', width: '20%' },
+        { color: '#f59e0b', label: 'Débil', width: '40%' },
+        { color: '#f59e0b', label: 'Regular', width: '60%' },
+        { color: '#10b981', label: 'Fuerte', width: '80%' },
+        { color: '#13c2ad', label: 'Muy fuerte', width: '100%' },
+    ];
+    const level = levels[score] || levels[0];
+    fill.style.width = level.width;
+    fill.style.background = level.color;
+    text.textContent = level.label;
+    text.style.color = level.color;
+});
+</script>
+{% endblock %}

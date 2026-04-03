@@ -1,0 +1,421 @@
+/* ==============================================================
+    PERFIL.CSS - ORDEN R.A.E
+    Compatible con base.css (light/dark themes)
+   ============================================================== */
+
+/* ==================================================
+    1. TARJETA PRINCIPAL DE PERFIL
+   ================================================== */
+.perfil-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+.perfil-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Header con fondo oscuro del sidebar */
+.perfil-card-header {
+    background: linear-gradient(160deg, var(--bg-sidebar) 0%, #1e293b 100%);
+    padding: 28px 20px 20px;
+    text-align: center;
+    position: relative;
+}
+
+/* Anillo del avatar */
+.avatar-ring {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--slate-950, #020617);
+    box-shadow: 0 0 0 4px rgba(19, 194, 173, 0.2),
+                0 0 0 8px rgba(19, 194, 173, 0.08);
+    letter-spacing: -1px;
+    transition: box-shadow 0.3s ease;
+}
+
+.perfil-card:hover .avatar-ring {
+    box-shadow: 0 0 0 4px rgba(19, 194, 173, 0.3),
+                0 0 0 8px rgba(19, 194, 173, 0.12);
+}
+
+.perfil-nombre {
+    color: #f1f5f9;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    line-height: 1.3;
+}
+
+.perfil-rol-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(19, 194, 173, 0.15);
+    color: #2dd4bf;
+    border: 1px solid rgba(45, 212, 191, 0.25);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.perfil-rol-dot {
+    width: 7px;
+    height: 7px;
+    background: #2dd4bf;
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ==================================================
+    2. INFO BODY DE LA TARJETA
+   ================================================== */
+.perfil-info-body {
+    padding: 4px 0;
+}
+
+.perfil-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 0.15s ease;
+}
+
+.perfil-info-row:hover {
+    background-color: var(--bg-elevated);
+}
+
+.perfil-info-row:last-child {
+    border-bottom: none;
+}
+
+.perfil-info-key {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+}
+
+.perfil-info-key i {
+    font-size: 0.75rem;
+}
+
+.perfil-info-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: right;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.perfil-info-val.accent {
+    color: var(--accent);
+}
+
+/* ==================================================
+    3. ESTADÍSTICAS DE LA TARJETA
+   ================================================== */
+.perfil-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border-subtle);
+    background-color: var(--bg-elevated);
+}
+
+.perfil-stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 8px;
+    border-right: 1px solid var(--border-subtle);
+    transition: background-color 0.15s ease;
+}
+
+.perfil-stat-box:last-child {
+    border-right: none;
+}
+
+.perfil-stat-box:hover {
+    background-color: var(--accent-light);
+}
+
+.perfil-stat-num {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+}
+
+.perfil-stat-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-top: 3px;
+}
+
+/* ==================================================
+    4. SECCIONES DE FORMULARIOS
+   ================================================== */
+.perfil-section-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background-color: var(--bg-elevated);
+    border-radius: 11px 11px 0 0;
+}
+
+.perfil-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+}
+
+.perfil-section-title i {
+    color: var(--accent);
+    font-size: 0.9rem;
+}
+
+/* ==================================================
+    5. BADGES DE PERMISOS
+   ================================================== */
+.badge-permiso {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--accent-light);
+    color: var(--accent);
+    border: 1px solid rgba(20, 184, 166, 0.2);
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    margin: 3px 3px 0 0;
+    transition: all 0.15s ease;
+}
+
+.badge-permiso:hover {
+    background-color: var(--accent);
+    color: var(--slate-950, #020617);
+}
+
+.badge-permiso i {
+    font-size: 0.65rem;
+}
+
+body.theme-dark .badge-permiso {
+    background-color: rgba(45, 212, 191, 0.12);
+    color: #2dd4bf;
+    border-color: rgba(45, 212, 191, 0.2);
+}
+
+body.theme-dark .badge-permiso:hover {
+    background-color: rgba(45, 212, 191, 0.25);
+    color: #2dd4bf;
+}
+
+/* ==================================================
+    6. INPUT GROUP CON TOGGLE CONTRASEÑA
+   ================================================== */
+.input-group-pwd {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-group-pwd .form-control {
+    padding-right: 36px;
+}
+
+.btn-eye {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    transition: color 0.2s ease, background 0.2s ease;
+    z-index: 2;
+}
+
+.btn-eye:hover {
+    color: var(--accent);
+    background-color: var(--accent-light);
+}
+
+.btn-eye i {
+    font-size: 0.8rem;
+}
+
+/* ==================================================
+    7. BARRA DE FORTALEZA DE CONTRASEÑA
+   ================================================== */
+.pwd-strength-bar {
+    height: 4px;
+    background-color: var(--border-subtle);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.pwd-strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease, background 0.4s ease;
+}
+
+/* ==================================================
+    8. LISTA DE ACTIVIDAD RECIENTE
+   ================================================== */
+.actividad-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.actividad-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 0.15s ease;
+}
+
+.actividad-item:last-child {
+    border-bottom: none;
+}
+
+.actividad-item:hover {
+    padding-left: 4px;
+}
+
+.act-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.actividad-item:hover .act-dot {
+    transform: scale(1.3);
+}
+
+.act-dot.act-green  { background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+.act-dot.act-blue   { background: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.act-dot.act-amber  { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+.act-dot.act-red    { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+
+.act-text {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.act-time {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* ==================================================
+    9. ANIMACIÓN DE ENTRADA
+   ================================================== */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.perfil-card,
+.info-card {
+    animation: slideInUp 0.35s ease-out both;
+}
+
+.col-lg-4 .perfil-card         { animation-delay: 0.05s; }
+.col-lg-4 .info-card           { animation-delay: 0.10s; }
+.col-lg-8 .info-card:nth-child(1) { animation-delay: 0.08s; }
+.col-lg-8 .info-card:nth-child(2) { animation-delay: 0.12s; }
+.col-lg-8 .info-card:nth-child(3) { animation-delay: 0.16s; }
+
+/* ==================================================
+    10. RESPONSIVE
+   ================================================== */
+@media (max-width: 992px) {
+    .avatar-ring {
+        width: 72px;
+        height: 72px;
+        font-size: 24px;
+    }
+
+    .perfil-nombre {
+        font-size: 15px;
+    }
+
+    .perfil-stat-num {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .perfil-card-header {
+        padding: 24px 16px 18px;
+    }
+
+    .perfil-stat-box {
+        padding: 12px 6px;
+    }
+
+    .perfil-stat-num {
+        font-size: 16px;
+    }
+
+    .perfil-stat-lbl {
+        font-size: 8px;
+    }
+}

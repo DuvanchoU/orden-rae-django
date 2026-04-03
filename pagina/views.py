@@ -787,7 +787,12 @@ def generar_codigo_aleatorio(longitud=6):
     """Genera código único para cotización"""
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=longitud))
 
+
 def cotiza(request):
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            from django.http import JsonResponse
+            return JsonResponse({'error': 'no_auth'}, status=401)
     """Vista de página de cotización con formulario multi-paso"""
     
     context = {
@@ -797,6 +802,8 @@ def cotiza(request):
         'form_data': {},
         'enviado': False,
         'random_code': generar_codigo_aleatorio(),
+        'user_full_name': request.user.get_full_name() if request.user.is_authenticated else '',
+        'user_email':     request.user.email if request.user.is_authenticated else '',
     }
     
     if request.method == 'POST':

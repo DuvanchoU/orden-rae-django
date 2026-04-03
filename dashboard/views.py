@@ -340,4 +340,191 @@ def logout_view(request):
     if next_url:
         return redirect(next_url)
     
-    return redirect('pagina:login')
+    return redirect('pagina:home')
+
+# =============================================================================
+# === PERFIL ===
+# =============================================================================
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from usuarios.decorators import login_required_custom
+
+
+# ─────────────────────────────────────────────
+# MAPA DE PERMISOS POR ROL
+# ─────────────────────────────────────────────
+PERMISOS_POR_ROL = {
+    'GERENTE': {
+        'can_view_dashboard':    True,
+        'can_view_inventario':   True,
+        'can_view_ventas':       True,
+        'can_view_pedidos':      True,
+        'can_view_clientes':     True,
+        'can_view_cotizaciones': True,
+        'can_view_produccion':   True,
+        'can_view_compras':      True,
+        'can_view_usuarios':     True,
+    },
+    'ASESOR COMERCIAL': {
+        'can_view_dashboard':    True,
+        'can_view_inventario':   True,
+        'can_view_ventas':       True,
+        'can_view_pedidos':      True,
+        'can_view_clientes':     True,
+        'can_view_cotizaciones': True,
+        'can_view_produccion':   False,
+        'can_view_compras':      False,
+        'can_view_usuarios':     False,
+    },
+    'JEFE LOGISTICO': {
+        'can_view_dashboard':    True,
+        'can_view_inventario':   True,
+        'can_view_ventas':       False,
+        'can_view_pedidos':      True,
+        'can_view_clientes':     False,
+        'can_view_cotizaciones': False,
+        'can_view_produccion':   True,
+        'can_view_compras':      True,
+        'can_view_usuarios':     False,
+    },
+    'AUXILIAR DE BODEGA': {
+        'can_view_dashboard':    True,
+        'can_view_inventario':   True,
+        'can_view_ventas':       False,
+        'can_view_pedidos':      False,
+        'can_view_clientes':     False,
+        'can_view_cotizaciones': False,
+        'can_view_produccion':   False,
+        'can_view_compras':      False,
+        'can_view_usuarios':     False,
+    },
+}
+
+def _get_permisos(usuario):
+    """Devuelve el dict de permisos según el rol del usuario."""
+    rol = usuario.id_rol.nombre_rol if usuario.id_rol else ''
+    return PERMISOS_POR_ROL.get(rol, {key: False for key in [
+        'can_view_dashboard', 'can_view_inventario', 'can_view_ventas',
+        'can_view_pedidos', 'can_view_clientes', 'can_view_cotizaciones',
+        'can_view_produccion', 'can_view_compras', 'can_view_usuarios',
+    ]})
+
+
+# ─────────────────────────────────────────────
+# VISTA PERFIL
+# ─────────────────────────────────────────────
+@login_required_custom
+def perfil_view(request):
+    usuario = request.user
+
+    stats = {'ventas': 0, 'pedidos': 0, 'cotizaciones': 0}
+    # Si quieres conectar estadísticas reales descomenta:
+    # from ventas.models import Ventas, Pedido, Cotizaciones
+    # stats['ventas']       = Ventas.objects.filter(...).count()
+    # stats['pedidos']      = Pedido.objects.filter(...).count()
+    # stats['cotizaciones'] = Cotizaciones.objects.filter(...).count()
+
+    context = {
+        'perfil_usuario':   usuario,
+        'user_nombre':      usuario.nombres,
+        'user_apellido':    usuario.apellidos,
+        'user_rol':         usuario.id_rol.nombre_rol if usuario.id_rol else 'Sin rol',
+        'user_permissions': _get_permisos(usuario),
+        'stats':            stats,
+        'actividad_reciente': [],
+    }
+    return render(request, 'dashboard/perfil.html', context)
+
+
+# ─────────────────────────────────────────────
+# VISTA ACTUALIZAR PERFIL
+# ─────────────────────────────────────────────
+@login_required_custom
+@require_POST
+def perfil_update_view(request):
+    usuario = request.user
+    action  = request.POST.get('action')
+
+    # ── Actualizar información personal ──────
+    if action == 'update_info':
+        nombres  = request.POST.get('first_name', '').strip()
+        apellidos = request.POST.get('last_name', '').strip()
+        correo   = request.POST.get('email', '').strip().lower()
+        telefono = request.POST.get('telefono', '').strip()
+
+        if not nombres or len(nombres) < 2:
+            messages.error(request, 'El nombre debe tener al menos 2 caracteres.')
+            return redirect('dashboard:perfil')
+
+        if correo and '@' not in correo:
+            messages.error(request, 'El correo electrónico no es válido.')
+            return redirect('dashboard:perfil')
+
+        # Verificar que el correo no lo use otro usuario
+        from usuarios.models import Usuarios
+        if correo and Usuarios.objects.filter(
+            correo_usuario=correo
+        ).exclude(pk=usuario.pk).exists():
+            messages.error(request, 'Ese correo ya está registrado por otro usuario.')
+            return redirect('dashboard:perfil')
+
+        usuario.nombres          = nombres
+        usuario.apellidos        = apellidos
+        usuario.correo_usuario   = correo or usuario.correo_usuario
+        if telefono:
+            usuario.telefono = telefono
+
+        # Guardamos sin ejecutar full_clean para evitar revalidar contraseña
+        usuario.save(update_fields=['nombres', 'apellidos',
+                                    'correo_usuario', 'telefono',
+                                    'updated_at'])
+        messages.success(request, 'Información personal actualizada correctamente.')
+        return redirect('dashboard:perfil')
+
+    # ── Cambiar contraseña ────────────────────
+    elif action == 'change_password':
+        current  = request.POST.get('current_password', '')
+        new_pwd  = request.POST.get('new_password', '')
+        confirm  = request.POST.get('confirm_password', '')
+
+        if not usuario.check_password(current):
+            messages.error(request, 'La contraseña actual es incorrecta.')
+            return redirect('dashboard:perfil')
+
+        if new_pwd != confirm:
+            messages.error(request, 'Las contraseñas nuevas no coinciden.')
+            return redirect('dashboard:perfil')
+
+        if len(new_pwd) < 8:
+            messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
+            return redirect('dashboard:perfil')
+
+        try:
+            # Usa el método del modelo que ya valida fortaleza y hashea
+            usuario.cambiar_contrasena(current, new_pwd)
+            messages.success(request, 'Contraseña actualizada correctamente.')
+        except Exception as e:
+            messages.error(request, str(e))
+
+        return redirect('dashboard:perfil')
+
+    messages.error(request, 'Acción no reconocida.')
+    return redirect('dashboard:perfil')
+# =============================================================================
+# === CHECK DE SESIÓN (ENDPOINT LIVIANO PARA JS) ===
+# =============================================================================
+
+from django.http import JsonResponse
+# Este endpoint es consultado por el JS del dashboard en cada carga para verificar que la sesión siga siendo válida. 
+# Si el usuario ha cerrado sesión en otra pestaña o su sesión ha expirado, el decorador login_required_custom redirigirá al login, 
+# y el JS del cliente detectará el redirect y
+@login_required_custom
+def session_check(request):
+    """
+    Endpoint liviano que el JS del dashboard consulta en cada carga.
+    Si la sesión no es válida, login_required_custom redirige al login
+    y el JS del cliente detecta el redirect y manda al login.
+    """
+    return JsonResponse({'ok': True})

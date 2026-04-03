@@ -163,7 +163,7 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 LOGIN_URL = '/pagina/login/' # Redirige al login si no está autenticado (clientes → /pagina/login/, staff → /usuarios/login/)
 LOGIN_REDIRECT_URL = 'dashboard:dashboard_home' # Redirige al dashboard después de login exitoso (ajusta según tu vista principal)
-LOGOUT_REDIRECT_URL = '/pagina/login/' # Redirige al login después de logout
+LOGOUT_REDIRECT_URL = '/pagina/' # Redirige a la página pública después de logout
 AUTHENTICATION_BACKENDS = [
     'usuarios.backends.UsuariosAuthBackend',  # Backend personalizado (PRIORITARIO)
     'ventas.backends.ClientesAuthBackend',  # Para clientes
