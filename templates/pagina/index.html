@@ -1416,11 +1416,11 @@
                          data-id="{{ prod.id }}"
                          data-nombre="{{ prod.nombre|escapejs }}"
                          data-precio="{{ prod.precio }}"
-                         data-img="{{ prod.imagen_url }}"
+                         data-img="{{ MEDIA_URL }}{{ prod.imagen_url }}"
                          data-cat="{{ prod.categoria|default:'General' }}">
 
                     <div class="prod-img-wrap">
-                        <img src="{{ prod.imagen_url }}"
+                        <img src="{{ MEDIA_URL }}{{ prod.imagen_url }}"
                              alt="{{ prod.nombre }}"
                              loading="lazy"
                              onerror="this.src='https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}'">
