@@ -22,6 +22,7 @@ logger = logging.getLogger('auth.debug')
 from django.core.mail import send_mail
 from django.conf import settings
 from decimal import Decimal
+from django.core.paginator import Paginator 
 
 
 def generar_avatar_url(nombre, tamaño=128):
@@ -222,8 +223,6 @@ def home(request):
     
     return render(request, 'pagina/index.html', context)
 
-
-from django.core.paginator import Paginator  # ← Agregar este import arriba del archivo
 
 def productos(request):
     """Vista de página de productos con paginación"""
@@ -475,7 +474,6 @@ def promociones(request):
     return render(request, 'pagina/promociones.html', context)
 
 
-@require_http_methods(["POST"])
 @require_http_methods(["POST"])
 def api_agregar_carrito(request):
     """Agregar producto al carrito — guarda en sesión Y en BD (Carritos/ItemsCarrito)"""
@@ -789,10 +787,6 @@ def generar_codigo_aleatorio(longitud=6):
 
 
 def cotiza(request):
-    if request.method == 'POST':
-        if not request.user.is_authenticated:
-            from django.http import JsonResponse
-            return JsonResponse({'error': 'no_auth'}, status=401)
     """Vista de página de cotización con formulario multi-paso"""
     
     context = {
@@ -966,7 +960,23 @@ def login_view(request):
                 correo_usuario=correo,
                 deleted_at__isnull=True
             )
-            if usuario.check_password(contrasena):
+
+            # Detectar formato SHA256 o pbkdf2
+            from django.contrib.auth.hashers import make_password, check_password as django_check
+            contrasena_valida = False
+
+            if usuario.contrasena_usuario.startswith('pbkdf2_'):
+                contrasena_valida = django_check(contrasena, usuario.contrasena_usuario)
+            else:
+                sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
+                contrasena_valida = (sha_hash == usuario.contrasena_usuario)
+                if contrasena_valida:
+                    # Migrar automáticamente a pbkdf2
+                    Usuarios.objects.filter(pk=usuario.pk).update(
+                        contrasena_usuario=make_password(contrasena)
+                    )
+
+            if contrasena_valida:
                 if usuario.estado != 'ACTIVO':
                     messages.error(request, 'Usuario inactivo. Contacte al administrador.')
                     return render(request, 'pagina/login.html')
@@ -987,7 +997,7 @@ def login_view(request):
                 messages.success(request, f'Bienvenido {usuario.nombres}')
                 return redirect('dashboard:dashboard_home')
             else:
-                messages.error(request, 'Contraseña incorrecta')
+                messages.error(request, 'Correo o contraseña incorrectos')
                 return render(request, 'pagina/login.html')
 
         except Usuarios.DoesNotExist:
@@ -1184,22 +1194,6 @@ def api_cupon_aplicar(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
-def checkout(request):
-    """Vista de proceso de checkout (placeholder)"""
-    if not request.session.get('carrito'):
-        return redirect('pagina:carrito_compra')
-    
-    # Aquí iría la lógica real de checkout:
-    # - Validar datos del usuario
-    # - Calcular envío
-    # - Procesar pago
-    # - Crear orden en BD
-    
-    context = {
-        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
-    }
-    return render(request, 'pagina/checkout.html', context)
-
 # =============================================================================
 # API ENDPOINTS PARA AJAX - URLs deben coincidir con el JavaScript
 # =============================================================================
@@ -1208,6 +1202,8 @@ def checkout(request):
 @login_required
 def checkout(request):
     """Vista de proceso de checkout"""
+    if not request.session.get('cliente_auth') and not request.session.get('usuario_id'):
+        return redirect('pagina:login')
     
     # Verificar que hay carrito
     carrito_session = request.session.get('carrito', {})
