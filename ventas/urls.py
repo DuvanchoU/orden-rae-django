@@ -56,8 +56,6 @@ urlpatterns = [
 
     # ── Perfil ────────────────────────────────────────────────────────────
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),
-    path('perfil/actualizar/', views.perfil_actualizar, name='perfil_actualizar'),
-    path('perfil/avatar/', views.avatar_actualizar, name='avatar_actualizar'),
     path('perfil/password/', views.password_cambiar, name='password_cambiar'),
     path('perfil/stats/', views.perfil_stats,name='perfil_stats'),
     path('perfil/exportar/', views.datos_exportar, name='datos_exportar'),

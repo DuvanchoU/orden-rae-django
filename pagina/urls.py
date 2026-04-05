@@ -25,6 +25,7 @@ urlpatterns = [
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
     path('perfil/', views.perfil_view, name='perfil'),
+    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
 
     # Formularios
     path('contacto/', views.contacto, name='contacto'),

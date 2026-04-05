@@ -494,100 +494,10 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Encabezado -->
-    <header id="barra_superior" class="bg-white border-bottom">
-        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
-            <a href="{% url 'pagina:home' %}" class="text-decoration-none d-flex align-items-center gap-2">
-                <img src="{% static 'img/Lsuper_bodega0.2.png' %}" class="logo_principal" alt="Logo Orden Rae" style="height: 45px;" />
-                <span class="fw-bold d-none d-md-inline" style="color: var(--color-primario); font-size: 1.1rem;">ORDER RAE</span>
-            </a>
-
-            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
-                <div class="position-relative">
-                    <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
-                    <i class="fas fa-search position-absolute end-0 top-50 translate-middle-y me-3 text-muted" style="pointer-events: none;"></i>
-                </div>
-                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
-            </div>
-
-            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
-                <!-- NOTIFICACIONES -->
-                <div class="notifications-bell position-relative" id="notifications-bell" style="cursor: pointer;">
-                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
-                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
-                    <div class="notifications-dropdown" id="notifications-dropdown">
-                        <div class="notifications-header d-flex justify-content-between align-items-center p-3 border-bottom">
-                            <strong>Notificaciones</strong>
-                            <a href="#" id="clear-notifications" class="small text-decoration-none">Marcar como leídas</a>
-                        </div>
-                        <div id="notifications-list" style="max-height: 300px; overflow-y: auto;">
-                            {% if notificaciones %}
-                                {% for notif in notificaciones %}
-                                <div class="notification-item {% if not notif.leida %}new{% endif %} p-3 border-bottom">
-                                    <div class="d-flex gap-2">
-                                        <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
-                                        <div class="notification-content flex-1">
-                                            <strong class="d-block">{{ notif.mensaje }}</strong>
-                                            <span class="notification-time small text-muted">{{ notif.fecha }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARRITO DE COMPRA -->
-                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative text-decoration-none">
-                    <img src="{% static 'img/CarritoCompra0.1.png' %}" alt="Carrito" class="icono-img">
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="contador-carrito">
-                        {{ carrito_cantidad|default:0 }}
-                    </span>
-                </>
-                
-                <!-- Usuario autenticado -->
-                {% if user.is_authenticated %}
-                <div class="menu-usuario position-relative">
-                    <div class="d-flex align-items-center position-relative" style="cursor: pointer;">
-                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}" 
-                            alt="Usuario" class="icono-img" id="user-avatar" style="border-radius: 50%;">
-                        <span class="user-tooltip ms-2 text-dark d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
-                    </div>
-                    <div class="submenu mt-1">
-                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a>
-                        <a href="{% url 'pagina:logout' %}?next={% url 'pagina:home' %}">Cerrar sesión</a>
-                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
-                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
-                        {% endif %}
-                    </div>
-                </div>
-                {% else %}
-                <div class="menu-usuario position-relative">
-                    <a href="#" style="cursor: pointer;"><img src="{% static 'img/usuario0.1.png' %}" alt="Usuario" class="icono-img"></a>
-                    <div class="submenu mt-1">
-                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
-                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="py-2 bg-light">
-            <div class="container">
-                <nav class="navegacion d-flex flex-wrap justify-content-center">
-                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1 fw-bold" style="color: var(--color-primario);">HOME</a>
-                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
-                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1">PROMOCIONES</a>
-                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
-                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
-                </nav>
-            </div>
-        </div>
-    </header>
+<!-- ════════════════════════════════════════
+    HEADER
+════════════════════════════════════════ -->
+{% include 'partials/header.html' %}
 
     <!-- Contenido Principal -->
     <main class="container main-with-fixed-header">
@@ -813,6 +723,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/header.js' %}"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     

@@ -1316,15 +1316,6 @@ def perfil_actualizar(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@require_POST
-@login_required
-def avatar_actualizar(request):
-    try:
-        data       = json.loads(request.body)
-        avatar_url = data.get('avatar_url', '')
-        return JsonResponse({'success': True, 'avatar_url': avatar_url})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @require_POST

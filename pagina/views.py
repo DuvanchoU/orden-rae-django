@@ -23,8 +23,57 @@ from django.core.mail import send_mail
 from django.conf import settings
 from decimal import Decimal
 from django.core.paginator import Paginator 
+import os
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 
+# Vistas para páginas principales (home, productos, promociones, contacto, etc.)
+# Vistas para autenticación (login, registro, perfil)
+# Vistas para manejo de carrito y checkout
+@login_required
+@require_POST
+@csrf_protect
+# Endpoint AJAX para actualizar foto de perfil del usuario
+def actualizar_avatar(request):
+    """
+    Endpoint AJAX para actualizar la foto de perfil del usuario.
+    Devuelve la URL de la nueva foto para actualizar el DOM en tiempo real.
+    """
+    foto = request.FILES.get('foto_perfil')
 
+    if not foto:
+        return JsonResponse({'success': False, 'error': 'No se recibió ningún archivo.'}, status=400)
+
+    # Validar tipo MIME
+    tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if foto.content_type not in tipos_permitidos:
+        return JsonResponse({'success': False, 'error': 'Tipo de archivo no permitido.'}, status=400)
+
+    # Validar tamaño (5 MB máximo)
+    if foto.size > 5 * 1024 * 1024:
+        return JsonResponse({'success': False, 'error': 'El archivo supera el límite de 5 MB.'}, status=400)
+
+    user = request.user
+
+    # Eliminar foto anterior si existe (evitar acumulación de archivos)
+    if user.foto_perfil:
+        try:
+            old_path = user.foto_perfil.path
+            if os.path.isfile(old_path):
+                os.remove(old_path)
+        except Exception:
+            pass  # Silenciar errores al borrar archivo viejo
+
+    # Guardar nueva foto
+    user.foto_perfil = foto
+    user.save(update_fields=['foto_perfil']) 
+    return JsonResponse({
+        'success': True,
+        'foto_url': user.foto_perfil.url,
+        'mensaje': 'Foto actualizada correctamente.'
+    })
+
+# Función auxiliar para generar URL de avatar consistente (usada en testimonios)
 def generar_avatar_url(nombre, tamaño=128):
     """Genera una URL de avatar consistente basada en el nombre."""
     colores = [

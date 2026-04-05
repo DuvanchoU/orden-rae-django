@@ -634,99 +634,10 @@
 </head>
 <body class="bg-light">
 
-    <!-- Encabezado -->
-    <header id="barra_superior" class="bg-white border-bottom">
-        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
-            <a href="{% url 'pagina:home' %}">
-                <img src="{% static 'img/super_bodega0.2.png' %}" class="logo_principal" alt="Logo Orden Rae" />
-            </a>
-
-            <div class="w-100 mt-2 mt-md-0" style="max-width: 400px;">
-                <input type="text" class="busqueda form-control" id="Buscador" placeholder="¿Qué producto deseas buscar?" />
-                <div id="sugerencias-busqueda" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
-            </div>
-
-            <div class="botones mt-2 mt-md-0 d-flex align-items-center gap-3">
-                <!-- NOTIFICACIONES -->
-                <div class="notifications-bell position-relative" id="notifications-bell">
-                    <i class="fas fa-bell" style="font-size: 28px; color: #333;"></i>
-                    <span class="bell-badge" id="bell-badge">{{ notificaciones_nuevas|default:0 }}</span>
-                    <div class="notifications-dropdown" id="notifications-dropdown">
-                        <div class="notifications-header">
-                            Notificaciones
-                            <a href="#" id="clear-notifications">Marcar como leídas</a>
-                        </div>
-                        <div id="notifications-list">
-                            {% if notificaciones %}
-                                {% for notif in notificaciones %}
-                                <div class="notification-item {% if not notif.leida %}new{% endif %}">
-                                    <span class="notification-icon">{% if notif.tipo == 'carrito' %}🛒{% else %}📣{% endif %}</span>
-                                    <div class="notification-content">
-                                        <strong>{{ notif.mensaje }}</strong>
-                                        <span class="notification-time">{{ notif.fecha }}</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="p-3 text-center text-muted">No tienes notificaciones nuevas.</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARRITO -->
-                <a href="{% url 'ventas:carrito_compra' %}" class="position-relative">
-                    <img src="{% static 'img/CarritoCompra0.1.png' %}" alt="Carrito" class="icono-img">
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
-                        id="contador-carrito"
-                        data-cantidad="{{ carrito_cantidad|default:0 }}">
-                        {{ carrito_cantidad|default:0 }}
-                    </span>
-                </a>
-
-                <!-- Usuario autenticado -->
-                {% if user.is_authenticated %}
-                <div class="menu-usuario position-relative">
-                    <div class="d-flex align-items-center position-relative">
-                        <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}" 
-                            alt="Usuario" class="icono-img user-trigger">
-                        <span class="user-tooltip ms-2 text-dark">
-                            {{ user.get_full_name|default:user.username }}
-                        </span>
-                    </div>
-                    <div class="submenu mt-1">
-                        <a href="{% url 'pagina:perfil' %}">Mi cuenta</a> 
-                        <a href="{% url 'pagina:logout' %}">Cerrar sesión</a> 
-                        
-                        {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
-                            <a href="{% url 'dashboard:dashboard_home' %}" class="enlace-dashboard">DASHBOARD</a>
-                        {% endif %}
-                    </div>
-                </div>
-                {% else %}
-                <div class="menu-usuario position-relative">
-                    <a href="#"><img src="{% static 'img/usuario0.1.png' %}" alt="Usuario" class="icono-img"></a>
-                    <div class="submenu mt-1">
-                        <a href="{% url 'pagina:login' %}">Iniciar sesión</a> |
-                        <a href="{% url 'pagina:registro' %}">Registrarse</a>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="py-2 bg-light">
-            <div class="container">
-                <nav class="navegacion d-flex flex-wrap justify-content-center">
-                    <a href="{% url 'pagina:home' %}" class="text-dark px-3 py-1">HOME</a>
-                    <a href="{% url 'pagina:productos' %}" class="text-dark px-3 py-1">PRODUCTOS</a>
-                    <a href="{% url 'pagina:promociones' %}" class="text-dark px-3 py-1 fw-bold" style="color: #8B5E3C;">PROMOCIONES</a>
-                    <a href="{% url 'pagina:contacto' %}" class="text-dark px-3 py-1">CONTACTO</a>
-                    <a href="{% url 'pagina:cotiza' %}" class="boton_rojo ms-3 px-4 py-1">COTICE AQUÍ</a>
-                </nav>
-            </div>
-        </div>
-    </header>
+<!-- ════════════════════════════════════════
+    HEADER
+════════════════════════════════════════ -->
+{% include 'partials/header.html' %}
 
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toast-container"></div>
@@ -1213,6 +1124,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/header.js' %}"></script>
 
     <!-- Datos desde Django para JavaScript -->
     <script id="contacto-data" type="application/json">
