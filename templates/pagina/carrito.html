@@ -1583,6 +1583,11 @@ function init() {
     state.subtotal = raw.total_carrito || 0;
     state.totalIva = raw.total_iva     || 0;
     state.total    = state.subtotal + state.totalIva;
+    
+    // AGREGAR ESTO TEMPORALMENTE:
+    console.log('items:', state.items);
+    console.log('hay_items:', {{ hay_items|yesno:"true,false" }});
+    
     updateSummary();
     updateShippingBar();
     toggleEmptyState();
@@ -1604,9 +1609,9 @@ function fmt(n) {
 
 // ── ESTADO VACÍO ──
 function toggleEmptyState() {
-    const isEmpty = state.items.length === 0;
-    document.getElementById('carrito-vacio').classList.toggle('d-none', !isEmpty);
-    document.getElementById('carrito-container').classList.toggle('d-none', isEmpty);
+        const hayItems = state.items.length > 0 || {% if hay_items %}true{% else %}false{% endif %}
+    document.getElementById('carrito-vacio').classList.toggle('d-none', hayItems);
+    document.getElementById('carrito-container').classList.toggle('d-none', !hayItems);
     const btn = document.getElementById('btn-finalizar');
     if (btn) btn.disabled = isEmpty;
 }
@@ -1863,7 +1868,11 @@ window.removerCupon = function() {
 
 // ── CHECKOUT ──
 window.abrirCheckout = function() {
-    if (state.items.length === 0) return showToast('El carrito está vacío', 'error');
+    // Verificar con el DOM, no solo con state.items
+    const filas = document.querySelectorAll('#carrito-items tr');
+    if (filas.length === 0 && state.items.length === 0) {
+        return showToast('El carrito está vacío', 'error');
+    }
     irPaso(1);
     const modal = new bootstrap.Modal(document.getElementById('checkoutModal'));
     modal.show();
@@ -1985,7 +1994,7 @@ window.confirmarPedido = async function() {
     };
 
     try {
-        const res  = await fetch('/api/checkout/procesar/', {
+        const res = await fetch('/pagina/api/checkout/procesar/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
             body: JSON.stringify(payload)

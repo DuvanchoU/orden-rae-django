@@ -26,6 +26,7 @@ from django.core.paginator import Paginator
 import os
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
+from django.db import transaction
 
 # Vistas para páginas principales (home, productos, promociones, contacto, etc.)
 # Vistas para autenticación (login, registro, perfil)
@@ -84,6 +85,29 @@ def generar_avatar_url(nombre, tamaño=128):
     color = colores[hash_nombre % len(colores)]
     nombre_url = nombre.replace(' ', '+')
     return f"https://ui-avatars.com/api/?name={nombre_url}&background={color}&color=fff&size={tamaño}&bold=true"
+
+#Actualizar avatar en perfil de usuario
+@login_required
+@require_POST
+def avatar_actualizar(request):
+    import base64, re
+    from django.core.files.base import ContentFile
+    user = request.user
+    data = request.POST.get('avatar_base64', '')
+    if not data:
+        return JsonResponse({'success': False, 'error': 'Sin imagen.'})
+    # Extraer base64
+    match = re.match(r'data:image/(\w+);base64,(.*)', data, re.DOTALL)
+    if not match:
+        return JsonResponse({'success': False, 'error': 'Formato inválido.'})
+    ext, imgdata = match.group(1), match.group(2)
+    archivo = ContentFile(base64.b64decode(imgdata), name=f'avatar_{user.id}.{ext}')
+    # Guardar en el perfil (ajusta según tu modelo)
+    perfil = getattr(user, 'perfil', None)
+    if perfil and hasattr(perfil, 'avatar'):
+        perfil.avatar.save(archivo.name, archivo, save=True)
+        return JsonResponse({'success': True, 'avatar_url': perfil.avatar.url})
+    return JsonResponse({'success': False, 'error': 'Modelo de perfil no encontrado.'})
 
 def home(request):
     """Vista principal - Con productos desde la base de datos"""
@@ -1180,19 +1204,17 @@ def logout_view(request):
     return redirect('pagina:home')
 
 def perfil_view(request):
-    """Vista de perfil de usuario"""
+    """Vista de perfil — redirige según tipo de usuario"""
     if not request.user.is_authenticated:
         return redirect('pagina:login')
-    
-    extra_data = request.session.get('user_extra_data', {})
-    
-    context = {
-        'user': request.user,
-        'documento': extra_data.get('documento', ''),
-        'telefono': extra_data.get('telefono', ''),
-        'genero': extra_data.get('genero', ''),
-    }
-    return render(request, 'pagina/perfil.html', context)
+
+    # Si es usuario staff (Usuarios), va al perfil del dashboard
+    if request.session.get('usuario_id'):
+        return redirect('dashboard:perfil')
+
+    # Si es cliente, va al perfil de cliente (ventas)
+    from ventas.views import perfil_usuario
+    return perfil_usuario(request)
 
 # =============================================================================
 # API ENDPOINTS ACTUALIZADOS
@@ -1316,57 +1338,127 @@ def checkout(request):
 
 @require_http_methods(["POST"])
 def api_checkout_procesar(request):
-    """Endpoint para procesar el pago (producción)"""
+    """Procesa el checkout y guarda Venta + DetalleVenta en BD"""
     if not request.user.is_authenticated:
-        return JsonResponse({'success': False, 'error': 'Autenticación requerida'}, status=401)
-    
+        return JsonResponse({'success': False, 'error': 'Debes iniciar sesión'}, status=401)
+
     try:
         data = json.loads(request.body)
-        
-        # TODO: Validar datos, procesar pago con pasarela, crear orden en BD
-        # Ejemplo simplificado:
-        
-        # 1. Crear orden en base de datos
-        # orden = Orden.objects.create(
-        #     usuario=request.user,
-        #     total=data['total'],
-        #     estado='pendiente',
-        #     metodo_pago=data['pago']['metodo'],
-        #     direccion_envio=data['envio'],
-        #     contacto=data['contacto']
-        # )
-        
-        # 2. Procesar pago con pasarela (Wompi, PayU, Stripe)
-        # payment_response = pasarela_pago.charge({
-        #     'amount': data['total'],
-        #     'currency': 'COP',
-        #     'payment_method': data['pago']['metodo'],
-        #     'customer_email': data['contacto']['email']
-        # })
-        
-        # 3. Enviar email de confirmación
-        # send_mail(
-        #     subject=f'Confirmación de pedido #{orden.numero}',
-        #     message=f'Gracias por tu compra...',
-        #     from_email=settings.DEFAULT_FROM_EMAIL,
-        #     recipient_list=[data['contacto']['email']],
-        #     fail_silently=False,
-        # )
-        
-        # 4. Limpiar carrito
-        if 'carrito' in request.session:
-            del request.session['carrito']
-        if 'cupon_activo' in request.session:
-            del request.session['cupon_activo']
-        request.session.modified = True
-        
+
+        # ── 1. Obtener cliente ──
+        from ventas.models import Clientes, Ventas, DetalleVenta, ItemsCarrito, Carritos, MetodosPago
+        from inventario.models import Producto
+
+        cliente = Clientes.objects.filter(
+            email=request.user.email,
+            deleted_at__isnull=True
+        ).first()
+
+        if not cliente:
+            return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+
+        # ── 2. Obtener carrito en BD ──
+        carrito_bd = Carritos.objects.filter(
+            cliente=cliente,
+            deleted_at__isnull=True
+        ).first()
+
+        if not carrito_bd:
+            carrito_bd = Carritos.objects.filter(
+                session_id=request.session.session_key,
+                deleted_at__isnull=True
+            ).first()
+
+        if not carrito_bd:
+            return JsonResponse({'success': False, 'error': 'Carrito vacío'}, status=400)
+
+        items = ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto')
+
+        if not items.exists():
+            return JsonResponse({'success': False, 'error': 'No hay productos en el carrito'}, status=400)
+
+        # ── 3. Calcular totales ──
+        subtotal   = sum(item.precio_unitario * item.cantidad for item in items)
+        impuesto   = subtotal * Decimal('0.19')
+        descuento  = Decimal('0')
+        total      = subtotal + impuesto - descuento
+
+        # ── 4. Método de pago ──
+        metodo_nombre = data.get('pago', {}).get('metodo', 'otro')
+        metodo_map    = {
+            'pse': 'PSE', 'tarjeta': 'Tarjeta', 'card': 'Tarjeta',
+            'nequi': 'Nequi', 'cash': 'Contra entrega', 'contraentrega': 'Contra entrega',
+            'whatsapp': 'WhatsApp',
+        }
+        metodo_pago = MetodosPago.objects.filter(
+            nombre__icontains=metodo_map.get(metodo_nombre, metodo_nombre)
+        ).first()
+
+        # ── 5. Dirección de entrega ──
+        envio     = data.get('envio', {})
+        contacto  = data.get('contacto', {})
+        direccion = f"{envio.get('direccion', '')} {envio.get('apartamento', '')}".strip()
+        if envio.get('ciudad'):
+            direccion = f"{envio.get('ciudad')} - {direccion}"
+
+        # Actualizar dirección del cliente si la ingresó
+        if direccion and not cliente.direccion:
+            cliente.direccion = direccion
+            cliente.save(update_fields=['direccion', 'updated_at'])
+
+        # ── 6. Crear Venta ──
+        with transaction.atomic():
+            venta = Ventas(
+                usuario    = None,          # nullable tras la migración
+                cliente    = cliente,
+                tipo_venta = 'DIRECTA',
+                fecha_venta= timezone.now(),
+                subtotal   = subtotal,
+                impuesto   = impuesto,
+                descuento  = descuento,
+                total      = total,
+                estado_venta = 'PENDIENTE',
+                metodo_pago  = metodo_pago,
+                observaciones= (
+                    f"Pedido web | "
+                    f"Contacto: {contacto.get('nombre','')} "
+                    f"{contacto.get('telefono','')} | "
+                    f"Entrega: {direccion}"
+                ),
+            )
+            # Saltar full_clean para evitar validación de total (ya calculado)
+            venta.save()
+
+            # ── 7. Crear DetalleVenta ──
+            for item in items:
+                DetalleVenta.objects.create(
+                    venta          = venta,
+                    producto       = item.producto,
+                    cantidad       = item.cantidad,
+                    precio_unitario= item.precio_unitario,
+                    descuento      = Decimal('0'),
+                    subtotal       = item.precio_unitario * item.cantidad,
+                )
+
+            # ── 8. Vaciar carrito ──
+            ItemsCarrito.objects.filter(carrito=carrito_bd).delete()
+            carrito_bd.updated_at = timezone.now()
+            carrito_bd.save()
+
+            request.session['carrito']          = {}
+            request.session['carrito_cantidad'] = 0
+            request.session.modified = True
+
         return JsonResponse({
-            'success': True,
-            'order_number': f"ORD-2026-{''.join(random.choices(string.ascii_uppercase + string.digits, k=6))}",
-            'message': 'Pedido procesado exitosamente'
+            'success':      True,
+            'order_number': venta.numero_factura,
+            'total':        float(total),
+            'message':      '¡Pedido creado exitosamente!',
         })
-        
+
     except Exception as e:
+        import traceback
+        print(f"ERROR checkout: {traceback.format_exc()}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @require_http_methods(["GET"])

@@ -332,7 +332,7 @@ class Cotizaciones(models.Model):
     id_cotizacion = models.AutoField(primary_key=True)
     numero_cotizacion = models.CharField(unique=True, max_length=255)
     cliente = models.ForeignKey(Clientes, models.DO_NOTHING)
-    usuario = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING) 
+    usuario = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING, blank=True, null=True)
     venta_id = models.IntegerField(blank=True, null=True)
     fecha_cotizacion = models.DateField(blank=True, null=True)
     fecha_vencimiento = models.DateField()
@@ -627,7 +627,7 @@ class Pedido(models.Model):
     ]
 
     id_pedido = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING)
+    usuario = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING, blank=True, null=True)
     cliente = models.ForeignKey('ventas.Clientes', models.DO_NOTHING)
     fecha_pedido = models.DateTimeField(default=timezone.now)
     fecha_entrega_estimada = models.DateField(blank=True, null=True)
@@ -825,7 +825,7 @@ class Ventas(models.Model):
     ]
 
     id_venta = models.AutoField(primary_key=True)
-    usuario = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING)
+    usuario = models.ForeignKey('usuarios.Usuarios', models.DO_NOTHING, blank=True, null=True)
     cliente = models.ForeignKey(Clientes, models.DO_NOTHING, blank=True, null=True)
     pedido = models.OneToOneField(Pedido, models.DO_NOTHING, blank=True, null=True)
     tipo_venta = models.CharField(

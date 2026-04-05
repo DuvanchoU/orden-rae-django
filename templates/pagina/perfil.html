@@ -48,7 +48,7 @@
     ══════════════════════════════════════════ */
     .perfil-hero {
     background: linear-gradient(135deg, var(--cafe-d) 0%, var(--cafe) 50%, var(--cafe-l) 100%);
-    padding: calc(5rem + 150px) 0 5rem;
+    padding: calc(5rem ) 0 ;
     position: relative;
     overflow: hidden;
     }
@@ -1068,46 +1068,102 @@
     <!-- ── TOAST STACK ── -->
     <div class="toast-stack" id="toast-stack"></div>
 
-    <!-- ── FOOTER ── -->
-    <footer class="footer-moderno footer-bg text-dark">
+<!-- ════════════════════════════════════════
+    FOOTER
+════════════════════════════════════════ -->
+<footer class="footer-moderno footer-bg text-dark">
     <div class="container">
         <div class="row g-4 g-lg-5">
-        <div class="col-12 col-lg-4">
-            <div class="footer-brand mb-4">
-            <img src="{% static 'img/emblema_bodega.png' %}" alt="ORDER R.A.E" class="footer-logo">
-            <p class="footer-description text-muted mt-3">"Diseños hechos con el alma"</p>
+            <div class="col-12 col-lg-4">
+                <div class="footer-brand mb-4">
+                    <img src="{% static 'img/emblema_bodega.png' %}" alt="ORDER R.A.E" class="footer-logo">
+                    <p class="footer-description text-muted mt-3">"Diseños hechos con el alma: transformamos cada rincón con piezas únicas, exclusivas y confortables"</p>
+                </div>
+                <div class="footer-social mb-4">
+                    <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-pinterest-p"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="footer-newsletter">
+                    <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
+                    <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
+                        <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
+                        <button type="submit" class="btn btn-newsletter"><i class="fas fa-arrow-right"></i></button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="footer-column-title">EMPRESA</h6>
+                <ul class="footer-links list-unstyled">
+                    <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
+                    <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
+                    <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
+                    <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
+                    <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="footer-column-title">AYUDA</h6>
+                <ul class="footer-links list-unstyled">
+                    <li><a href="#">Preguntas Frecuentes</a></li>
+                    <li><a href="#">Guía de tallas</a></li>
+                    <li><a href="#">Cuidado de muebles</a></li>
+                    <li><a href="#">Política de envíos</a></li>
+                    <li><a href="#">Devoluciones</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="footer-column-title">LEGAL</h6>
+                <ul class="footer-links list-unstyled">
+                    <li><a href="#">Términos y Condiciones</a></li>
+                    <li><a href="#">Política de Privacidad</a></li>
+                    <li><a href="#">Política de Cookies</a></li>
+                    <li><a href="#">PQRS</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="footer-column-title">CONTACTO</h6>
+                <ul class="footer-contact list-unstyled">
+                    <li class="mb-3"><i class="fas fa-map-marker-alt text-primary me-2"></i><span>Carrera 13 # 65-10<br>Bogotá - Colombia</span></li>
+                    <li class="mb-3"><i class="fas fa-clock text-primary me-2"></i><span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span></li>
+                    <li class="mb-3"><i class="fas fa-phone text-primary me-2"></i><a href="tel:+5717977090" class="text-decoration-none">797 7090</a></li>
+                    <li><i class="fab fa-whatsapp text-primary me-2"></i><a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a></li>
+                </ul>
             </div>
         </div>
-        <div class="col-6 col-lg-2">
-            <h6 class="footer-column-title">EMPRESA</h6>
-            <ul class="footer-links list-unstyled">
-            <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
-            <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
-            <li><a href="{% url 'pagina:blog_decoracion' %}">Blog</a></li>
-            </ul>
+        <div class="footer-badges mt-5 pt-4 border-top border-secondary">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-lg-6">
+                    <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
+                        <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
+                        <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
+                        <span class="payment-badge"><i class="fas fa-credit-card"></i> PSE</span>
+                        <span class="payment-badge"><i class="fas fa-mobile-alt"></i> Nequi</span>
+                        <span class="payment-badge"><i class="fas fa-wallet"></i> DaviPlata</span>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 text-lg-end">
+                    <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
+                    <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
+                        <span class="cert-badge"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
+                        <span class="cert-badge"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
+                        <span class="cert-badge"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-6 col-lg-2">
-            <h6 class="footer-column-title">AYUDA</h6>
-            <ul class="footer-links list-unstyled">
-            <li><a href="#">Preguntas Frecuentes</a></li>
-            <li><a href="#">Política de envíos</a></li>
-            <li><a href="#">Devoluciones</a></li>
-            </ul>
-        </div>
-        <div class="col-6 col-lg-4">
-            <h6 class="footer-column-title">CONTACTO</h6>
-            <ul class="footer-contact list-unstyled">
-            <li><i class="fas fa-map-marker-alt text-primary me-2"></i>Carrera 13 # 65-10, Bogotá</li>
-            <li><i class="fas fa-phone text-primary me-2"></i><a href="tel:+5717977090" class="text-decoration-none">797 7090</a></li>
-            <li><i class="fab fa-whatsapp text-primary me-2"></i><a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a></li>
-            </ul>
-        </div>
-        </div>
-        <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center">
-        <p class="mb-0 small text-muted">&copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.</p>
+        <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <p class="mb-0 small text-muted">&copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.</p>
+            <a href="#" class="small text-muted text-decoration-none">Mapa del sitio</a>
         </div>
     </div>
-    </footer>
+</footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/header.js' %}"></script>
@@ -1202,7 +1258,7 @@
         const fd = new FormData(document.getElementById('form-perfil'));
 
         try {
-            const res = await fetch('{% url "ventas:perfil_actualizar" %}', {
+            const res = await fetch('{% url "pagina:perfil_actualizar" %}', {
             method:'POST', body:fd,
             headers:{'X-CSRFToken': getCSRF()}
             });
@@ -1253,7 +1309,7 @@
         btn.innerHTML = '<i class="fas fa-circle-notch spin"></i> Guardando...';
 
         try {
-            const res = await fetch('{% url "ventas:avatar_actualizar" %}', {
+            const res = await fetch('{% url "pagina:avatar_actualizar" %}', {
             method:'POST',
             headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
             body: JSON.stringify({avatar_url: selectedAvatarSrc})
@@ -1312,7 +1368,7 @@
         if (nueva.length < 8) { toast('La contraseña debe tener al menos 8 caracteres', 'warning'); return; }
 
         try {
-            const res = await fetch('{% url "ventas:password_cambiar" %}', {
+            const res = await fetch('{% url "pagina:password_cambiar" %}', {
             method:'POST',
             headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
             body: JSON.stringify({current_password:actual, new_password:nueva})
@@ -1340,11 +1396,11 @@
         }
         // Aquí podrías agregar lógica adicional, como mostrar un QR para configurar 2FA si se activó, etc.
         const URLS = {
-            perfilActualizar:      '{% url "ventas:perfil_actualizar" %}',
-            avatarActualizar:      '{% url "ventas:avatar_actualizar" %}',
-            passwordCambiar:       '{% url "ventas:password_cambiar" %}',
-            preferenciasGuardar:   '{% url "ventas:preferencias_guardar" %}',
-            notifMarcarLeidas:     '{% url "ventas:notificaciones_marcar_leidas" %}',
+            perfilActualizar:      '{% url "pagina:perfil_actualizar" %}',
+            avatarActualizar:      '{% url "pagina:avatar_actualizar" %}',
+            passwordCambiar:       '{% url "pagina:password_cambiar" %}',
+            preferenciasGuardar:   '{% url "pagina:preferencias_guardar" %}',
+            notifMarcarLeidas:     '{% url "pagina:notificaciones_marcar_leidas" %}',
             canjearPuntos:         '#',
             // ── URLs que NO existen aún, ponlas en # por ahora ──
             toggle2fa:             '#',   // Crear si lo necesitas
@@ -1426,7 +1482,7 @@
         // ── NOTIFICACIONES ──
         async function guardarPreferencia(tipo, valor) {
         try {
-            await fetch('{% url "ventas:preferencias_guardar" %}', {
+            await fetch('{% url "pagina:preferencias_guardar" %}', {
             method:'POST',
             headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
             body: JSON.stringify({tipo, valor})
@@ -1439,7 +1495,7 @@
 
         async function marcarTodasLeidas() {
         try {
-            const res = await fetch('{% url "ventas:notificaciones_marcar_leidas" %}', {
+            const res = await fetch('{% url "pagina:notificaciones_marcar_leidas" %}', {
             method:'POST', headers:{'X-CSRFToken':getCSRF()}
             });
             const data = await res.json();
