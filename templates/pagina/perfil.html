@@ -6,7 +6,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mi Perfil — ORDER RAE</title>
+<title>Mi Perfil — ORDEN RAE</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -470,8 +470,12 @@
         </div>
         <div class="col-lg-4 text-center">
             <div class="avatar-ring-wrap d-inline-block" onclick="abrirModalAvatar()">
-            <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/avatars/default-avatar-1.png' %}{% endif %}"
-                alt="Avatar" class="hero-avatar" id="hero-avatar-img">
+            <img src="{% if cliente and cliente.foto_perfil %}
+                {{ cliente.foto_perfil.url }}
+            {% else %}
+                {% static 'img/avatars/default-avatar-1.png' %}
+            {% endif %}"
+            alt="Avatar" class="hero-avatar" id="hero-avatar-img">
             <div class="avatar-edit-btn"><i class="fas fa-camera"></i></div>
             </div>
             <p style="color:rgba(255,255,255,.5);font-size:.75rem;margin-top:.75rem">
@@ -489,8 +493,14 @@
     <aside>
         <div class="sidebar-nav">
         <div class="sidebar-user-mini">
-            <img src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/avatars/default-avatar-1.png' %}{% endif %}"
-            alt="mini avatar" id="sidebar-avatar-img">
+            <img src="{% if cliente and cliente.foto_perfil %}
+                {{ cliente.foto_perfil.url }}
+            {% else %}
+                {% static 'img/avatars/default-avatar-1.png' %}
+            {% endif %}"
+            alt="mini avatar" 
+            class="sidebar-avatar"
+            id="sidebar-avatar-img">
             <div class="u-name">{{ user.get_full_name|default:user.username }}</div>
             <div class="u-email">{{ user.email }}</div>
         </div>
@@ -573,7 +583,7 @@
                     <div class="field-wrap">
                     <label>Teléfono</label>
                     <input type="tel" class="field-input" id="f-telefono" name="telefono"
-                        value="{{ user.cliente.telefono|default:'' }}" disabled
+                        value="{{ cliente.telefono|default:'' }}" disabled
                         placeholder="+57 300 000 0000">
                     </div>
                 </div>
@@ -581,21 +591,21 @@
                     <div class="field-wrap">
                     <label>Fecha de nacimiento</label>
                     <input type="date" class="field-input" id="f-fecha" name="fecha_nacimiento"
-                        value="{{ user.cliente.fecha_nacimiento|date:'Y-m-d'|default:'' }}" disabled>
+                        value="{{ cliente.fecha_nacimiento|date:'Y-m-d'|default:'' }}" disabled>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="field-wrap">
                     <label>Dirección</label>
                     <textarea class="field-input" id="f-direccion" name="direccion"
-                        rows="2" disabled style="resize:vertical">{{ user.cliente.direccion|default:'' }}</textarea>
+                        rows="2" disabled style="resize:vertical">{{ cliente.direccion|default:'' }}</textarea>
                     </div>
                 </div>
                 </div>
             </form>
 
             <!-- Alerta cumpleaños -->
-            {% if not user.cliente.fecha_nacimiento %}
+            {% if not cliente.fecha_nacimiento %}
             <div style="margin-top:1.25rem;padding:.875rem 1.1rem;background:#FFF9F0;border:1px solid #F5D78C;border-radius:var(--r-md);display:flex;align-items:center;gap:.75rem;">
                 <i class="fas fa-birthday-cake" style="color:var(--gold);font-size:1.1rem"></i>
                 <div>
@@ -906,10 +916,10 @@
                 <div class="logro-name">Coleccionista</div>
                 <div class="logro-desc">5 favoritos guardados</div>
                 </div>
-                <div class="logro-item {% if user.cliente.fecha_nacimiento %}desbloqueado{% else %}bloqueado{% endif %}">
+                <div class="logro-item {% if cliente and cliente.telefono and cliente.direccion %}desbloqueado{% else %}bloqueado{% endif %}">
                 <span class="logro-icon">🎂</span>
                 <div class="logro-name">Perfil completo</div>
-                <div class="logro-desc">Fecha de nacimiento registrada</div>
+                <div class="logro-desc">Información de contacto registrada</div>
                 </div>
                 <div class="logro-item bloqueado">
                 <span class="logro-icon">💎</span>
@@ -1258,7 +1268,7 @@
         const fd = new FormData(document.getElementById('form-perfil'));
 
         try {
-            const res = await fetch('{% url "pagina:perfil_actualizar" %}', {
+            const res = await fetch('{% url "ventas:perfil_actualizar" %}', {
             method:'POST', body:fd,
             headers:{'X-CSRFToken': getCSRF()}
             });
@@ -1396,7 +1406,7 @@
         }
         // Aquí podrías agregar lógica adicional, como mostrar un QR para configurar 2FA si se activó, etc.
         const URLS = {
-            perfilActualizar:      '{% url "pagina:perfil_actualizar" %}',
+            perfilActualizar:      '{% url "ventas:perfil_actualizar" %}',
             avatarActualizar:      '{% url "pagina:avatar_actualizar" %}',
             passwordCambiar:       '{% url "pagina:password_cambiar" %}',
             preferenciasGuardar:   '{% url "pagina:preferencias_guardar" %}',

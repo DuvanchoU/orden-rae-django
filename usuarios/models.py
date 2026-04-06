@@ -81,7 +81,12 @@ class Usuarios(models.Model):
         ('INACTIVO', 'Inactivo'),
         ('SUSPENDIDO', 'Suspendido'),
     ]
-
+    foto_perfil = models.ImageField(
+        upload_to='avatars/', 
+        null=True, 
+        blank=True, 
+        default='avatars/default-avatar-1.png'
+    )
     id_usuario = models.AutoField(primary_key=True)
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)

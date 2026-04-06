@@ -31,49 +31,6 @@ from django.db import transaction
 # Vistas para páginas principales (home, productos, promociones, contacto, etc.)
 # Vistas para autenticación (login, registro, perfil)
 # Vistas para manejo de carrito y checkout
-@login_required
-@require_POST
-@csrf_protect
-# Endpoint AJAX para actualizar foto de perfil del usuario
-def actualizar_avatar(request):
-    """
-    Endpoint AJAX para actualizar la foto de perfil del usuario.
-    Devuelve la URL de la nueva foto para actualizar el DOM en tiempo real.
-    """
-    foto = request.FILES.get('foto_perfil')
-
-    if not foto:
-        return JsonResponse({'success': False, 'error': 'No se recibió ningún archivo.'}, status=400)
-
-    # Validar tipo MIME
-    tipos_permitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if foto.content_type not in tipos_permitidos:
-        return JsonResponse({'success': False, 'error': 'Tipo de archivo no permitido.'}, status=400)
-
-    # Validar tamaño (5 MB máximo)
-    if foto.size > 5 * 1024 * 1024:
-        return JsonResponse({'success': False, 'error': 'El archivo supera el límite de 5 MB.'}, status=400)
-
-    user = request.user
-
-    # Eliminar foto anterior si existe (evitar acumulación de archivos)
-    if user.foto_perfil:
-        try:
-            old_path = user.foto_perfil.path
-            if os.path.isfile(old_path):
-                os.remove(old_path)
-        except Exception:
-            pass  # Silenciar errores al borrar archivo viejo
-
-    # Guardar nueva foto
-    user.foto_perfil = foto
-    user.save(update_fields=['foto_perfil']) 
-    return JsonResponse({
-        'success': True,
-        'foto_url': user.foto_perfil.url,
-        'mensaje': 'Foto actualizada correctamente.'
-    })
-
 # Función auxiliar para generar URL de avatar consistente (usada en testimonios)
 def generar_avatar_url(nombre, tamaño=128):
     """Genera una URL de avatar consistente basada en el nombre."""
@@ -89,25 +46,89 @@ def generar_avatar_url(nombre, tamaño=128):
 #Actualizar avatar en perfil de usuario
 @login_required
 @require_POST
-def avatar_actualizar(request):
-    import base64, re
+@csrf_protect
+def actualizar_avatar(request):
+    """
+    Endpoint AJAX para actualizar avatar desde base64 o URL estática.
+    Compatible con el modelo Clientes.
+    """
+    import base64, re, uuid, os, json
     from django.core.files.base import ContentFile
-    user = request.user
-    data = request.POST.get('avatar_base64', '')
-    if not data:
-        return JsonResponse({'success': False, 'error': 'Sin imagen.'})
-    # Extraer base64
-    match = re.match(r'data:image/(\w+);base64,(.*)', data, re.DOTALL)
-    if not match:
-        return JsonResponse({'success': False, 'error': 'Formato inválido.'})
-    ext, imgdata = match.group(1), match.group(2)
-    archivo = ContentFile(base64.b64decode(imgdata), name=f'avatar_{user.id}.{ext}')
-    # Guardar en el perfil (ajusta según tu modelo)
-    perfil = getattr(user, 'perfil', None)
-    if perfil and hasattr(perfil, 'avatar'):
-        perfil.avatar.save(archivo.name, archivo, save=True)
-        return JsonResponse({'success': True, 'avatar_url': perfil.avatar.url})
-    return JsonResponse({'success': False, 'error': 'Modelo de perfil no encontrado.'})
+    from django.conf import settings
+    from ventas.models import Clientes
+    
+    try:
+        # 1. Parsear JSON
+        data = json.loads(request.body)
+        avatar_data = data.get('avatar_url', '')
+        
+        if not avatar_data:
+            return JsonResponse({'success': False, 'error': 'No se recibió la imagen'}, status=400)
+        
+        # 2. Obtener cliente
+        cliente = Clientes.objects.filter(
+            email=request.user.email,
+            deleted_at__isnull=True
+        ).first()
+        
+        if not cliente:
+            return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+        
+        # 3. CASO: URL estática (default-avatar)
+        if 'default-avatar' in avatar_data or avatar_data.startswith('/static/'):
+            cliente.foto_perfil = avatar_data.replace('/static/', 'static/')
+            cliente.save(update_fields=['foto_perfil'])
+            return JsonResponse({
+                'success': True,
+                'foto_url': cliente.foto_perfil.url if hasattr(cliente.foto_perfil, 'url') else avatar_data,
+                'mensaje': 'Avatar actualizado'
+            })
+        
+        # 4. CASO: Base64 (data:image/png;base64,... o image/png;base64,...)
+        if 'base64' in avatar_data:
+            # ← Regex que acepta "data:" opcional
+            match = re.match(r'(?:data:)?image/(\w+);base64,(.+)', avatar_data, re.DOTALL)
+            if not match:
+                print(f"❌ Regex no coincide. Avatar data: {avatar_data[:50]}...")
+                return JsonResponse({'success': False, 'error': 'Formato de imagen inválido'}, status=400)
+            
+            ext = match.group(1)  # png, jpg, jpeg, webp
+            img_data = match.group(2)  # el base64 puro
+            
+            try:
+                image_file = ContentFile(base64.b64decode(img_data))
+                filename = f'avatar_cliente_{cliente.id_cliente}_{uuid.uuid4().hex[:8]}.{ext}'
+                
+                upload_path = os.path.join(settings.MEDIA_ROOT, 'avatars')
+                os.makedirs(upload_path, exist_ok=True)
+                
+                file_path = os.path.join(upload_path, filename)
+                with open(file_path, 'wb+') as f:
+                    for chunk in image_file.chunks():
+                        f.write(chunk)
+                
+                cliente.foto_perfil = f'avatars/{filename}'
+                cliente.save(update_fields=['foto_perfil'])
+                
+                return JsonResponse({
+                    'success': True,
+                    'foto_url': cliente.foto_perfil.url,
+                    'mensaje': 'Foto actualizada correctamente'
+                })
+                
+            except Exception as decode_error:
+                print(f"❌ Error decodificando base64: {decode_error}")
+                return JsonResponse({'success': False, 'error': f'Error al procesar imagen: {str(decode_error)}'}, status=500)
+        
+        return JsonResponse({'success': False, 'error': 'Formato no soportado'}, status=400)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Datos JSON inválidos'}, status=400)
+    except Exception as e:
+        print(f"❌ Error general avatar: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'success': False, 'error': f'Error del servidor: {str(e)}'}, status=500)
 
 def home(request):
     """Vista principal - Con productos desde la base de datos"""

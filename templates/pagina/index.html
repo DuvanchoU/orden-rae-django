@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ORDER RAE - Muebles Hechos a Mano en Colombia</title>
+    <title>ORDEN RAE - Muebles Hechos a Mano en Colombia</title>
     <meta name="description" content="Descubre muebles únicos hechos a mano por artesanos colombianos. Sofás, camas, escritorios y más con envío a todo el país.">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -1328,11 +1328,11 @@
                          data-id="{{ prod.id }}"
                          data-nombre="{{ prod.nombre|escapejs }}"
                          data-precio="{{ prod.precio }}"
-                         data-img="{{ prod.imagen_url }}"
+                         data-img="{{ MEDIA_URL }}{{ prod.imagen_url }}"
                          data-cat="{{ prod.categoria|default:'General' }}">
 
                     <div class="prod-img-wrap">
-                        <img src="{{ prod.imagen_url }}"
+                        <img src="{{ MEDIA_URL }}{{ prod.imagen_url }}"
                              alt="{{ prod.nombre }}"
                              loading="lazy"
                              onerror="this.src='https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}'">

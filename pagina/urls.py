@@ -25,8 +25,8 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
-    path('perfil/', views.perfil_view, name='perfil'),
     path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
+    path('perfil/', ventas_views.perfil_usuario, name='perfil'),
 
     # Formularios
     path('contacto/', views.contacto, name='contacto'),
@@ -44,16 +44,13 @@ urlpatterns = [
     path('api/notificaciones/marcar-leidas/', views.api_marcar_leidas, name='api_marcar_leidas'),
 
     #Avatar
-    path('perfil/', ventas_views.perfil_usuario, name='perfil'),
-    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
+    path('perfil/avatar/actualizar/', views.actualizar_avatar, name='avatar_actualizar'),
+
+    # Otras rutas de perfil
     path('perfil/actualizar/', ventas_views.perfil_actualizar, name='perfil_actualizar'),
-    path('perfil/avatar/', views.actualizar_avatar, name='avatar_actualizar'),
     path('perfil/password/', ventas_views.password_cambiar, name='password_cambiar'),
     path('perfil/stats/', ventas_views.perfil_stats, name='perfil_stats'),
     path('perfil/exportar/', ventas_views.datos_exportar, name='datos_exportar'),
     path('perfil/notificaciones/leidas/', ventas_views.notificaciones_marcar_leidas, name='notificaciones_marcar_leidas'),
     path('perfil/preferencias/', ventas_views.preferencias_guardar, name='preferencias_guardar'),
-
-    #Terminos y condiciones
-
 ]

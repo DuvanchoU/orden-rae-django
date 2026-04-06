@@ -20,6 +20,12 @@ class Clientes(models.Model):
         ('O', 'Otro'),
     ]
 
+    foto_perfil = models.ImageField(
+        upload_to='avatars/', 
+        null=True, 
+        blank=True, 
+        default='avatars/default-avatar-1.png'
+    )
     id_cliente = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100, blank=True, null=True)
@@ -253,10 +259,6 @@ class Clientes(models.Model):
     @property
     def username(self):
         return self.email or f"cliente_{self.id_cliente}"
-    
-    @property
-    def foto_perfil(self):
-        return None
     
     def get_full_name(self):
         if self.apellido:
