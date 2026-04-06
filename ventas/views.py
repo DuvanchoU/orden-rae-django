@@ -19,6 +19,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.http import require_http_methods
 import json
+from datetime import datetime
 
 
 IVA_RATE = Decimal('0.19')
@@ -1304,20 +1305,63 @@ def perfil_actualizar(request):
         cliente = Clientes.objects.filter(
             email=request.user.email, deleted_at__isnull=True
         ).first()
+        
         if not cliente:
             return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
 
-        if 'telefono'  in request.POST: cliente.telefono  = request.POST.get('telefono', '')
-        if 'direccion' in request.POST: cliente.direccion = request.POST.get('direccion', '')
+        # CAMPOS DEL FORMULARIO
+        if 'nombre' in request.POST:
+            cliente.nombre = request.POST.get('nombre', '').strip()
+        
+        if 'email' in request.POST:
+            cliente.email = request.POST.get('email', '').strip().lower()
+        
+        if 'telefono' in request.POST:
+            cliente.telefono = request.POST.get('telefono', '').strip()
+        
+        if 'direccion' in request.POST:
+            direccion = request.POST.get('direccion', '').strip()
+            cliente.direccion = direccion if direccion else None
+
+        # Convertir string a date
+        if 'fecha_nacimiento' in request.POST:
+            fecha_str = request.POST.get('fecha_nacimiento', '').strip()
+            if fecha_str:
+                try:
+                    # Convertir string 'YYYY-MM-DD' a objeto date
+                    cliente.fecha_nacimiento = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                except ValueError:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'Formato de fecha inválido. Use AAAA-MM-DD'
+                    }, status=400)
+            else:
+                cliente.fecha_nacimiento = None
+        
+        # Validaciones del modelo
+        cliente.full_clean()
         cliente.save()
+        
+        # Recargar desde la BD para asegurar tipos correctos
+        cliente.refresh_from_db()
 
-        return JsonResponse({'success': True, 'mensaje': 'Perfil actualizado'})
+        return JsonResponse({
+            'success': True, 
+            'mensaje': 'Perfil actualizado',
+            'data': {
+                'nombre': cliente.nombre,
+                'telefono': cliente.telefono,
+                'direccion': cliente.direccion,
+                'fecha_nacimiento': cliente.fecha_nacimiento.isoformat() if cliente.fecha_nacimiento else None
+            }
+        })
+        
+    except ValidationError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-
-
+        return JsonResponse({'success': False, 'error': f'Error: {str(e)}'}, status=500)
+    
 @require_POST
 @login_required
 def password_cambiar(request):

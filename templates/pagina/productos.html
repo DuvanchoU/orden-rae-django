@@ -1410,8 +1410,8 @@
                     <em>historias</em>
                 </h1>
                 <p class="hero-desc">
-                    Cada pieza es diseñada y construida a mano por nuestros maestros artesanos
-                    con materiales premium certificados. Calidad que dura generaciones.
+                    Cada pieza es diseñada y construida a mano por nuestros artesanos
+                    con materiales de la mejor calidad y certificados. Calidad que dura generaciones.
                 </p>
                 <div class="hero-stats">
                     <div class="hero-stat">
@@ -1435,7 +1435,9 @@
                         <img src="{{ MEDIA_URL }}{{ prod.imagen_url }}" alt="{{ prod.nombre }}"
                             onerror="this.src='https://via.placeholder.com/150x150?text=Producto'">
                         <div class="pname">{{ prod.nombre|truncatechars:22 }}</div>
-                        <div class="pprice">${{ prod.precio|floatformat:0|intcomma }}</div>
+                        <div class="pprice" data-raw-price="{{ prod.precio|floatformat:0 }}">
+                            ${{ prod.precio|floatformat:0|intcomma }}
+                        </div>
                     </div>
                     {% empty %}
                     {% for i in "1234" %}
@@ -1634,9 +1636,13 @@
                             </div>
 
                             <div class="card-price-row">
-                                <span class="price-main">${{ prod.precio_actual|floatformat:0|intcomma }}</span>
+                                <span class="price-main" data-precio="{{ prod.precio_actual|floatformat:0 }}">
+                                    ${{ prod.precio_actual|floatformat:0|intcomma }}
+                                </span>
                                 {% if prod.es_oferta %}
-                                <span class="price-old">${{ prod.precio_actual|add_percent:20|floatformat:0|intcomma }}</span>
+                                <span class="price-old" data-precio-old="{{ prod.precio_actual|add_percent:20|floatformat:0 }}">
+                                    ${{ prod.precio_actual|add_percent:20|floatformat:0|intcomma }}
+                                </span>
                                 <span class="price-save">-17%</span>
                                 {% endif %}
                             </div>
@@ -1768,9 +1774,9 @@
                         </div>
                         
                         <div class="card-price-row">
-                            <span class="price-main">${{ prod.precio_actual|floatformat:0|intcomma }}</span>
+                            <span class="price-main" id="modal-price" data-raw="">—</span>
                             {% if prod.es_oferta %}
-                            <span class="price-old">${{ prod.precio_actual|add_percent:20|floatformat:0|intcomma }}</span>
+                            <span class="price-old" id="modal-price-old"></span>
                             <span class="price-save">-17%</span>
                             {% endif %}
                         </div>
@@ -2081,6 +2087,57 @@ document.addEventListener('DOMContentLoaded', () => {
         return '';
     }
 
+    /* ══════════════════════════════════════
+    FORMATO MONEDA (COP)
+    ═════════════════════════════════════════ */
+    function fmt(n) {
+        // Formato colombiano: $ 1.428.000 (puntos para miles, sin decimales)
+        return '$ ' + new Intl.NumberFormat('es-CO', { 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0 
+        }).format(n);
+    }
+
+    /* ══════════════════════════════════════
+    ACTUALIZAR PRECIOS EN PÁGINA
+    ═════════════════════════════════════════ */
+    function updatePricesInPage() {
+        // Formatear precios en tarjetas de productos (GRID/LIST)
+        document.querySelectorAll('.product-card').forEach(card => {
+            const precio = parseFloat(card.dataset.price) || 0;
+            const priceMain = card.querySelector('.price-main');
+            const priceOld = card.querySelector('.price-old');
+            
+            if (priceMain && precio > 0) {
+                priceMain.textContent = fmt(precio);
+            }
+            if (priceOld && card.dataset.esOferta === 'true') {
+                const precioOld = Math.round(precio * 1.2);
+                priceOld.textContent = fmt(precioOld);
+            }
+        });
+        
+        // Formatear precios en hero preview
+        document.querySelectorAll('.hero-preview-card .pprice').forEach(el => {
+            const raw = el.textContent.replace(/[^0-9]/g, '');
+            if (raw) {
+                el.textContent = fmt(parseFloat(raw));
+            }
+        });
+        
+        // Formatear precios en modal de producto
+        const modalData = state.modalProducto;
+        if (modalData && modalData.price) {
+            const modalPrice = document.getElementById('modal-price');
+            const modalPriceOld = document.getElementById('modal-price-old');
+            if (modalPrice) modalPrice.textContent = fmt(modalData.price);
+            if (modalPriceOld && modalData.esOferta) {
+                const priceOld = Math.round(modalData.price * 1.2);
+                modalPriceOld.textContent = fmt(priceOld);
+            }
+        }
+    }
+
     /* ================================================================
     FILTRADO Y ORDENADO
     ================================================================ */
@@ -2363,11 +2420,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const price    = data.price || 0;
         const esOferta = cardEl ? cardEl.dataset.esOferta === 'true' : false;
-        if (modalPrice) modalPrice.textContent = '$' + price.toLocaleString('es-CO');
+
+        if (modalPrice) modalPrice.textContent = fmt(price);
         if (modalPriceOld) {
             if (esOferta) {
                 const priceOld = Math.round(price * 1.2);
-                modalPriceOld.textContent = '$' + priceOld.toLocaleString('es-CO');
+                modalPriceOld.textContent = fmt(priceOld);
                 modalPriceOld.style.display = '';
             } else {
                 modalPriceOld.textContent = '';
@@ -2504,7 +2562,9 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(c);
     });
 
-    console.log('🪵 ORDER RAE — Página de productos inicializada');
+    updatePricesInPage();
+
+    console.log('🪵 ORDEN RAE — Página de productos inicializada');
 });
 </script>
 

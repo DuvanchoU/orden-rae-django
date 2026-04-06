@@ -460,7 +460,7 @@ def productos(request):
         'categorias_principales':  categorias_principales,
         'categorias_secundarias':  categorias_secundarias,
         'productos_destacados':    productos_destacados,
-        'productos':               page_obj,          # ← page_obj en lugar de lista
+        'productos':               page_obj,     
         'page_obj':                page_obj,
         'paginator':               paginator,
         'sort_options':            sort_options,

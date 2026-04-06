@@ -1367,7 +1367,9 @@
                         </div>
 
                         <div class="prod-price-row">
-                            <span class="prod-price">${{ prod.precio|floatformat:0|intcomma }}</span>
+                            <span class="prod-price">${{ prod.precio|floatformat:0 }}">
+                                ${{ prod.precio|floatformat:0 }}
+                            </span>
                         </div>
 
                         <div class="prod-btns">
@@ -1596,7 +1598,7 @@
                         <div class="pm-cat"  id="pm-cat">—</div>
                         <h2 class="pm-name" id="pm-name">Cargando…</h2>
                         <div class="pm-price-row">
-                            <span class="pm-price" id="pm-price">—</span>
+                            <span class="pm-price" id="pm-price" data-raw="">—</span>
                             <span class="pm-price-old" id="pm-price-old"></span>
                         </div>
                         <p class="pm-desc">
@@ -1690,6 +1692,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ══════════════════════════════════════
+    FORMATO MONEDA (COP)
+    ═════════════════════════════════════════ */
+    function fmt(n) {
+        // Formato colombiano: $ 1.428.000 (puntos para miles, sin decimales)
+        return '$ ' + new Intl.NumberFormat('es-CO', { 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0 
+        }).format(n);
+    }
+
+    /* ══════════════════════════════════════
+    ACTUALIZAR PRECIOS EN PÁGINA
+    ═════════════════════════════════════════ */
+    function updatePricesInPage() {
+        // Formatear precios en tarjetas de productos
+        document.querySelectorAll('.prod-card').forEach(card => {
+            const precio = parseFloat(card.dataset.precio) || 0;
+            const priceEl = card.querySelector('.prod-price');
+            if (priceEl && precio > 0) {
+                priceEl.textContent = fmt(precio);
+            }
+        });
+        
+        // Formatear precios en modal de producto
+        const modalPrecio = parseFloat(document.getElementById('pm-price')?.dataset.raw || 0);
+        if (modalPrecio > 0) {
+            document.getElementById('pm-price').textContent = fmt(modalPrecio);
+        }
+    }
+
+    /* ══════════════════════════════════════
         HERO SLIDER
     ══════════════════════════════════════ */
     const slides = document.querySelectorAll('.h-slide');
@@ -1700,7 +1733,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             pill: '🎁 Envío Gratis en tu primera compra',
             h1:   'Muebles que <em>Transforman</em><br>tu Hogar',
-            desc: 'Hechos a mano por artesanos colombianos con materiales premium y diseño único. Cada pieza cuenta una historia.',
+            desc: 'Hechos a mano por artesanos colombianos con materiales de alta calidad y diseño único. Cada pieza cuenta una historia.',
             cta1: { url: "{% url 'pagina:productos' %}", icon: 'fa-shopping-bag', txt: 'Explorar Colección' },
             cta2: { url: "{% url 'pagina:cotiza' %}",   icon: 'fa-paint-brush',  txt: 'Cotizar Ahora' },
         },
@@ -1995,6 +2028,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setEl('pm-price',     'textContent', '$' + d.precio.toLocaleString('es-CO'));
         setEl('pm-price-old', 'textContent', '');
         setEl('pm-qty',       'value',       '1');
+        setEl('pm-price', 'textContent', fmt(d.precio));  // ← Usar fmt() aquí
+        setEl('pm-price', 'dataset.raw', d.precio);
 
         const wishBtn = document.getElementById('pm-btn-wish');
         if (wishBtn) {
@@ -2109,7 +2144,9 @@ document.addEventListener('DOMContentLoaded', () => {
         io.observe(el);
     });
 
-    console.log('🏠 ORDER RAE Home — Listo');
+    updatePricesInPage();
+
+    console.log('🏠 ORDEN RAE Home — Listo');
 });
 </script>
 

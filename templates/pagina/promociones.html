@@ -1131,9 +1131,13 @@
 
                 <!-- Precios -->
                 <div class="hero-price-block">
-                    <span class="hero-price">${{ promo_combo.precio|default:2490000|floatformat:0|intcomma }}</span>
-                    <span class="hero-price-original">${{ promo_combo.precio_original|default:3290000|floatformat:0|intcomma }}</span>
-                    <span class="hero-saving">
+                    <span class="hero-price" data-raw="{{ promo_combo.precio|default:2490000 }}">
+                        ${{ promo_combo.precio|default:2490000|floatformat:0|intcomma }}
+                    </span>
+                    <span class="hero-price-original" data-raw="{{ promo_combo.precio_original|default:3290000 }}">
+                        ${{ promo_combo.precio_original|default:3290000|floatformat:0|intcomma }}
+                    </span>
+                    <span class="hero-saving" data-raw="{{ promo_combo.ahorro|default:800000 }}">
                         ¡Ahorra ${{ promo_combo.ahorro|default:800000|floatformat:0|intcomma }}!
                     </span>
                 </div>
@@ -1300,9 +1304,13 @@
 
                         <!-- Precios -->
                         <div class="pcard-price-row">
-                            <span class="pcard-price">${{ promo.precio_promo|floatformat:0|intcomma }}</span>
+                            <span class="pcard-price" data-precio="{{ promo.precio_promo|floatformat:0 }}">
+                                ${{ promo.precio_promo|floatformat:0|intcomma }}
+                            </span>
                             {% if promo.precio_original %}
-                            <span class="pcard-price-old">${{ promo.precio_original|floatformat:0|intcomma }}</span>
+                            <span class="pcard-price-old" data-precio-old="{{ promo.precio_original|floatformat:0 }}">
+                                ${{ promo.precio_original|floatformat:0|intcomma }}
+                            </span>
                             {% endif %}
                             {% if promo.porcentaje_descuento %}
                             <span class="pcard-save-chip">Ahorras {{ promo.porcentaje_descuento }}%</span>
@@ -1361,9 +1369,9 @@
                         <h2 class="modal-name"  id="m-name">Cargando…</h2>
 
                         <div class="modal-price-row">
-                            <span class="modal-price"     id="m-price">—</span>
-                            <span class="modal-price-old" id="m-price-old">—</span>
-                            <span class="modal-save-tag"  id="m-save">—</span>
+                            <span class="modal-price" id="m-price" data-raw="">—</span>
+                            <span class="modal-price-old" id="m-price-old" data-raw=""></span>
+                            <span class="modal-save-tag" id="m-save">—</span>
                         </div>
 
                         <p class="modal-desc">
@@ -1543,6 +1551,78 @@ document.addEventListener('DOMContentLoaded', () => {
             const [k, val] = c.trim().split('=');
             return k === 'csrftoken' ? decodeURIComponent(val) : v;
         }, '');
+    }
+
+    /* ══════════════════════════════════════
+    FORMATO MONEDA (COP)
+    ═════════════════════════════════════════ */
+    function fmt(n) {
+        // Formato colombiano: $ 1.428.000 (puntos para miles, sin decimales)
+        return '$ ' + new Intl.NumberFormat('es-CO', { 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0 
+        }).format(n);
+    }
+
+    /* ══════════════════════════════════════
+        ACTUALIZAR PRECIOS EN PÁGINA
+    ═════════════════════════════════════════ */
+    function updatePricesInPage() {
+        // Formatear precios en tarjetas de promociones
+        document.querySelectorAll('.promo-card-new').forEach(card => {
+            const precio = parseFloat(card.dataset.precio) || 0;
+            const precioOld = parseFloat(card.dataset.precioOriginal) || 0;
+            
+            const priceMain = card.querySelector('.pcard-price');
+            const priceOldEl = card.querySelector('.pcard-price-old');
+            
+            if (priceMain && precio > 0) {
+                priceMain.textContent = fmt(precio);
+            }
+            if (priceOldEl && precioOld > 0) {
+                priceOldEl.textContent = fmt(precioOld);
+            }
+        });
+        
+        // Formatear precios en hero
+        const heroPrice = document.querySelector('.hero-price');
+        const heroPriceOld = document.querySelector('.hero-price-original');
+        const heroSaving = document.querySelector('.hero-saving');
+        
+        if (heroPrice) {
+            const raw = heroPrice.textContent.replace(/[^0-9]/g, '');
+            if (raw) heroPrice.textContent = fmt(parseFloat(raw));
+        }
+        if (heroPriceOld) {
+            const raw = heroPriceOld.textContent.replace(/[^0-9]/g, '');
+            if (raw) heroPriceOld.textContent = fmt(parseFloat(raw));
+        }
+        if (heroSaving) {
+            const raw = heroSaving.textContent.replace(/[^0-9]/g, '');
+            if (raw) {
+                const num = parseFloat(raw);
+                heroSaving.textContent = `¡Ahorra ${fmt(num)}!`;
+            }
+        }
+        
+        // Formatear precios en modal
+        const modalData = state.modalData;
+        if (modalData) {
+            const modalPrice = document.getElementById('m-price');
+            const modalPriceOld = document.getElementById('m-price-old');
+            const modalSave = document.getElementById('m-save');
+            
+            if (modalPrice && modalData.precio) {
+                modalPrice.textContent = fmt(modalData.precio);
+            }
+            if (modalPriceOld && modalData.precioOrig) {
+                modalPriceOld.textContent = fmt(modalData.precioOrig);
+            }
+            if (modalSave && modalData.descuento) {
+                const ahorro = modalData.precioOrig - modalData.precio;
+                modalSave.textContent = `Ahorras ${fmt(ahorro)}`;
+            }
+        }
     }
 
     /* ════════════════════════════════════════
@@ -1778,9 +1858,14 @@ document.addEventListener('DOMContentLoaded', () => {
         set('m-img',       'alt',         data.nombre);
         set('m-cat',       'textContent', data.cat.toUpperCase());
         set('m-name',      'textContent', data.nombre);
-        set('m-price',     'textContent', '$' + data.precio.toLocaleString('es-CO'));
-        set('m-price-old', 'textContent', data.precioOrig ? '$' + data.precioOrig.toLocaleString('es-CO') : '');
-        set('m-save',      'textContent', data.descuento > 0 ? `-${data.descuento}% OFF` : '');
+        // USAR fmt()
+        set('m-price',     'textContent', fmt(data.precio));
+        set('m-price-old', 'textContent', data.precioOrig ? fmt(data.precioOrig) : '');
+        // Calcular ahorro
+        if (data.precioOrig && data.precio) {
+            const ahorro = data.precioOrig - data.precio;
+            set('m-save', 'textContent', `Ahorras ${fmt(ahorro)}`);
+        }
         set('m-discount',  'textContent', data.descuento > 0 ? `-${data.descuento}%` : 'OFERTA');
         set('m-qty',       'value',       '1');
 
@@ -1927,7 +2012,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.pcard-stock').forEach(el => stockObs.observe(el));
 
-    console.log('🎁 ORDER RAE — Página de promociones lista');
+    /* Formatear precios */
+    updatePricesInPage();
+    
+    console.log('🎁 ORDEN RAE — Página de promociones lista');
 });
 </script>
 

@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Quiénes Somos - ORDER RAE</title>
+    <title>Quiénes Somos - ORDEN RAE</title>
     <meta name="description" content="Conoce al equipo detrás de ORDER RAE: artesanos colombianos dedicados a crear muebles únicos desde 2015.">
     
     <!-- Fonts -->
@@ -207,7 +207,7 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
             {% for articulo in articulos %}
             <article class="blog-card" data-categoria="{{ articulo.categoria|lower }}" style="background: var(--bg-primary); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
-                <img src="{{ articulo.imagen }}" alt="{{ articulo.titulo }}" style="width: 100%; height: 200px; object-fit: cover;">
+                <img src="{{ MEDIA_URL }}{{ articulo.imagen }}" alt="{{ articulo.titulo }}" style="width: 100%; height: 200px; object-fit: cover;">
                 <div style="padding: 1.5rem;">
                     <span style="background: rgba(139,94,60,0.1); color: var(--color-primario); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 500;">{{ articulo.categoria }}</span>
                     <h3 style="font-weight: 700; margin: 0.75rem 0;">{{ articulo.titulo }}</h3>

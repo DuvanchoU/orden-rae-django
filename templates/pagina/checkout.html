@@ -280,7 +280,8 @@
                 <!-- Botón de pago -->
                 <button class="btn-pay" id="btn-pagar" onclick="procesarPago()">
                     <span class="btn-text">
-                        <i class="fas fa-lock me-2"></i>Pagar $<span id="btn-total">{{ total_carrito|floatformat:0|intcomma|default:'0' }}</span>
+                        <i class="fas fa-lock me-2"></i>Pagar $<span id="btn-total" data-raw="{{ total_final|floatformat:0|default:0 }}">
+                        {{ total_final|floatformat:0|intcomma|default:'0' }}
                     </span>
                     <span class="spinner spinner-border spinner-border-sm" role="status"></span>
                 </button>
@@ -318,7 +319,7 @@
                             <div class="summary-item-name">{{ item.nombre }}</div>
                             <div class="summary-item-qty">Cantidad: {{ item.cantidad }}</div>
                         </div>
-                        <div class="summary-item-price">
+                        <div class="summary-item-price" data-raw="{{ item.subtotal|floatformat:0 }}">
                             ${{ item.subtotal|floatformat:0|intcomma }}
                         </div>
                     </div>
@@ -330,11 +331,15 @@
                 <!-- Cálculos -->
                 <div class="summary-row">
                     <span class="summary-label">Subtotal</span>
-                    <span class="summary-value" id="summary-subtotal">${{ total_carrito|floatformat:0|intcomma|default:'0' }}</span>
+                    <span class="summary-value" id="summary-subtotal" data-raw="{{ total_carrito|floatformat:0|default:0 }}">
+                        ${{ total_carrito|floatformat:0|intcomma|default:'0' }}
+                    </span>
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">IVA (19%)</span>
-                    <span class="summary-value" id="summary-iva">${{ total_iva|floatformat:0|intcomma|default:'0' }}</span>
+                    <span class="summary-value" id="summary-iva" data-raw="{{ total_iva|floatformat:0|default:0 }}">
+                        ${{ total_iva|floatformat:0|intcomma|default:'0' }}
+                    </span>
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">Envío</span>
@@ -349,7 +354,9 @@
                 
                 <div class="summary-row total">
                     <span>TOTAL</span>
-                    <span id="summary-total">${{ total_final|floatformat:0|intcomma|default:total_carrito }}</span>
+                    <span id="summary-total" data-raw="{{ total_final|floatformat:0|default:total_carrito }}">
+                        ${{ total_final|floatformat:0|intcomma|default:total_carrito }}
+                    </span>
                 </div>
                 
                 <!-- Cupón aplicado -->
@@ -432,6 +439,53 @@
     document.addEventListener('DOMContentLoaded', () => {
         console.log('🔐 Checkout Profesional 2026 cargado');
         
+        // === FORMATO MONEDA (COP) ===
+        function fmt(n) {
+            // Formato colombiano: $ 1.428.000 (puntos para miles, sin decimales)
+            return '$ ' + new Intl.NumberFormat('es-CO', { 
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0 
+            }).format(n);
+        }
+
+        // === ACTUALIZAR PRECIOS EN CHECKOUT ===
+        function updateCheckoutPrices() {
+            // Precios en resumen de orden
+            const summarySubtotal = document.getElementById('summary-subtotal');
+            const summaryIva = document.getElementById('summary-iva');
+            const summaryTotal = document.getElementById('summary-total');
+            const summaryDiscount = document.getElementById('summary-discount');
+            const btnTotal = document.getElementById('btn-total');
+            
+            // Obtener datos desde Django (ya están en el script tag)
+            const djangoData = JSON.parse(document.getElementById('checkout-data')?.textContent || '{}');
+            
+            // Formatear precios del resumen
+            if (summarySubtotal && djangoData.total_carrito) {
+                summarySubtotal.textContent = fmt(djangoData.total_carrito);
+            }
+            if (summaryIva && djangoData.total_iva) {
+                summaryIva.textContent = fmt(djangoData.total_iva);
+            }
+            if (summaryTotal && djangoData.total_final) {
+                summaryTotal.textContent = fmt(djangoData.total_final);
+            }
+            if (summaryDiscount && djangoData.descuento) {
+                summaryDiscount.textContent = `−${fmt(djangoData.descuento)}`;
+            }
+            if (btnTotal && djangoData.total_final) {
+                btnTotal.textContent = fmt(djangoData.total_final).replace('$ ', '');
+            }
+            
+            // Formatear precios de items en el resumen
+            document.querySelectorAll('#summary-items .summary-item-price').forEach((el, index) => {
+                const item = djangoData.carrito_items?.[index];
+                if (item && item.subtotal) {
+                    el.textContent = fmt(item.subtotal);
+                }
+            });
+        }
+
         // === ESTADO GLOBAL ===
         const state = {
             step: 2, // Empezamos en "Información"
@@ -460,6 +514,7 @@
             
             // Actualizar progress bar
             updateProgress();
+            updateCheckoutPrices();
             
             console.log('✅ Checkout inicializado');
         }

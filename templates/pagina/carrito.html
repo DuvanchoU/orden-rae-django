@@ -919,6 +919,28 @@ tr.removing td { animation: rowOut .35s ease forwards; }
     .cart-table td { padding: .75rem 1rem; }
     .shipping-bar, .coupon-section { padding: 1rem 1.25rem; }
 }
+
+/* ── LIGHTBOX ── */
+#lightboxModal .modal-content {
+    background: rgba(0,0,0,.95);
+}
+
+#lightboxModal .modal-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+#lightbox-img {
+    max-height: 80vh;
+    object-fit: contain;
+}
+
+#lightbox-caption {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+}
 </style>
 </head>
 
@@ -994,7 +1016,7 @@ tr.removing td { animation: rowOut .35s ease forwards; }
 
                                 <td data-label="Imagen">
                                     <div class="product-img-wrap" onclick="quickView('{{ item.producto_id }}')">
-                                        <img src="{{ item.imagen_url|default:'/static/img/placeholder.jpg' }}"
+                                        <img src="{{ MEDIA_URL }}{{ item.imagen_url|default:'/static/img/placeholder.jpg' }}"
                                             alt="{{ item.nombre }}"
                                             onerror="this.src='https://via.placeholder.com/80x80?text=IMG'">
                                         <div class="img-overlay"><i class="fas fa-eye"></i></div>
@@ -1027,15 +1049,21 @@ tr.removing td { animation: rowOut .35s ease forwards; }
                                 </td>
 
                                 <td data-label="Precio" class="text-end">
-                                    <div class="price-tag">${{ item.precio_base|floatformat:0|intcomma }}</div>
+                                    <div class="price-tag" data-precio="{{ item.precio_base|floatformat:0 }}">
+                                        ${{ item.precio_base|floatformat:0|intcomma }}
+                                    </div>
                                 </td>
 
                                 <td data-label="IVA" class="text-end">
-                                    <div class="price-iva">${{ item.iva|floatformat:0|intcomma }}</div>
+                                    <div class="price-iva" data-iva="{{ item.iva|floatformat:0 }}">
+                                        ${{ item.iva|floatformat:0|intcomma }}
+                                    </div>
                                 </td>
 
                                 <td data-label="Subtotal" class="text-end">
-                                    <div class="price-subtotal">${{ item.subtotal|add:item.iva|floatformat:0|intcomma }}</div>
+                                    <div class="price-subtotal" data-subtotal="{{ item.subtotal|add:item.iva|floatformat:0 }}">
+                                        ${{ item.subtotal|add:item.iva|floatformat:0|intcomma }}
+                                    </div>
                                     <div style="font-size:.72rem;color:var(--text-light);">c/IVA</div>
                                 </td>
 
@@ -1066,7 +1094,7 @@ tr.removing td { animation: rowOut .35s ease forwards; }
                     <div class="shipping-track">
                         <div class="shipping-fill" id="shipping-fill" style="width:0%"></div>
                     </div>
-                    <div class="shipping-note">🚚 Envío gratis en compras superiores a $3.000.000</div>
+                    <div class="shipping-note">🚚 Envío gratis en compras superiores a <strong>$ 3.000.000</strong></div>
                 </div>
 
                 <!-- Cupón -->
@@ -1110,7 +1138,7 @@ tr.removing td { animation: rowOut .35s ease forwards; }
                         <img src="{% static 'img/Sofá2.jpg' %}" alt="Sofá" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
                         <div class="rec-card-body">
                             <div class="rec-name">Sofá Moderno 2 Puestos</div>
-                            <div class="rec-price">$1.890.000</div>
+                            <div class="rec-price" data-raw="1890000">$1.890.000</div>
                             <button class="rec-add">+ Agregar</button>
                         </div>
                     </div>
@@ -1118,7 +1146,7 @@ tr.removing td { animation: rowOut .35s ease forwards; }
                         <img src="{% static 'img/Cama3.jpg' %}" alt="Cama" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
                         <div class="rec-card-body">
                             <div class="rec-name">Cama King Size Premium</div>
-                            <div class="rec-price">$2.450.000</div>
+                            <div class="rec-price" data-raw="2450000">$2.450.000</div>
                             <button class="rec-add">+ Agregar</button>
                         </div>
                     </div>
@@ -1126,7 +1154,7 @@ tr.removing td { animation: rowOut .35s ease forwards; }
                         <img src="{% static 'img/Escritorio1.jpg' %}" alt="Escritorio" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
                         <div class="rec-card-body">
                             <div class="rec-name">Escritorio Ejecutivo</div>
-                            <div class="rec-price">$890.000</div>
+                            <div class="rec-price" data-raw="890000">$890.000</div>
                             <button class="rec-add">+ Agregar</button>
                         </div>
                     </div>
@@ -1134,7 +1162,7 @@ tr.removing td { animation: rowOut .35s ease forwards; }
                         <img src="{% static 'img/Silla3.jpg' %}" alt="Silla" onerror="this.src='https://via.placeholder.com/160x160?text=Producto'">
                         <div class="rec-card-body">
                             <div class="rec-name">Silla Ergonómica Pro</div>
-                            <div class="rec-price">$450.000</div>
+                            <div class="rec-price" data-raw="450000">$450.000</div>
                             <button class="rec-add">+ Agregar</button>
                         </div>
                     </div>
@@ -1152,11 +1180,15 @@ tr.removing td { animation: rowOut .35s ease forwards; }
 
                     <div class="summary-row">
                         <span class="summary-label">Subtotal</span>
-                        <span class="summary-value" id="summary-subtotal">${{ total_carrito|floatformat:0|intcomma|default:'0' }}</span>
+                        <span class="summary-value" id="summary-subtotal" data-raw="{{ total_carrito|floatformat:0|default:0 }}">
+                            ${{ total_carrito|floatformat:0|intcomma|default:'0' }}
+                        </span>
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">IVA (19%)</span>
-                        <span class="summary-value" id="summary-iva">${{ total_iva|floatformat:0|intcomma|default:'0' }}</span>
+                        <span class="summary-value" id="summary-iva" data-raw="{{ total_iva|floatformat:0|default:0 }}">
+                            ${{ total_iva|floatformat:0|intcomma|default:'0' }}
+                        </span>
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">Envío</span>
@@ -1588,9 +1620,25 @@ function init() {
     console.log('items:', state.items);
     console.log('hay_items:', {{ hay_items|yesno:"true,false" }});
     
+    updatePricesInTable();
+    updateRecPrices();
     updateSummary();
+    initModalPrices();
     updateShippingBar();
     toggleEmptyState();
+}
+
+// ── INICIALIZAR PRECIOS DEL MODAL ──
+function initModalPrices() {  // ← Función fuera de init()
+    const modalSubtotal = document.getElementById('modal-subtotal');
+    const modalTotal = document.getElementById('modal-total');
+    const modalDesc = document.getElementById('modal-descuento');
+    
+    if (modalSubtotal) modalSubtotal.textContent = fmt(state.total);
+    if (modalTotal) modalTotal.textContent = fmt(state.total - state.descuento);
+    if (modalDesc && state.descuento > 0) {
+        modalDesc.textContent = `−${fmt(state.descuento)}`;
+    }
 }
 
 // ── CSRF ──
@@ -1602,18 +1650,44 @@ function csrf() {
         }, '');
 }
 
-// ── FORMATO MONEDA ──
+// ── FORMATO MONEDA (COP) ──
 function fmt(n) {
-    return new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP', minimumFractionDigits:0 }).format(n);
+    // Formato colombiano: $1.428.000 (puntos para miles, sin decimales)
+    return '$ ' + new Intl.NumberFormat('es-CO', { 
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0 
+    }).format(n);
+}
+
+// ── ACTUALIZAR PRECIOS EN TABLA ──
+function updatePricesInTable() {
+    document.querySelectorAll('#carrito-items tr').forEach(row => {
+        // Leer del TR en lugar de los elementos hijos
+        const precio = parseFloat(row.dataset.precio) || 0;
+        const iva = parseFloat(row.dataset.iva) || 0;
+        const subtotal = precio + iva;
+        
+        // Actualizar precio unitario
+        const precioEl = row.querySelector('.price-tag');
+        if (precioEl) precioEl.textContent = fmt(precio);
+        
+        // Actualizar IVA
+        const ivaEl = row.querySelector('.price-iva');
+        if (ivaEl) ivaEl.textContent = fmt(iva);
+        
+        // Actualizar subtotal
+        const subtotalEl = row.querySelector('.price-subtotal');
+        if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
+    });
 }
 
 // ── ESTADO VACÍO ──
 function toggleEmptyState() {
-        const hayItems = state.items.length > 0 || {% if hay_items %}true{% else %}false{% endif %}
-    document.getElementById('carrito-vacio').classList.toggle('d-none', hayItems);
+    const hayItems = state.items.length > 0 || {% if hay_items %}true{% else %}false{% endif %};
+    document.getElementById('carrito-vacio').classList.toggle('d-none', !hayItems);  // ← Cambiado
     document.getElementById('carrito-container').classList.toggle('d-none', !hayItems);
     const btn = document.getElementById('btn-finalizar');
-    if (btn) btn.disabled = isEmpty;
+    if (btn) btn.disabled = !hayItems;  // ← Cambiado (era 'isEmpty')
 }
 
 // ── RESUMEN ──
@@ -1675,6 +1749,7 @@ async function refreshCart() {
         state.totalIva = raw.total_iva     || 0;
         state.total    = state.subtotal + state.totalIva;
 
+        updatePricesInTable();
         updateSummary();
         toggleEmptyState();
     } catch (e) {
@@ -1722,6 +1797,16 @@ window.cambiarCantidad = async function(btn, change) {
         btn.disabled = false;
     }
 };
+
+// ── ACTUALIZAR PRECIOS EN RECOMENDACIONES ──
+function updateRecPrices() {
+    document.querySelectorAll('.rec-price').forEach(el => {
+        const raw = el.dataset.raw;
+        if (raw) {
+            el.textContent = fmt(parseFloat(raw));
+        }
+    });
+}
 
 // ── ACTUALIZAR DESDE INPUT ──
 window.actualizarCantidadInput = async function(input) {
@@ -1807,7 +1892,21 @@ window.guardarParaDespues = function(btn) {
 
 // ── QUICK VIEW ──
 window.quickView = function(productId) {
-    window.location.href = `/productos/`;
+    // Buscar la fila del producto
+    const row = document.querySelector(`tr[data-id="${productId}"]`);
+    if (!row) return;
+    
+    const img = row.querySelector('img');
+    const nombre = row.dataset.nombre || 'Producto';
+    const src = img.src;
+    
+    // Actualizar modal
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox-caption').textContent = nombre;
+    
+    // Abrir modal
+    const modal = new bootstrap.Modal(document.getElementById('lightboxModal'));
+    modal.show();
 };
 
 // ── AGREGAR RECOMENDACIÓN ──
@@ -2045,5 +2144,20 @@ init();
 
 });
 </script>
+<!-- ════════════════════════════════════════
+    MODAL LIGHTBOX IMAGEN
+════════════════════════════════════════ -->
+<div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-body p-0 text-center">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3" 
+                        data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <img id="lightbox-img" src="" alt="Producto" class="img-fluid rounded shadow-lg">
+                <div id="lightbox-caption" class="text-white mt-3 fw-bold"></div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -1,5 +1,4 @@
 from decimal import Decimal
-
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -36,6 +35,7 @@ class Clientes(models.Model):
     email = models.CharField(max_length=100, blank=True, null=True)
     direccion = models.CharField(max_length=255, blank=True, null=True)
     fecha_registro = models.DateTimeField(blank=True, null=True)
+    fecha_nacimiento = models.DateField(blank=True, null=True, verbose_name='Fecha de nacimiento')
     estado = models.CharField(
         max_length=8, 
         choices=ESTADOS_CLIENTE,
