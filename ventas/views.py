@@ -168,7 +168,7 @@ def carrito_compra(request):
 
     context = {
         'carrito_items':      items,
-        'carrito_items_json': json.dumps(items),
+        'carrito_items_json': json.dumps(items, ensure_ascii=False), 
         'total_carrito':      round(total_carrito, 2),
         'total_iva':          round(total_iva, 2),
         'total_final':        round(total_carrito + total_iva, 2),
@@ -436,7 +436,110 @@ def api_carrito_contador(request):
     except Exception as e:
         return JsonResponse({'cantidad': 0, 'error': str(e)})
 
+@require_GET
+def api_carrito_estado(request):
+    """
+    Devuelve el estado actual del carrito para actualización en tiempo real.
+    URL: /ventas/carrito/estado/
+    """
+    carrito_bd    = _get_carrito_bd(request)
+    items         = []
+    total_carrito = 0
+    total_iva     = 0
 
+    if carrito_bd:
+        items_qs = ItemsCarrito.objects.filter(
+            carrito=carrito_bd
+        ).select_related('producto')
+
+        for item in items_qs:
+            prod          = item.producto
+            precio_base   = float(item.precio_unitario)
+            iva_unitario  = round(precio_base * float(IVA_RATE), 2)
+            subtotal_base = round(precio_base * item.cantidad, 2)
+            subtotal_iva  = round(iva_unitario * item.cantidad, 2)
+
+            img = ImagenesProducto.objects.filter(
+                producto=prod, es_principal=1
+            ).first()
+
+            stock_real = Inventario.objects.filter(
+                producto=prod,
+                estado='DISPONIBLE',
+                deleted_at__isnull=True
+            ).aggregate(total=Sum('cantidad_disponible'))['total']
+
+            if not stock_real:
+                stock_real = Inventario.objects.filter(
+                    producto=prod,
+                    deleted_at__isnull=True
+                ).aggregate(total=Sum('cantidad_disponible'))['total']
+
+            stock_real = stock_real or 99
+
+            items.append({
+                'item_id':     item.id_item,
+                'producto_id': prod.id_producto,
+                'nombre':      prod.referencia_producto or prod.codigo_producto,
+                'sku':         prod.codigo_producto,
+                'precio_base': precio_base,
+                'iva':         subtotal_iva,
+                'subtotal':    subtotal_base,
+                'subtotal_con_iva': round(subtotal_base + subtotal_iva, 2),
+                'cantidad':    item.cantidad,
+                'imagen_url':  img.ruta_imagen if img else '/static/img/placeholder.jpg',
+                'stock':       stock_real,
+            })
+
+            total_carrito += subtotal_base
+            total_iva     += subtotal_iva
+
+    return JsonResponse({
+        'carrito_items':    items,
+        'total_carrito':    round(total_carrito, 2),
+        'total_iva':        round(total_iva, 2),
+        'total_final':      round(total_carrito + total_iva, 2),
+        'carrito_cantidad': sum(i['cantidad'] for i in items),
+        'hay_items':        bool(items),
+    })
+
+@require_GET
+def api_carrito_recomendados(request):
+    """
+    Devuelve productos recomendados excluyendo los que ya están en el carrito.
+    URL: /ventas/api/carrito/recomendados/
+    """
+    from inventario.models import Producto, ImagenesProducto
+
+    carrito_bd = _get_carrito_bd(request)
+    ids_en_carrito = []
+
+    if carrito_bd:
+        ids_en_carrito = list(
+            ItemsCarrito.objects.filter(carrito=carrito_bd)
+            .values_list('producto_id', flat=True)
+        )
+
+    productos_qs = Producto.objects.filter(
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).exclude(
+        id_producto__in=ids_en_carrito
+    ).order_by('-created_at')[:8]
+
+    productos = []
+    for prod in productos_qs:
+        img = ImagenesProducto.objects.filter(
+            producto=prod, es_principal=1
+        ).first()
+        productos.append({
+            'id':        prod.id_producto,
+            'nombre':    prod.referencia_producto or prod.codigo_producto,
+            'precio':    float(prod.precio_actual),
+            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
+        })
+
+    return JsonResponse({'productos': productos})
 # ============================================================================
 # CLIENTES
 # ============================================================================

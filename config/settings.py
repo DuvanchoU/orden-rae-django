@@ -165,7 +165,7 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # CONFIGURACIÓN DE AUTENTICACIÓN
 
-LOGIN_URL = '/pagina/login/' # Redirige al login si no está autenticado (clientes → /pagina/login/, staff → /usuarios/login/)
+LOGIN_URL = '/login/' # Redirige a esta URL si el usuario no está autenticado
 LOGIN_REDIRECT_URL = 'dashboard:dashboard_home' # Redirige al dashboard después de login exitoso (ajusta según tu vista principal)
 LOGOUT_REDIRECT_URL = '/pagina/' # Redirige a la página pública después de logout
 AUTHENTICATION_BACKENDS = [

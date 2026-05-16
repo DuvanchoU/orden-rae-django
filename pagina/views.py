@@ -1241,50 +1241,122 @@ def perfil_view(request):
 # API ENDPOINTS ACTUALIZADOS
 # =============================================================================
 
-
 @require_http_methods(["POST"])
 def api_cupon_aplicar(request):
     """Validar y aplicar cupón de descuento"""
     try:
-        data = json.loads(request.body)
+        data   = json.loads(request.body)
         codigo = data.get('codigo', '').strip().upper()
-        
-        # Cupones válidos (en producción: consulta a BD con fechas y usos)
+
         cupones_validos = {
-            'BIENVENIDO10': {'type': 'percentage', 'value': 10, 'min_compra': 0},
-            'ENVIO500': {'type': 'fixed', 'value': 50000, 'min_compra': 200000},
-            'FREESHIP': {'type': 'shipping', 'value': 0, 'min_compra': 0},
+            'BIENVENIDO10': {'tipo': 'porcentaje', 'valor': 10,    'min_compra': 0},
+            'ENVIO500':     {'tipo': 'fijo',       'valor': 50000, 'min_compra': 200000},
+            'FREESHIP':     {'tipo': 'porcentaje', 'valor': 0,     'min_compra': 0},
+            'ORDERRAE20':   {'tipo': 'porcentaje', 'valor': 20,    'min_compra': 0},
         }
-        
+
         if codigo not in cupones_validos:
-            return JsonResponse({'success': False, 'error': 'Cupón inválido'}, status=400)
-        
+            return JsonResponse(
+                {'success': False, 'error': 'Cupón inválido o expirado'}, status=400
+            )
+
         cupon = cupones_validos[codigo]
-        
-        # Validar monto mínimo
-        carrito_total = sum(
-            (p['precio_base'] + p['iva']) * request.session.get('carrito', {}).get(p['id'], 0)
-            for p in Producto.objects.filter(id__in=request.session.get('carrito', {}).keys())
-        ) if False else 3500000  # TODO: cálculo real
-        
-        if carrito_total < cupon['min_compra']:
+
+        # ── Calcular total del carrito ──────────────────────────────────────
+        from ventas.models import Carritos, ItemsCarrito
+
+        carrito_bd    = None
+        total_con_iva = Decimal('0')
+
+        # Buscar carrito en BD (cliente autenticado primero, luego sesión)
+        if request.user.is_authenticated:
+            from ventas.models import Clientes as C
+            cliente = C.objects.filter(
+                email=request.user.email, deleted_at__isnull=True
+            ).first()
+            if cliente:
+                carrito_bd = Carritos.objects.filter(
+                    cliente=cliente, deleted_at__isnull=True
+                ).first()
+
+        if not carrito_bd and request.session.session_key:
+            carrito_bd = Carritos.objects.filter(
+                session_id=request.session.session_key, deleted_at__isnull=True
+            ).first()
+
+        if carrito_bd:
+            items = ItemsCarrito.objects.filter(
+                carrito=carrito_bd
+            ).select_related('producto')
+            for item in items:
+                precio        = Decimal(str(item.precio_unitario))
+                subtotal      = precio * item.cantidad
+                total_con_iva += subtotal + (subtotal * Decimal('0.19'))
+        else:
+            # Fallback: sesión de Django
+            carrito_session = request.session.get('carrito', {})
+            for pid, item_data in carrito_session.items():
+                if not isinstance(item_data, dict):
+                    continue
+                precio        = Decimal(str(item_data.get('precio', 0)))
+                cantidad      = int(item_data.get('cantidad', 1))
+                subtotal      = precio * cantidad
+                total_con_iva += subtotal + (subtotal * Decimal('0.19'))
+
+        total_con_iva = total_con_iva.quantize(Decimal('0.01'))
+
+        if total_con_iva <= 0:
+            return JsonResponse(
+                {'success': False, 'error': 'Tu carrito está vacío'}, status=400
+            )
+
+        # ── Validar monto mínimo ────────────────────────────────────────────
+        if total_con_iva < Decimal(str(cupon['min_compra'])):
             return JsonResponse({
-                'success': False, 
-                'error': f'Mínimo de compra: ${cupon["min_compra"]:,}'
+                'success': False,
+                'error':   f'Monto mínimo para este cupón: ${cupon["min_compra"]:,.0f}'
             }, status=400)
-        
-        # Aplicar cupón a sesión
-        request.session['cupon_activo'] = {'codigo': codigo, **cupon}
+
+        # ── Calcular descuento ──────────────────────────────────────────────
+        if cupon['tipo'] == 'porcentaje':
+            descuento = (
+                total_con_iva * Decimal(str(cupon['valor'])) / 100
+            ).quantize(Decimal('0.01'))
+        elif cupon['tipo'] == 'fijo':
+            descuento = min(Decimal(str(cupon['valor'])), total_con_iva)
+        else:
+            descuento = Decimal('0')
+
+        total_final = max(Decimal('0'), total_con_iva - descuento)
+
+        # ── Guardar en sesión — claves UNIFICADAS (una sola convención) ─────
+        request.session['cupon_activo'] = {
+            'codigo':    codigo,
+            'tipo':      cupon['tipo'],   # 'porcentaje' | 'fijo'
+            'valor':     cupon['valor'],
+            'descuento': float(descuento),
+        }
         request.session.modified = True
-        
+
         return JsonResponse({
-            'success': True,
-            'cupon': cupon,
-            'message': 'Cupón aplicado exitosamente'
+            'success':     True,
+            'codigo':      codigo,
+            'tipo':        cupon['tipo'],
+            'valor':       cupon['valor'],
+            'descuento':   float(descuento),
+            'total_final': float(total_final),
+            'mensaje':     f'Cupón aplicado: −${descuento:,.0f}',
         })
-            
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+@require_http_methods(["POST"])
+def api_cupon_remover(request):
+    """Remover cupón activo de la sesión"""
+    request.session.pop('cupon_activo', None)
+    request.session.modified = True
+    return JsonResponse({'success': True})
 
 # =============================================================================
 # API ENDPOINTS PARA AJAX - URLs deben coincidir con el JavaScript
@@ -1293,194 +1365,455 @@ def api_cupon_aplicar(request):
 
 @login_required
 def checkout(request):
-    """Vista de proceso de checkout"""
+    """Vista de proceso de checkout — requiere sesión de cliente autenticado"""
     if not request.session.get('cliente_auth') and not request.session.get('usuario_id'):
         return redirect('pagina:login')
-    
-    # Verificar que hay carrito
+ 
     carrito_session = request.session.get('carrito', {})
     if not carrito_session:
-        return redirect('pagina:carrito_compra')
-    
-    # Datos de productos (en producción: consulta a BD con select_related)
-    productos_db = {
-        '1': {'nombre': 'SOFÁ FATIMA', 'precio_base': 1872269, 'iva': 356731, 'imagen': '/static/img/Sofá2.JPG'},
-        # ... más productos
-    }
-    
-    # Calcular totales
+        messages.warning(request, 'Tu carrito está vacío. Agrega productos antes de continuar.')
+        return redirect('pagina:productos')
+ 
     carrito_items = []
     total_carrito = 0
-    total_iva = 0
-    
-    for producto_id_str, cantidad in carrito_session.items():
-        producto = productos_db.get(producto_id_str)
-        if producto:
-            precio_base = producto['precio_base']
-            iva = producto['iva']
-            subtotal = (precio_base + iva) * cantidad
-            
-            carrito_items.append({
-                'producto_id': producto_id_str,
-                'nombre': producto['nombre'],
-                'precio_base': precio_base,
-                'iva': iva,
-                'cantidad': cantidad,
-                'subtotal': subtotal,
-                'imagen_url': producto['imagen'],
-            })
-            total_carrito += precio_base * cantidad
-            total_iva += iva * cantidad
-    
-    # Aplicar cupón si existe
-    cupon_activo = request.session.get('cupon_activo')
-    descuento = 0
+    total_iva     = 0
+ 
+    # Consultar productos en bloque (eficiente)
+    producto_ids = list(carrito_session.keys())
+    productos_qs = Producto.objects.filter(
+        id_producto__in=producto_ids,
+        estado='DISPONIBLE',
+        deleted_at__isnull=True
+    ).select_related('categoria')
+    productos_map = {str(p.id_producto): p for p in productos_qs}
+ 
+    for producto_id_str, item_data in carrito_session.items():
+        if isinstance(item_data, dict):
+            cantidad    = int(item_data.get('cantidad', 1))
+            precio_base = float(item_data.get('precio', item_data.get('precio_base', 0)))
+            nombre      = item_data.get('nombre', 'Producto')
+            imagen_url  = item_data.get('imagen_url', '/static/img/placeholder.jpg')
+            sku         = item_data.get('sku', producto_id_str)
+        else:
+            cantidad    = int(item_data)
+            precio_base = 0
+            nombre      = 'Producto'
+            imagen_url  = '/static/img/placeholder.jpg'
+            sku         = producto_id_str
+ 
+        prod = productos_map.get(producto_id_str)
+        if prod:
+            precio_base = float(prod.precio_actual)
+            nombre      = prod.referencia_producto or prod.codigo_producto
+            sku         = prod.codigo_producto
+            img         = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
+            if img:
+                imagen_url = img.ruta_imagen
+ 
+        iva_unitario        = round(precio_base * 0.19, 2)
+        iva_total           = round(iva_unitario * cantidad, 2)
+        subtotal            = round(precio_base * cantidad, 2)
+        subtotal_con_iva    = round(subtotal + iva_total, 2)
+ 
+        carrito_items.append({
+            'item_id':          producto_id_str,
+            'producto_id':      producto_id_str,
+            'nombre':           nombre,
+            'sku':              sku,
+            'precio_base':      precio_base,
+            'iva':              iva_unitario,
+            'iva_total':        iva_total,
+            'subtotal_con_iva': subtotal_con_iva,
+            'cantidad':         cantidad,
+            'subtotal':         subtotal,
+            'imagen_url':       imagen_url,
+            'stock':            99,
+        })
+ 
+        total_carrito += subtotal
+        total_iva     += iva_total
+ 
+    # Cupón
+    cupon_activo  = request.session.get('cupon_activo')
+    descuento     = 0
+    total_con_iva = round(total_carrito + total_iva, 2)
+
     if cupon_activo:
-        if cupon_activo['type'] == 'percentage':
-            descuento = (total_carrito + total_iva) * (cupon_activo['value'] / 100)
-        elif cupon_activo['type'] == 'fixed':
-            descuento = min(cupon_activo['value'], total_carrito + total_iva)
-    
-    total_final = total_carrito + total_iva - descuento
-    
+        tipo  = cupon_activo.get('tipo', '')      
+        valor = cupon_activo.get('valor', 0)        
+        if tipo == 'porcentaje':
+            descuento = round(total_con_iva * valor / 100, 2)
+        elif tipo == 'fijo':
+            descuento = min(valor, total_con_iva)
+
+    total_final = max(0, round(total_con_iva - descuento, 2))
+ 
+    carrito_items_json = json.dumps([
+        {**item, 'precio_base': item['precio_base'], 'iva': item['iva']}
+        for item in carrito_items
+    ], ensure_ascii=False)
+ 
     context = {
-        'carrito_items': carrito_items,
-        'carrito_items_json': json.dumps(carrito_items),
-        'total_carrito': total_carrito,
-        'total_iva': total_iva,
-        'total_final': max(0, total_final),
-        'descuento': descuento,
-        'cupon_activo': cupon_activo,
-        'random_number': ''.join(random.choices(string.ascii_uppercase + string.digits, k=6)),
+        'carrito_items':      carrito_items,
+        'carrito_items_json': carrito_items_json,
+        'carrito_cantidad':   sum(i['cantidad'] for i in carrito_items),
+        'total_carrito':      round(total_carrito, 2),
+        'total_iva':          round(total_iva, 2),
+        'total_final':        total_final,
+        'descuento':          round(descuento, 2),
+        'descuento_aplicado': descuento > 0,
+        'cupon_activo':       cupon_activo,
+        'hay_items':          len(carrito_items) > 0,
+        'random_number':      ''.join(random.choices(string.ascii_uppercase + string.digits, k=6)),
     }
-    
+ 
     return render(request, 'pagina/checkout.html', context)
-
-
+ 
+ 
+# =============================================================================
+# API: api_checkout_procesar  — guarda Pedido + DetallePedido + Venta + DetalleVenta
+# =============================================================================
+ 
 @require_http_methods(["POST"])
 def api_checkout_procesar(request):
-    """Procesa el checkout y guarda Venta + DetalleVenta en BD"""
+    """
+    Procesa el checkout completo:
+    1. Crea Pedido + DetallePedido (en tabla pedido / detalle_pedido)
+    2. Crea Venta + DetalleVenta  (en tabla ventas / detalle_venta)
+    3. Limpia el carrito (BD + sesión)
+    4. Genera número de factura y número de pedido
+    5. Retorna JSON con número de orden y totales
+    """
+    import traceback
+    from decimal import Decimal, ROUND_HALF_UP
+    from django.db import transaction
+    from django.utils import timezone
+    from django.db.models import Model as DjangoModel
+ 
+    # ── Auth ──────────────────────────────────────────────────────────────────
     if not request.user.is_authenticated:
-        return JsonResponse({'success': False, 'error': 'Debes iniciar sesión'}, status=401)
-
+        return JsonResponse({'success': False, 'error': 'Debes iniciar sesión para continuar.'}, status=401)
+ 
     try:
         data = json.loads(request.body)
-
-        # ── 1. Obtener cliente ──
-        from ventas.models import Clientes, Ventas, DetalleVenta, ItemsCarrito, Carritos, MetodosPago
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Datos enviados no válidos.'}, status=400)
+ 
+    try:
+        from ventas.models import (
+            Clientes, Ventas, DetalleVenta,
+            ItemsCarrito, Carritos, MetodosPago,
+            Pedido, DetallePedido,
+        )
         from inventario.models import Producto
-
-        cliente = Clientes.objects.filter(
-            email=request.user.email,
-            deleted_at__isnull=True
-        ).first()
-
+ 
+        # ── 1. Obtener cliente ───────────────────────────────────────────────
+        # El cliente puede estar en request.user si se autenticó con ClientesAuthBackend
+        cliente = None
+        if hasattr(request.user, 'id_cliente'):
+            cliente = request.user
+        else:
+            cliente = Clientes.objects.filter(
+                email=request.user.email,
+                deleted_at__isnull=True
+            ).first()
+ 
         if not cliente:
-            return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
-
-        # ── 2. Obtener carrito en BD ──
-        carrito_bd = Carritos.objects.filter(
-            cliente=cliente,
-            deleted_at__isnull=True
-        ).first()
-
-        if not carrito_bd:
-            carrito_bd = Carritos.objects.filter(
+            return JsonResponse(
+                {'success': False, 'error': 'No se encontró el cliente. Inicia sesión nuevamente.'},
+                status=404
+            )
+ 
+        # ── 2. Recopilar items del carrito (BD primero, sesión como fallback) ──
+        items_data = []  # [{'producto': obj, 'cantidad': int, 'precio_unitario': Decimal}]
+ 
+        carrito_bd = (
+            Carritos.objects.filter(cliente=cliente, deleted_at__isnull=True).first()
+            or Carritos.objects.filter(
                 session_id=request.session.session_key,
                 deleted_at__isnull=True
             ).first()
-
-        if not carrito_bd:
-            return JsonResponse({'success': False, 'error': 'Carrito vacío'}, status=400)
-
-        items = ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto')
-
-        if not items.exists():
-            return JsonResponse({'success': False, 'error': 'No hay productos en el carrito'}, status=400)
-
-        # ── 3. Calcular totales ──
-        subtotal   = sum(item.precio_unitario * item.cantidad for item in items)
-        impuesto   = subtotal * Decimal('0.19')
-        descuento  = Decimal('0')
-        total      = subtotal + impuesto - descuento
-
-        # ── 4. Método de pago ──
-        metodo_nombre = data.get('pago', {}).get('metodo', 'otro')
-        metodo_map    = {
-            'pse': 'PSE', 'tarjeta': 'Tarjeta', 'card': 'Tarjeta',
-            'nequi': 'Nequi', 'cash': 'Contra entrega', 'contraentrega': 'Contra entrega',
-            'whatsapp': 'WhatsApp',
-        }
-        metodo_pago = MetodosPago.objects.filter(
-            nombre__icontains=metodo_map.get(metodo_nombre, metodo_nombre)
-        ).first()
-
-        # ── 5. Dirección de entrega ──
-        envio     = data.get('envio', {})
-        contacto  = data.get('contacto', {})
-        direccion = f"{envio.get('direccion', '')} {envio.get('apartamento', '')}".strip()
-        if envio.get('ciudad'):
-            direccion = f"{envio.get('ciudad')} - {direccion}"
-
-        # Actualizar dirección del cliente si la ingresó
-        if direccion and not cliente.direccion:
-            cliente.direccion = direccion
-            cliente.save(update_fields=['direccion', 'updated_at'])
-
-        # ── 6. Crear Venta ──
-        with transaction.atomic():
-            venta = Ventas(
-                usuario    = None,          # nullable tras la migración
-                cliente    = cliente,
-                tipo_venta = 'DIRECTA',
-                fecha_venta= timezone.now(),
-                subtotal   = subtotal,
-                impuesto   = impuesto,
-                descuento  = descuento,
-                total      = total,
-                estado_venta = 'PENDIENTE',
-                metodo_pago  = metodo_pago,
-                observaciones= (
-                    f"Pedido web | "
-                    f"Contacto: {contacto.get('nombre','')} "
-                    f"{contacto.get('telefono','')} | "
-                    f"Entrega: {direccion}"
-                ),
-            )
-            # Saltar full_clean para evitar validación de total (ya calculado)
-            venta.save()
-
-            # ── 7. Crear DetalleVenta ──
-            for item in items:
-                DetalleVenta.objects.create(
-                    venta          = venta,
-                    producto       = item.producto,
-                    cantidad       = item.cantidad,
-                    precio_unitario= item.precio_unitario,
-                    descuento      = Decimal('0'),
-                    subtotal       = item.precio_unitario * item.cantidad,
+        )
+ 
+        if carrito_bd:
+            for item in ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto'):
+                if item.producto and item.cantidad > 0:
+                    items_data.append({
+                        'producto':        item.producto,
+                        'cantidad':        item.cantidad,
+                        'precio_unitario': Decimal(str(item.precio_unitario)),
+                    })
+ 
+        # Fallback: sesión de Django
+        if not items_data:
+            carrito_session = request.session.get('carrito', {})
+            if not carrito_session:
+                return JsonResponse(
+                    {'success': False, 'error': 'Tu carrito está vacío. Agrega productos antes de continuar.'},
+                    status=400
                 )
-
-            # ── 8. Vaciar carrito ──
-            ItemsCarrito.objects.filter(carrito=carrito_bd).delete()
-            carrito_bd.updated_at = timezone.now()
-            carrito_bd.save()
-
+            productos_map = {
+                str(p.id_producto): p
+                for p in Producto.objects.filter(
+                    id_producto__in=list(carrito_session.keys()),
+                    estado='DISPONIBLE',
+                    deleted_at__isnull=True
+                )
+            }
+            for prod_id_str, item_data_s in carrito_session.items():
+                prod = productos_map.get(prod_id_str)
+                if not prod:
+                    continue
+                cantidad = int(item_data_s.get('cantidad', 1)) if isinstance(item_data_s, dict) else int(item_data_s)
+                items_data.append({
+                    'producto':        prod,
+                    'cantidad':        cantidad,
+                    'precio_unitario': Decimal(str(prod.precio_actual)),
+                })
+ 
+        if not items_data:
+            return JsonResponse(
+                {'success': False, 'error': 'No hay productos válidos en el carrito.'},
+                status=400
+            )
+ 
+        # ── 3. Calcular totales ──────────────────────────────────────────────
+        subtotal = sum(
+            (item['precio_unitario'] * item['cantidad']).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            for item in items_data
+        )
+        impuesto = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        descuento = Decimal('0.00')
+ 
+        cupon = request.session.get('cupon_activo')
+        if cupon:
+            tipo  = cupon.get('tipo', '')            
+            valor = Decimal(str(cupon.get('valor', 0)))  
+            total_con_iva = subtotal + impuesto
+            if tipo == 'porcentaje':
+                descuento = (
+                    total_con_iva * valor / 100
+                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            elif tipo == 'fijo':
+                descuento = min(valor, total_con_iva)
+ 
+        total = subtotal + impuesto - descuento
+ 
+        # ── 4. Método de pago ────────────────────────────────────────────────
+        metodo_raw = data.get('pago', {}).get('metodo', '')
+        metodo_map = {
+            'pse':           'PSE',
+            'card':          'Tarjeta',
+            'tarjeta':       'Tarjeta',
+            'nequi':         'Nequi',
+            'cash':          'Contra entrega',
+            'contraentrega': 'Contra entrega',
+            'whatsapp':      'WhatsApp',
+        }
+        nombre_metodo = metodo_map.get(metodo_raw, metodo_raw)
+        metodo_pago = None
+        if nombre_metodo:
+            metodo_pago = MetodosPago.objects.filter(
+                nombre__icontains=nombre_metodo,
+                deleted_at__isnull=True
+            ).first()
+            # Si no existe en BD, crear uno básico para no romper el flujo
+            if not metodo_pago and nombre_metodo:
+                metodo_pago, _ = MetodosPago.objects.get_or_create(
+                    nombre=nombre_metodo,
+                    defaults={
+                        'descripcion': f'Método de pago: {nombre_metodo}',
+                        'created_at': timezone.now(),
+                        'updated_at': timezone.now(),
+                    }
+                )
+ 
+        # ── 5. Datos de envío y contacto ─────────────────────────────────────
+        envio    = data.get('envio', {})
+        contacto = data.get('contacto', {})
+ 
+        partes_direccion = [
+            envio.get('ciudad', ''),
+            envio.get('direccion', ''),
+            envio.get('apartamento', ''),
+        ]
+        direccion_envio = ' - '.join(p.strip() for p in partes_direccion if p.strip())
+ 
+        instrucciones = envio.get('instrucciones', '').strip()
+        observaciones = (
+            f"Pedido web | "
+            f"Contacto: {contacto.get('nombre', '')} {contacto.get('telefono', '')} | "
+            f"Entrega: {direccion_envio}"
+        )
+        if instrucciones:
+            observaciones += f" | Instrucciones: {instrucciones}"
+ 
+        ahora = timezone.now()
+        fecha_entrega = (ahora + timezone.timedelta(days=5)).date()
+ 
+        # ── 6. Guardar todo en transacción atómica ───────────────────────────
+        with transaction.atomic():
+ 
+            # ── 6a. Generar número de pedido único ───────────────────────────
+            ultimo_pedido = Pedido.objects.filter(
+                deleted_at__isnull=True
+            ).order_by('-id_pedido').first()
+            consec_pedido = (ultimo_pedido.id_pedido if ultimo_pedido else 0) + 1
+            numero_pedido = f"PED-{consec_pedido:06d}"
+ 
+            # Verificar que no exista (por si acaso hay concurrencia)
+            while Pedido.objects.filter(numero_pedido=numero_pedido).exists():
+                consec_pedido += 1
+                numero_pedido = f"PED-{consec_pedido:06d}"
+ 
+            # ── 6b. Crear Pedido (usando DjangoModel.save para evitar full_clean) ──
+            pedido = Pedido.__new__(Pedido)
+            Pedido.__init__(pedido)
+ 
+            pedido.cliente                = cliente
+            pedido.usuario                = None
+            pedido.asesor                 = None
+            pedido.fecha_pedido           = ahora
+            pedido.fecha_entrega_estimada = fecha_entrega
+            pedido.total_pedido           = total
+            pedido.estado_pedido          = 'CONFIRMADO'
+            pedido.estado_facturacion     = 'NO_FACTURADO'
+            pedido.direccion_entrega      = direccion_envio
+            pedido.numero_pedido          = numero_pedido
+            pedido.created_at             = ahora
+            pedido.updated_at             = ahora
+ 
+            DjangoModel.save(pedido)
+ 
+            # ── 6c. Crear DetallePedido ──────────────────────────────────────
+            for item in items_data:
+                subtotal_item = (
+                    item['precio_unitario'] * item['cantidad']
+                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+ 
+                det_pedido = DetallePedido.__new__(DetallePedido)
+                DetallePedido.__init__(det_pedido)
+ 
+                det_pedido.pedido          = pedido
+                det_pedido.producto        = item['producto']
+                det_pedido.cantidad        = item['cantidad']
+                det_pedido.precio_unitario = item['precio_unitario']
+                det_pedido.subtotal        = subtotal_item
+                det_pedido.created_at      = ahora
+                det_pedido.updated_at      = ahora
+ 
+                DjangoModel.save(det_pedido)
+ 
+            # ── 6d. Generar número de factura único ──────────────────────────
+            prefijo = 'FAC'
+            ultimo_venta = Ventas.objects.filter(
+                prefijo=prefijo,
+                deleted_at__isnull=True
+            ).order_by('-id_venta').first()
+            consec_venta = (ultimo_venta.id_venta if ultimo_venta else 0) + 1
+            numero_factura = f"{prefijo}-{consec_venta:06d}"
+ 
+            while Ventas.objects.filter(numero_factura=numero_factura).exists():
+                consec_venta += 1
+                numero_factura = f"{prefijo}-{consec_venta:06d}"
+ 
+            # ── 6e. Crear Venta vinculada al Pedido ──────────────────────────
+            venta = Ventas.__new__(Ventas)
+            Ventas.__init__(venta)
+ 
+            venta.usuario        = None
+            venta.cliente        = cliente
+            venta.pedido         = pedido
+            venta.tipo_venta     = 'DIRECTA'
+            venta.fecha_venta    = ahora
+            venta.subtotal       = subtotal
+            venta.impuesto       = impuesto
+            venta.descuento      = descuento
+            venta.total          = total
+            venta.estado_venta   = 'PENDIENTE'
+            venta.metodo_pago    = metodo_pago
+            venta.observaciones  = observaciones
+            venta.numero_factura = numero_factura
+            venta.prefijo        = prefijo
+            venta.created_at     = ahora
+            venta.updated_at     = ahora
+ 
+            DjangoModel.save(venta)
+ 
+            # ── 6f. Crear DetalleVenta ───────────────────────────────────────
+            detalles_venta = []
+            for item in items_data:
+                subtotal_item = (
+                    item['precio_unitario'] * item['cantidad']
+                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+ 
+                detalle = DetalleVenta.__new__(DetalleVenta)
+                DetalleVenta.__init__(detalle)
+ 
+                detalle.venta           = venta
+                detalle.producto        = item['producto']
+                detalle.cantidad        = item['cantidad']
+                detalle.precio_unitario = item['precio_unitario']
+                detalle.descuento       = Decimal('0.00')
+                detalle.subtotal        = subtotal_item
+                detalle.costo_estimado  = None
+                detalle.created_at      = ahora
+                detalle.updated_at      = ahora
+ 
+                DjangoModel.save(detalle)
+                detalles_venta.append(detalle)
+ 
+            # ── 6g. Actualizar dirección del cliente si no tenía ─────────────
+            if direccion_envio and not cliente.direccion:
+                Clientes.objects.filter(pk=cliente.pk).update(
+                    direccion=direccion_envio,
+                    updated_at=ahora
+                )
+ 
+            # ── 6h. Actualizar pedido con venta creada (estado facturación) ──
+            Pedido.objects.filter(pk=pedido.pk).update(
+                updated_at=ahora
+            )
+ 
+            # ── 6i. Vaciar carrito en BD ─────────────────────────────────────
+            if carrito_bd:
+                ItemsCarrito.objects.filter(carrito=carrito_bd).delete()
+                Carritos.objects.filter(pk=carrito_bd.pk).update(
+                    deleted_at=ahora,
+                    updated_at=ahora
+                )
+ 
+            # ── 6j. Vaciar carrito en sesión ─────────────────────────────────
             request.session['carrito']          = {}
             request.session['carrito_cantidad'] = 0
+            request.session.pop('cupon_activo', None)
             request.session.modified = True
-
+ 
+        # ── 7. Generar factura PDF interna (gratuita, sin API externa) ────────
+        # La URL de descarga de factura se incluye en la respuesta
+        factura_url = f"/ventas/factura/{venta.id_venta}/pdf/"  # Implementar esta vista si se desea
+ 
+        # ── 8. Respuesta exitosa ──────────────────────────────────────────────
         return JsonResponse({
-            'success':      True,
-            'order_number': venta.numero_factura,
-            'total':        float(total),
-            'message':      '¡Pedido creado exitosamente!',
+            'success':        True,
+            'order_number':   venta.numero_factura,
+            'pedido_number':  pedido.numero_pedido,
+            'total':          float(total),
+            'subtotal':       float(subtotal),
+            'impuesto':       float(impuesto),
+            'descuento':      float(descuento),
+            'items':          len(detalles_venta),
+            'metodo_pago':    nombre_metodo,
+            'factura_url':    factura_url,
+            'message':        '¡Pedido creado exitosamente! Recibirás la confirmación en tu correo.',
         })
-
+ 
     except Exception as e:
-        import traceback
-        print(f"ERROR checkout: {traceback.format_exc()}")
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        print(f"[CHECKOUT ERROR]\n{traceback.format_exc()}")
+        return JsonResponse(
+            {'success': False, 'error': f'Error al procesar la compra: {str(e)}'},
+            status=500
+        )
 
 @require_http_methods(["GET"])
 def api_listar_notificaciones(request):

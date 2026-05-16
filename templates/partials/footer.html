@@ -1,0 +1,174 @@
+{% load static %}
+{% load humanize %}
+
+<footer class="footer-v2" id="footer-v2">
+
+    <!-- ── Fila de columnas ── -->
+    <div class="ft-top">
+        <div class="container">
+            <div class="ft-grid">
+
+                <!-- Columna 1: Marca -->
+                <div class="ft-col-block ft-animate">
+                    <img src="{% static 'img/emblema_bodega.png' %}" class="ft-logo" alt="ORDEN RAE">
+                    <div class="ft-brand-name">ORDEN RAE</div>
+                    <div class="ft-brand-sub">Muebles artesanales</div>
+                    <p class="ft-brand-desc">"Diseños hechos con el alma: transformamos cada rincón con piezas únicas, exclusivas y confortables"</p>
+
+                    <div class="ft-social-label">Síguenos</div>
+                    <div class="ft-socials">
+                        <a href="#" class="soc-btn soc-fb" aria-label="Facebook" title="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="soc-btn soc-ig" aria-label="Instagram" title="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="soc-btn soc-pi" aria-label="Pinterest" title="Pinterest">
+                            <i class="fab fa-pinterest-p"></i>
+                        </a>
+                        <a href="#" class="soc-btn soc-tk" aria-label="TikTok" title="TikTok">
+                            <i class="fab fa-tiktok"></i>
+                        </a>
+                        <a href="https://wa.me/573166712526" class="soc-btn soc-wa" aria-label="WhatsApp" title="WhatsApp" target="_blank" rel="noopener">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
+                    </div>
+
+                    <!-- Indicador horario en vivo -->
+                    <div class="ft-status">
+                        <span class="ft-status-dot" id="ft-status-dot"></span>
+                        <span id="ft-status-text">Verificando horario…</span>
+                    </div>
+                </div>
+
+                <!-- Columna 2: Empresa -->
+                <div class="ft-col-block ft-animate" style="transition-delay:.07s">
+                    <div class="ft-col-trigger" onclick="ftToggleCol(this)">
+                        <div class="ft-col-title">Empresa</div>
+                        <i class="fas fa-chevron-down ft-chev"></i>
+                    </div>
+                    <div class="ft-col-collapsible is-open">
+                        <div class="ft-col-title">Empresa</div>
+                        <ul class="ft-links">
+                            <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
+                            <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
+                            <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
+                            <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
+                            <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Columna 3: Ayuda -->
+                <div class="ft-col-block ft-animate" style="transition-delay:.14s">
+                    <div class="ft-col-trigger" onclick="ftToggleCol(this)">
+                        <div class="ft-col-title">Ayuda</div>
+                        <i class="fas fa-chevron-down ft-chev"></i>
+                    </div>
+                    <div class="ft-col-collapsible is-open">
+                        <div class="ft-col-title">Ayuda</div>
+                        <ul class="ft-links">
+                            <li><a href="#">Preguntas frecuentes</a></li>
+                            <li><a href="#">Guía de materiales</a></li>
+                            <li><a href="#">Cuidado de muebles</a></li>
+                            <li><a href="#">Política de envíos</a></li>
+                            <li><a href="#">Devoluciones</a></li>
+                            <li>
+                                <a href="#">
+                                    Rastrear pedido
+                                    <i class="fas fa-arrow-right" style="font-size:.65rem;margin-left:.25rem"></i>
+                                </a>
+                            </li>
+                            <li><a href="#">Términos y condiciones</a></li>
+                            <li><a href="#">PQRS</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Columna 4: Contacto -->
+                <div class="ft-col-block ft-animate" style="transition-delay:.21s">
+                    <div class="ft-col-trigger" onclick="ftToggleCol(this)">
+                        <div class="ft-col-title">Contacto</div>
+                        <i class="fas fa-chevron-down ft-chev"></i>
+                    </div>
+                    <div class="ft-col-collapsible is-open">
+                        <div class="ft-col-title">Contacto</div>
+
+                        <div class="ft-contact-item">
+                            <i class="fas fa-map-marker-alt ft-ci-icon"></i>
+                            <span>Carrera 13 # 65-10<br>Bogotá, Colombia</span>
+                        </div>
+                        <div class="ft-contact-item">
+                            <i class="fas fa-clock ft-ci-icon"></i>
+                            <span>Lun–Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
+                        </div>
+                        <div class="ft-contact-item">
+                            <i class="fas fa-phone ft-ci-icon"></i>
+                            <a href="tel:+5717977090">797 7090</a>
+                        </div>
+                        <div class="ft-contact-item">
+                            <i class="fab fa-whatsapp ft-ci-icon" style="color:#25D366"></i>
+                            <a href="https://wa.me/573166712526" target="_blank" rel="noopener">(+57) 316 671 2526</a>
+                        </div>
+                        <div class="ft-contact-item">
+                            <i class="fas fa-envelope ft-ci-icon"></i>
+                            <a href="mailto:info@orderrae.co">info@orderrae.co</a>
+                        </div>
+
+                        <button class="ft-copy-email-btn" id="ft-copy-email-btn" onclick="ftCopyEmail()">
+                            <i class="fas fa-copy"></i> Copiar email
+                        </button>
+                    </div>
+                </div>
+
+            </div><!-- /ft-grid -->
+        </div>
+    </div><!-- /ft-top -->
+
+    <!-- ── Bottom ── -->
+    <div class="ft-bottom">
+        <div class="container">
+
+            <div class="ft-pay-row">
+                <div>
+                    <div class="ft-section-label">Métodos de pago seguros</div>
+                    <div class="ft-pay-badges">
+                        <span class="pay-badge"><i class="fab fa-cc-visa"        style="font-size:1.1rem;color:#1a1f71"></i> Visa</span>
+                        <span class="pay-badge"><i class="fab fa-cc-mastercard"  style="font-size:1.1rem;color:#eb001b"></i> Mastercard</span>
+                        <span class="pay-badge"><i class="fab fa-cc-amex"        style="font-size:1.1rem;color:#007bc1"></i> Amex</span>
+                        <span class="pay-badge"><i class="fas fa-credit-card"    style="color:#C49A6C"></i> PSE</span>
+                        <span class="pay-badge"><i class="fas fa-mobile-alt"     style="color:#8DC63F"></i> Nequi</span>
+                        <span class="pay-badge"><i class="fas fa-wallet"         style="color:#E30613"></i> DaviPlata</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="ft-section-label">Garantías</div>
+                    <div class="ft-cert-badges">
+                        <span class="cert-badge"><i class="fas fa-truck-fast"></i>  Envío seguro</span>
+                        <span class="cert-badge"><i class="fas fa-certificate"></i>  Calidad premium</span>
+                        <span class="cert-badge"><i class="fas fa-lock"></i>         SSL seguro</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ft-final">
+                <p class="ft-copy-text">
+                    © <span id="ft-year"></span> <strong>ORDEN RAE</strong>.
+                    Todos los derechos reservados. Hecho con ❤️ en Colombia.
+                </p>
+                <ul class="ft-legal-links">
+                    <li><a href="#">Términos</a></li>
+                    <li><a href="#">Privacidad</a></li>
+                    <li><a href="#">Cookies</a></li>
+                    <li><a href="#">PQRS</a></li>
+                    <li><a href="#">Mapa del sitio</a></li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+</footer>
+
+<!-- JS del footer — siempre va al final del body -->
+<script src="{% static 'js/footer.js' %}"></script>

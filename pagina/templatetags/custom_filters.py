@@ -62,3 +62,15 @@ def add_percent(value, percent):
         return Decimal(str(value)) * (1 + Decimal(str(percent)) / 100)
     except Exception:
         return value
+    
+@register.filter(name='cop_format')
+def cop_format(value):
+    """
+    Formatea un número como pesos colombianos: 1234567 → 1.234.567
+    Uso: {{ total_final|cop_format }}
+    """
+    try:
+        value = int(round(float(value)))
+        return f"{value:,}".replace(",", ".")
+    except (ValueError, TypeError):
+        return value

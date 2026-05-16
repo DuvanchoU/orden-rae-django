@@ -10,28 +10,28 @@ urlpatterns = [
     path('productos/', views.productos, name='productos'),
     path('productos/<slug:categoria_slug>/', views.productos_por_categoria, name='productos_por_categoria'),
     path('promociones/', views.promociones, name='promociones'),
-    
+
     # Sobre la empresa
     path('quienes-somos/', views.quienes_somos, name='quienes_somos'),
     path('nuestra-historia/', views.nuestra_historia, name='nuestra_historia'),
     path('sostenibilidad/', views.sostenibilidad, name='sostenibilidad'),
     path('trabaja-con-nosotros/', views.trabaja_con_nosotros, name='trabaja_con_nosotros'),
-    path('blog-decoracion/', views.blog_decoracion, name='blog_decoracion'),   
-    
+    path('blog-decoracion/', views.blog_decoracion, name='blog_decoracion'),
+
     # Checkout
     path('checkout/', views.checkout, name='checkout'),
+    path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
 
     # Usuario y Autenticación
     path('login/', views.login_view, name='login'),
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
-    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
-    path('perfil/', ventas_views.perfil_usuario, name='perfil'),
+    path('perfil/', views.perfil_view, name='perfil'), 
 
     # Formularios
     path('contacto/', views.contacto, name='contacto'),
-    path('cotiza/', views.cotiza, name='cotiza'), 
-    
+    path('cotiza/', views.cotiza, name='cotiza'),
+
     # API
     path('api/carrito/agregar/', views.api_agregar_carrito, name='api_carrito_agregar'),
     path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
@@ -43,14 +43,19 @@ urlpatterns = [
     path('api/notificaciones/crear/', views.api_crear_notificacion, name='api_crear_notificacion'),
     path('api/notificaciones/marcar-leidas/', views.api_marcar_leidas, name='api_marcar_leidas'),
 
-    #Avatar
-    path('perfil/avatar/actualizar/', views.actualizar_avatar, name='avatar_actualizar'),
+    # Avatar
+    path('api/actualizar-avatar/', views.actualizar_avatar, name='actualizar_avatar'),
 
-    # Otras rutas de perfil
+    # Perfil extendido (ventas)
     path('perfil/actualizar/', ventas_views.perfil_actualizar, name='perfil_actualizar'),
     path('perfil/password/', ventas_views.password_cambiar, name='password_cambiar'),
     path('perfil/stats/', ventas_views.perfil_stats, name='perfil_stats'),
     path('perfil/exportar/', ventas_views.datos_exportar, name='datos_exportar'),
     path('perfil/notificaciones/leidas/', ventas_views.notificaciones_marcar_leidas, name='notificaciones_marcar_leidas'),
     path('perfil/preferencias/', ventas_views.preferencias_guardar, name='preferencias_guardar'),
+
+    #Cupones
+    path('api/cupon/aplicar/', views.api_cupon_aplicar, name='api_cupon_aplicar'),
+    path('api/cupon/remover/', views.api_cupon_remover, name='api_cupon_remover'),
+
 ]

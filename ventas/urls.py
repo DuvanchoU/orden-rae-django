@@ -17,6 +17,10 @@ urlpatterns = [
     path('api/carrito/actualizar/<int:item_id>/', views.api_carrito_actualizar, name='api_carrito_actualizar'),
     path('api/carrito/eliminar/<int:item_id>/', views.api_carrito_eliminar, name='api_carrito_eliminar'),
     path('api/carrito/contador/', views.api_carrito_contador, name='api_carrito_contador'),
+    
+    # Carrito — estado y recomendados
+    path('carrito/estado/', views.api_carrito_estado, name='api_carrito_estado'),
+    path('api/carrito/recomendados/', views.api_carrito_recomendados, name='api_carrito_recomendados'),
 
     # ── Clientes ──────────────────────────────────────────────────────────
     path('clientes/', views.ClienteListView.as_view(), name='cliente_list'),

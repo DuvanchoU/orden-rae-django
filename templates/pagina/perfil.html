@@ -15,9 +15,6 @@
 <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=4.0">
 
 <style>
-    /* ══════════════════════════════════════════
-    VARIABLES
-    ══════════════════════════════════════════ */
     :root {
     --cafe:       #8B5E3C;
     --cafe-d:     #6B462C;
@@ -43,12 +40,9 @@
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'DM Sans',sans-serif;background:var(--crema);color:var(--dark);overflow-x:hidden}
 
-    /* ══════════════════════════════════════════
-    HERO PERFIL
-    ══════════════════════════════════════════ */
     .perfil-hero {
     background: linear-gradient(135deg, var(--cafe-d) 0%, var(--cafe) 50%, var(--cafe-l) 100%);
-    padding: calc(5rem ) 0 ;
+    padding: calc(5rem) 0;
     position: relative;
     overflow: hidden;
     }
@@ -61,7 +55,6 @@
     }
     .hero-wave{position:absolute;bottom:-2px;left:0;right:0;line-height:0}
 
-    /* Avatar */
     .avatar-ring-wrap {
     position:relative;
     display:inline-block;
@@ -108,7 +101,6 @@
     font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
     }
 
-    /* Stats hero */
     .hero-stats-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1.5rem}
     .h-stat {
     background:rgba(255,255,255,.12);backdrop-filter:blur(8px);
@@ -120,9 +112,6 @@
     .h-stat .num{font-size:1.6rem;font-weight:800;color:var(--gold-l);line-height:1;display:block}
     .h-stat .lbl{font-size:.68rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em;margin-top:.2rem}
 
-    /* ══════════════════════════════════════════
-    LAYOUT PRINCIPAL
-    ══════════════════════════════════════════ */
     .perfil-layout {
     max-width:1200px;margin:0 auto;
     padding:2.5rem 1.5rem 5rem;
@@ -133,9 +122,6 @@
     }
     @media(max-width:992px){.perfil-layout{grid-template-columns:1fr}}
 
-    /* ══════════════════════════════════════════
-    SIDEBAR NAV
-    ══════════════════════════════════════════ */
     .sidebar-nav {
     background:#fff;border:1px solid var(--border);
     border-radius:var(--r-xl);box-shadow:var(--shadow-sm);
@@ -180,9 +166,6 @@
     .btn-logout:hover{background:#FFF0F0}
     .btn-logout .nav-icon{width:32px;height:32px;border-radius:var(--r-sm);background:#FFF0F0;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;color:var(--rojo)}
 
-    /* ══════════════════════════════════════════
-    SECCIONES
-    ══════════════════════════════════════════ */
     .seccion { display:none; animation:fadeIn .3s ease }
     .seccion.active { display:block }
     @keyframes fadeIn{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -204,9 +187,6 @@
     .card-head h5 i{color:var(--cafe);font-size:1rem}
     .card-body-p{ padding:1.75rem }
 
-    /* ══════════════════════════════════════════
-    FORMULARIO CAMPOS
-    ══════════════════════════════════════════ */
     .field-wrap{ margin-bottom:1.1rem }
     .field-wrap label {
     display:block;font-size:.75rem;font-weight:700;
@@ -224,9 +204,6 @@
     .field-input.success{border-color:var(--verde)}
     .field-input.error{border-color:var(--rojo)}
 
-    /* ══════════════════════════════════════════
-    BOTONES
-    ══════════════════════════════════════════ */
     .btn-prim {
     display:inline-flex;align-items:center;gap:.5rem;
     background:linear-gradient(135deg,var(--cafe),var(--cafe-d));
@@ -247,9 +224,6 @@
     .btn-danger{background:#FFF0F0;border:1.5px solid #f5c6c6;color:var(--rojo)}
     .btn-danger:hover{background:var(--rojo);color:#fff;border-color:var(--rojo)}
 
-    /* ══════════════════════════════════════════
-    TOGGLE SWITCH
-    ══════════════════════════════════════════ */
     .toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px dashed var(--border)}
     .toggle-wrap:last-child{border-bottom:none}
     .toggle-info strong{display:block;font-size:.875rem;font-weight:600;color:var(--dark)}
@@ -261,9 +235,6 @@
     .toggle-switch input:checked+.toggle-slider{background:var(--cafe)}
     .toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
 
-    /* ══════════════════════════════════════════
-    PEDIDOS TIMELINE
-    ══════════════════════════════════════════ */
     .pedido-card {
     border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;
     margin-bottom:1rem;transition:var(--transition);cursor:pointer;
@@ -290,9 +261,6 @@
     .progress-track{height:6px;background:var(--crema-d);border-radius:3px;margin:.75rem 0 .25rem;overflow:hidden}
     .progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cafe),var(--gold));transition:width .8s cubic-bezier(.16,1,.3,1)}
 
-    /* ══════════════════════════════════════════
-    FAVORITOS GRID
-    ══════════════════════════════════════════ */
     .fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem}
     .fav-card {
     border:1px solid var(--border);border-radius:var(--r-lg);
@@ -314,9 +282,6 @@
     .fav-card:hover .btn-remove-fav{opacity:1}
     .btn-remove-fav:hover{background:var(--rojo);color:#fff;border-color:var(--rojo)}
 
-    /* ══════════════════════════════════════════
-    SEGURIDAD
-    ══════════════════════════════════════════ */
     .security-item {
     display:flex;align-items:center;justify-content:space-between;
     padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);
@@ -329,13 +294,9 @@
     .sec-icon.cafe{background:#FFF5EE;color:var(--cafe)}
     .sec-icon.rojo{background:#FFF0F0;color:var(--rojo)}
 
-    /* Fuerza contraseña */
     .pwd-strength-bar{height:4px;border-radius:2px;background:var(--border);margin:.4rem 0;overflow:hidden}
     .pwd-strength-fill{height:100%;border-radius:2px;width:0%;transition:all .4s ease}
 
-    /* ══════════════════════════════════════════
-    LOGROS / GAMIFICACIÓN
-    ══════════════════════════════════════════ */
     .xp-bar{height:10px;background:var(--crema-d);border-radius:5px;overflow:hidden;margin:.5rem 0}
     .xp-fill{height:100%;background:linear-gradient(90deg,var(--cafe),var(--gold));border-radius:5px;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
 
@@ -352,9 +313,6 @@
     .logro-name{font-size:.78rem;font-weight:700;color:var(--dark);margin-bottom:.2rem}
     .logro-desc{font-size:.7rem;color:var(--light-text)}
 
-    /* ══════════════════════════════════════════
-    MODAL
-    ══════════════════════════════════════════ */
     .modal-perfil .modal-content{border:none;border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-lg)}
     .modal-perfil .modal-header{background:linear-gradient(135deg,var(--cafe-d),var(--cafe));color:#fff;border:none;padding:1.25rem 1.75rem}
     .modal-perfil .modal-header .btn-close{filter:invert(1) brightness(2)}
@@ -362,14 +320,12 @@
     .modal-perfil .modal-body{padding:1.75rem}
     .modal-perfil .modal-footer{border:none;padding:1rem 1.75rem 1.5rem;gap:.6rem}
 
-    /* Avatares grid */
     .avatar-options-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem}
     .av-opt{border:2px solid var(--border);border-radius:var(--r-md);overflow:hidden;cursor:pointer;transition:var(--transition);aspect-ratio:1}
     .av-opt:hover{border-color:var(--cafe-l);transform:scale(1.05)}
     .av-opt.selected{border-color:var(--cafe);box-shadow:0 0 0 3px rgba(139,94,60,.2)}
     .av-opt img{width:100%;height:100%;object-fit:cover}
 
-    /* Drop zone */
     .drop-zone {
     border:2px dashed var(--border);border-radius:var(--r-lg);
     padding:2rem;text-align:center;cursor:pointer;
@@ -378,9 +334,6 @@
     .drop-zone:hover,.drop-zone.drag-over{border-color:var(--cafe);background:var(--crema-d)}
     .drop-zone i{font-size:2rem;color:var(--cafe-l);display:block;margin-bottom:.6rem}
 
-    /* ══════════════════════════════════════════
-    TOAST
-    ══════════════════════════════════════════ */
     .toast-stack{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
     .toast-item {
     background:#fff;border:1px solid var(--border);
@@ -399,22 +352,13 @@
     .toast-msg{font-size:.85rem;font-weight:500;color:var(--dark);flex:1}
     .toast-close{background:none;border:none;color:var(--light-text);cursor:pointer;font-size:.8rem;padding:.2rem;line-height:1}
 
-    /* ══════════════════════════════════════════
-    ESTADO VACÍO
-    ══════════════════════════════════════════ */
     .empty-state{text-align:center;padding:3rem 1.5rem}
     .empty-state i{font-size:3rem;color:var(--cafe-l);margin-bottom:1rem;display:block;opacity:.5}
     .empty-state p{color:var(--light-text);font-size:.9rem;margin-bottom:1rem}
 
-    /* ══════════════════════════════════════════
-    LOADING SPINNER
-    ══════════════════════════════════════════ */
     .spin{animation:spin .7s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* ══════════════════════════════════════════
-    RESPONSIVE
-    ══════════════════════════════════════════ */
     @media(max-width:992px){
     .perfil-hero{padding:calc(3rem + 120px) 0 3rem}
     .hero-stats-row{gap:1rem}
@@ -424,663 +368,632 @@
     .logro-grid{grid-template-columns:repeat(2,1fr)}
     .avatar-options-grid{grid-template-columns:repeat(4,1fr)}
     }
-    </style>
-    </head>
-    <body>
-    {% csrf_token %}
+</style>
+</head>
+<body>
+{% csrf_token %}
 
-<!-- ════════════════════════════════════════
-    HEADER
-════════════════════════════════════════ -->
 {% include 'partials/header.html' %}
 
-    <!-- ── HERO ── -->
-    <section class="perfil-hero">
+<!-- HERO -->
+<section class="perfil-hero">
     <div class="hero-wave">
         <svg viewBox="0 0 1440 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" fill="#FAF6F1"/>
+            <path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" fill="#FAF6F1"/>
         </svg>
     </div>
     <div class="container" style="position:relative;z-index:1">
         <div class="row align-items-center g-4">
-        <div class="col-lg-8">
-            <span class="hero-role-badge mb-3 d-inline-flex"><i class="fas fa-crown"></i> {{ user.role|default:'Cliente' }}</span>
-            <h1 class="hero-name mb-2">Bienvenido, <strong>{{ user.get_full_name|default:user.username }}</strong></h1>
-            <p style="color:rgba(255,255,255,.75);font-size:.95rem;max-width:500px;line-height:1.7">
-            Gestiona tu cuenta, revisa tus pedidos y personaliza tu experiencia en ORDER RAE.
-            </p>
-            <div class="hero-stats-row">
-            <div class="h-stat">
-                <span class="num" id="hs-pedidos">{{ total_pedidos|default:0 }}</span>
-                <span class="lbl">Pedidos</span>
+            <div class="col-lg-8">
+                <span class="hero-role-badge mb-3 d-inline-flex"><i class="fas fa-crown"></i> {{ user.role|default:'Cliente' }}</span>
+                <h1 class="hero-name mb-2">Bienvenido, <strong>{{ user.get_full_name|default:user.username }}</strong></h1>
+                <p style="color:rgba(255,255,255,.75);font-size:.95rem;max-width:500px;line-height:1.7">
+                    Gestiona tu cuenta, revisa tus pedidos y personaliza tu experiencia en ORDER RAE.
+                </p>
+                <div class="hero-stats-row">
+                    <div class="h-stat">
+                        <span class="num" id="hs-pedidos">{{ total_pedidos|default:0 }}</span>
+                        <span class="lbl">Pedidos</span>
+                    </div>
+                    <div class="h-stat">
+                        <span class="num" id="hs-favoritos">{{ wishlist_count|default:0 }}</span>
+                        <span class="lbl">Favoritos</span>
+                    </div>
+                    <div class="h-stat">
+                        <span class="num" id="hs-puntos">{{ puntos_lealtad|default:0 }}</span>
+                        <span class="lbl">Puntos</span>
+                    </div>
+                    <div class="h-stat">
+                        <span class="num">{{ badges_count|default:0 }}</span>
+                        <span class="lbl">Logros</span>
+                    </div>
+                </div>
             </div>
-            <div class="h-stat">
-                <span class="num" id="hs-favoritos">{{ wishlist_count|default:0 }}</span>
-                <span class="lbl">Favoritos</span>
+            <div class="col-lg-4 text-center">
+                <div class="avatar-ring-wrap d-inline-block" onclick="abrirModalAvatar()">
+                    <img src="{% if cliente and cliente.foto_perfil %}{{ cliente.foto_perfil.url }}{% else %}{% static 'img/avatars/default-avatar-1.png' %}{% endif %}"
+                        alt="Avatar" class="hero-avatar" id="hero-avatar-img">
+                    <div class="avatar-edit-btn"><i class="fas fa-camera"></i></div>
+                </div>
+                <p style="color:rgba(255,255,255,.5);font-size:.75rem;margin-top:.75rem">
+                    <i class="fas fa-camera me-1"></i>Toca para cambiar tu foto
+                </p>
             </div>
-            <div class="h-stat">
-                <span class="num" id="hs-puntos">{{ puntos_lealtad|default:0 }}</span>
-                <span class="lbl">Puntos</span>
-            </div>
-            <div class="h-stat">
-                <span class="num">{{ badges_count|default:0 }}</span>
-                <span class="lbl">Logros</span>
-            </div>
-            </div>
-        </div>
-        <div class="col-lg-4 text-center">
-            <div class="avatar-ring-wrap d-inline-block" onclick="abrirModalAvatar()">
-            <img src="{% if cliente and cliente.foto_perfil %}
-                {{ cliente.foto_perfil.url }}
-            {% else %}
-                {% static 'img/avatars/default-avatar-1.png' %}
-            {% endif %}"
-            alt="Avatar" class="hero-avatar" id="hero-avatar-img">
-            <div class="avatar-edit-btn"><i class="fas fa-camera"></i></div>
-            </div>
-            <p style="color:rgba(255,255,255,.5);font-size:.75rem;margin-top:.75rem">
-            <i class="fas fa-camera me-1"></i>Toca para cambiar tu foto
-            </p>
-        </div>
         </div>
     </div>
-    </section>
+</section>
 
-    <!-- ── LAYOUT PRINCIPAL ── -->
-    <div class="perfil-layout">
+<!-- LAYOUT PRINCIPAL -->
+<div class="perfil-layout">
 
-    <!-- ── SIDEBAR ── -->
+    <!-- SIDEBAR -->
     <aside>
         <div class="sidebar-nav">
-        <div class="sidebar-user-mini">
-            <img src="{% if cliente and cliente.foto_perfil %}
-                {{ cliente.foto_perfil.url }}
-            {% else %}
-                {% static 'img/avatars/default-avatar-1.png' %}
-            {% endif %}"
-            alt="mini avatar" 
-            class="sidebar-avatar"
-            id="sidebar-avatar-img">
-            <div class="u-name">{{ user.get_full_name|default:user.username }}</div>
-            <div class="u-email">{{ user.email }}</div>
-        </div>
-        <nav class="nav-links">
-            <a class="nav-link-item active" data-section="informacion" href="#">
-            <span class="nav-icon"><i class="fas fa-user"></i></span> Información Personal
-            </a>
-            <a class="nav-link-item" data-section="seguridad" href="#">
-            <span class="nav-icon"><i class="fas fa-shield-alt"></i></span> Seguridad
-            </a>
-            <a class="nav-link-item" data-section="pedidos" href="#">
-            <span class="nav-icon"><i class="fas fa-box-open"></i></span> Mis Pedidos
-            {% if total_pedidos %}<span class="nav-badge-dot">{{ total_pedidos }}</span>{% endif %}
-            </a>
-            <a class="nav-link-item" data-section="favoritos" href="#">
-            <span class="nav-icon"><i class="fas fa-heart"></i></span> Favoritos
-            {% if wishlist_count %}<span class="nav-badge-dot">{{ wishlist_count }}</span>{% endif %}
-            </a>
-            <a class="nav-link-item" data-section="notificaciones" href="#">
-            <span class="nav-icon"><i class="fas fa-bell"></i></span> Notificaciones
-            {% if notificaciones_nuevas %}<span class="nav-badge-dot">{{ notificaciones_nuevas }}</span>{% endif %}
-            </a>
-            <a class="nav-link-item" data-section="logros" href="#">
-            <span class="nav-icon"><i class="fas fa-trophy"></i></span> Logros
-            </a>
-            <div class="sidebar-divider"></div>
-            <a class="nav-link-item" href="{% url 'pagina:cotiza' %}">
-            <span class="nav-icon"><i class="fas fa-file-invoice"></i></span> Nueva Cotización
-            </a>
-            <a class="nav-link-item" href="{% url 'ventas:carrito_compra' %}">
-            <span class="nav-icon"><i class="fas fa-cart-shopping"></i></span> Ver Carrito
-            </a>
-            <div class="sidebar-divider"></div>
-            <a href="{% url 'pagina:logout' %}" class="btn-logout">
-            <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span> Cerrar Sesión
-            </a>
-        </nav>
+            <div class="sidebar-user-mini">
+                <img src="{% if cliente and cliente.foto_perfil %}{{ cliente.foto_perfil.url }}{% else %}{% static 'img/avatars/default-avatar-1.png' %}{% endif %}"
+                    alt="mini avatar" class="sidebar-avatar" id="sidebar-avatar-img">
+                <div class="u-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="u-email">{{ user.email }}</div>
+            </div>
+            <nav class="nav-links">
+                <a class="nav-link-item active" data-section="informacion" href="#">
+                    <span class="nav-icon"><i class="fas fa-user"></i></span> Información Personal
+                </a>
+                <a class="nav-link-item" data-section="seguridad" href="#">
+                    <span class="nav-icon"><i class="fas fa-shield-alt"></i></span> Seguridad
+                </a>
+                <a class="nav-link-item" data-section="pedidos" href="#">
+                    <span class="nav-icon"><i class="fas fa-box-open"></i></span> Mis Pedidos
+                    {% if total_pedidos %}<span class="nav-badge-dot">{{ total_pedidos }}</span>{% endif %}
+                </a>
+                <a class="nav-link-item" data-section="favoritos" href="#">
+                    <span class="nav-icon"><i class="fas fa-heart"></i></span> Favoritos
+                    {% if wishlist_count %}<span class="nav-badge-dot">{{ wishlist_count }}</span>{% endif %}
+                </a>
+                <a class="nav-link-item" data-section="notificaciones" href="#">
+                    <span class="nav-icon"><i class="fas fa-bell"></i></span> Notificaciones
+                    {% if notificaciones_nuevas %}<span class="nav-badge-dot">{{ notificaciones_nuevas }}</span>{% endif %}
+                </a>
+                <a class="nav-link-item" data-section="logros" href="#">
+                    <span class="nav-icon"><i class="fas fa-trophy"></i></span> Logros
+                </a>
+                <div class="sidebar-divider"></div>
+                <a class="nav-link-item" href="{% url 'pagina:cotiza' %}">
+                    <span class="nav-icon"><i class="fas fa-file-invoice"></i></span> Nueva Cotización
+                </a>
+                <a class="nav-link-item" href="{% url 'ventas:carrito_compra' %}">
+                    <span class="nav-icon"><i class="fas fa-cart-shopping"></i></span> Ver Carrito
+                </a>
+                <div class="sidebar-divider"></div>
+                <a href="{% url 'pagina:logout' %}" class="btn-logout">
+                    <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span> Cerrar Sesión
+                </a>
+            </nav>
         </div>
     </aside>
 
-    <!-- ── CONTENIDO ── -->
+    <!-- CONTENIDO -->
     <main>
 
-        <!-- ════ SECCIÓN: INFORMACIÓN ════ -->
+        <!-- SECCIÓN: INFORMACIÓN -->
         <section class="seccion active" id="sec-informacion">
-        <div class="card-perfil">
-            <div class="card-head">
-            <h5><i class="fas fa-user-edit"></i> Información Personal</h5>
-            <div class="d-flex gap-2">
-                <button class="btn-sec btn-sm" id="btn-editar" onclick="activarEdicion()">
-                <i class="fas fa-pen"></i> Editar
-                </button>
-                <button class="btn-prim btn-sm" id="btn-guardar" style="display:none" onclick="guardarPerfil()">
-                <i class="fas fa-save"></i> Guardar
-                </button>
-                <button class="btn-sec btn-sm" id="btn-cancelar" style="display:none" onclick="cancelarEdicion()">
-                Cancelar
-                </button>
-            </div>
-            </div>
-            <div class="card-body-p">
-            <form id="form-perfil">
-                {% csrf_token %}
-                <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="field-wrap">
-                    <label>Nombre completo</label>
-                    <input type="text" class="field-input" id="f-nombre" name="nombre"
-                        value="{{ user.get_full_name|default:user.username }}" disabled>
+            <div class="card-perfil">
+                <div class="card-head">
+                    <h5><i class="fas fa-user-edit"></i> Información Personal</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn-sec btn-sm" id="btn-editar" onclick="activarEdicion()">
+                            <i class="fas fa-pen"></i> Editar
+                        </button>
+                        <button class="btn-prim btn-sm" id="btn-guardar" style="display:none" onclick="guardarPerfil()">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button class="btn-sec btn-sm" id="btn-cancelar" style="display:none" onclick="cancelarEdicion()">
+                            Cancelar
+                        </button>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="field-wrap">
-                    <label>Correo electrónico</label>
-                    <input type="email" class="field-input" id="f-email" name="email"
-                        value="{{ user.email }}" disabled>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="field-wrap">
-                    <label>Teléfono</label>
-                    <input type="tel" class="field-input" id="f-telefono" name="telefono"
-                        value="{{ cliente.telefono|default:'' }}" disabled
-                        placeholder="+57 300 000 0000">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="field-wrap">
-                    <label>Fecha de nacimiento</label>
-                    <input type="date" class="field-input" id="f-fecha" name="fecha_nacimiento"
-                        value="{{ cliente.fecha_nacimiento|date:'Y-m-d'|default:'' }}" disabled>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="field-wrap">
-                    <label>Dirección</label>
-                    <textarea class="field-input" id="f-direccion" name="direccion"
-                        rows="2" disabled style="resize:vertical">{{ cliente.direccion|default:'' }}</textarea>
-                    </div>
-                </div>
-                </div>
-            </form>
+                <div class="card-body-p">
+                    <form id="form-perfil">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="field-wrap">
+                                    <label>Nombre completo</label>
+                                    <input type="text" class="field-input" id="f-nombre" name="nombre"
+                                        value="{{ user.get_full_name|default:user.username }}" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="field-wrap">
+                                    <label>Correo electrónico</label>
+                                    <input type="email" class="field-input" id="f-email" name="email"
+                                        value="{{ user.email }}" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="field-wrap">
+                                    <label>Teléfono</label>
+                                    <input type="tel" class="field-input" id="f-telefono" name="telefono"
+                                        value="{{ cliente.telefono|default:'' }}" disabled
+                                        placeholder="+57 300 000 0000">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="field-wrap">
+                                    <label>Fecha de nacimiento</label>
+                                    <input type="date" class="field-input" id="f-fecha" name="fecha_nacimiento"
+                                        value="{{ cliente.fecha_nacimiento|date:'Y-m-d'|default:'' }}" disabled>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="field-wrap">
+                                    <label>Dirección</label>
+                                    <textarea class="field-input" id="f-direccion" name="direccion"
+                                        rows="2" disabled style="resize:vertical">{{ cliente.direccion|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
 
-            <!-- Alerta cumpleaños -->
-            {% if not cliente.fecha_nacimiento %}
-            <div style="margin-top:1.25rem;padding:.875rem 1.1rem;background:#FFF9F0;border:1px solid #F5D78C;border-radius:var(--r-md);display:flex;align-items:center;gap:.75rem;">
-                <i class="fas fa-birthday-cake" style="color:var(--gold);font-size:1.1rem"></i>
-                <div>
-                <strong style="font-size:.85rem;color:var(--dark)">¡Agrega tu cumpleaños!</strong>
-                <p style="font-size:.78rem;color:var(--mid);margin:0">Recibe descuentos exclusivos en tu fecha especial 🎁</p>
-                </div>
-            </div>
-            {% endif %}
-            </div>
-        </div>
-        </section>
-
-        <!-- ════ SECCIÓN: SEGURIDAD ════ -->
-        <section class="seccion" id="sec-seguridad">
-        <div class="card-perfil">
-            <div class="card-head">
-            <h5><i class="fas fa-shield-alt"></i> Seguridad de la Cuenta</h5>
-            <span style="background:#E8F5F0;color:var(--verde);padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:700">
-                <i class="fas fa-check-circle me-1"></i>Segura
-            </span>
-            </div>
-            <div class="card-body-p">
-
-            <!-- Contraseña -->
-            <div style="margin-bottom:1.5rem">
-                <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.875rem">
-                <i class="fas fa-key me-2" style="color:var(--cafe)"></i>Contraseña
-                </h6>
-                <div class="security-item">
-                <div class="d-flex align-items-center gap-1rem" style="gap:.875rem">
-                    <div class="sec-icon cafe"><i class="fas fa-lock"></i></div>
-                    <div>
-                    <strong style="font-size:.875rem">Contraseña actual</strong>
-                    <p style="font-size:.775rem;color:var(--light-text);margin:0">Último cambio: {{ last_password_change|default:'Nunca registrado' }}</p>
+                    {% if not cliente.fecha_nacimiento %}
+                    <div style="margin-top:1.25rem;padding:.875rem 1.1rem;background:#FFF9F0;border:1px solid #F5D78C;border-radius:var(--r-md);display:flex;align-items:center;gap:.75rem;">
+                        <i class="fas fa-birthday-cake" style="color:var(--gold);font-size:1.1rem"></i>
+                        <div>
+                            <strong style="font-size:.85rem;color:var(--dark)">¡Agrega tu cumpleaños!</strong>
+                            <p style="font-size:.78rem;color:var(--mid);margin:0">Recibe descuentos exclusivos en tu fecha especial 🎁</p>
+                        </div>
                     </div>
-                </div>
-                <button class="btn-prim" onclick="abrirModalPassword()">
-                    <i class="fas fa-edit"></i> Cambiar
-                </button>
-                </div>
-            </div>
-
-            <!-- 2FA -->
-            <div style="margin-bottom:1.5rem">
-                <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.875rem">
-                <i class="fas fa-mobile-alt me-2" style="color:var(--cafe)"></i>Verificación en dos pasos
-                </h6>
-                <div class="security-item">
-                <div class="d-flex align-items-center gap-1rem" style="gap:.875rem">
-                    <div class="sec-icon gold"><i class="fas fa-shield-alt"></i></div>
-                    <div>
-                    <strong style="font-size:.875rem">Autenticación 2FA</strong>
-                    <p style="font-size:.775rem;color:var(--light-text);margin:0">Protege tu cuenta con un código adicional</p>
-                    </div>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-2fa" {% if user.two_factor_enabled %}checked{% endif %}
-                    onchange="toggle2FA(this)">
-                    <span class="toggle-slider"></span>
-                </label>
-                </div>
-            </div>
-
-            <!-- Sesiones -->
-            <div>
-                <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.875rem">
-                <i class="fas fa-laptop me-2" style="color:var(--cafe)"></i>Sesión activa
-                </h6>
-                <div class="security-item">
-                <div class="d-flex align-items-center gap-1rem" style="gap:.875rem">
-                    <div class="sec-icon verde"><i class="fas fa-desktop"></i></div>
-                    <div>
-                    <strong style="font-size:.875rem">Este dispositivo</strong>
-                    <p style="font-size:.775rem;color:var(--light-text);margin:0">Bogotá, CO · Sesión actual</p>
-                    </div>
-                </div>
-                <span style="background:#E8F5F0;color:var(--verde);padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700">Activa</span>
-                </div>
-            </div>
-
-            </div>
-        </div>
-        </section>
-
-        <!-- ════ SECCIÓN: PEDIDOS ════ -->
-        <section class="seccion" id="sec-pedidos">
-        <div class="card-perfil">
-            <div class="card-head">
-            <h5><i class="fas fa-box-open"></i> Mis Pedidos</h5>
-            <div class="d-flex gap-2">
-                <button class="btn-sec btn-sm filtro-btn active" data-filtro="todos" onclick="filtrarPedidos(this)">Todos</button>
-                <button class="btn-sec btn-sm filtro-btn" data-filtro="procesando" onclick="filtrarPedidos(this)">En proceso</button>
-                <button class="btn-sec btn-sm filtro-btn" data-filtro="entregado" onclick="filtrarPedidos(this)">Entregados</button>
-            </div>
-            </div>
-            <div class="card-body-p" id="lista-pedidos">
-            {% for pedido in pedidos_recientes %}
-            <div class="pedido-card estado-{{ pedido.estado|lower|slugify }}"
-                data-estado="{{ pedido.estado|lower }}"
-                onclick="verDetallePedido({{ pedido.id }})">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <strong style="font-size:.9rem">Pedido #{{ pedido.numero }}</strong>
-                    <span class="estado-badge badge-{{ pedido.estado_color|default:'gris' }} ms-2">
-                    <i class="fas fa-circle" style="font-size:.4rem"></i> {{ pedido.estado }}
-                    </span>
-                </div>
-                <span style="font-size:.775rem;color:var(--light-text)">{{ pedido.fecha|date:"d M Y" }}</span>
-                </div>
-                <p style="font-size:.825rem;color:var(--mid);margin:0 0 .6rem">
-                {{ pedido.total_items }} producto{{ pedido.total_items|pluralize }} ·
-                <strong style="color:var(--cafe)">${{ pedido.total|floatformat:0|intcomma }}</strong>
-                </p>
-                <div class="progress-track">
-                <div class="progress-fill" style="width:{{ pedido.progreso_percent|default:0 }}%"></div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                <span style="font-size:.775rem;color:var(--light-text)">{{ pedido.estado_detalle }}</span>
-                <div class="d-flex gap-2" onclick="event.stopPropagation()">
-                    <button class="btn-sec btn-sm" onclick="verDetallePedido({{ pedido.id }})">
-                    <i class="fas fa-eye"></i> Ver
-                    </button>
-                    {% if pedido.puede_rastrear %}
-                    <button class="btn-prim btn-sm" onclick="rastrearPedido({{ pedido.id }})">
-                    <i class="fas fa-truck"></i> Rastrear
-                    </button>
                     {% endif %}
                 </div>
-                </div>
             </div>
-            {% empty %}
-            <div class="empty-state">
-                <i class="fas fa-box-open"></i>
-                <p>Aún no tienes pedidos realizados</p>
-                <a href="{% url 'pagina:productos' %}" class="btn-prim">
-                <i class="fas fa-shopping-bag"></i> Explorar productos
-                </a>
-            </div>
-            {% endfor %}
-            </div>
-        </div>
         </section>
 
-        <!-- ════ SECCIÓN: FAVORITOS ════ -->
-        <section class="seccion" id="sec-favoritos">
-        <div class="card-perfil">
-            <div class="card-head">
-            <h5><i class="fas fa-heart"></i> Mis Favoritos</h5>
-            <button class="btn-sec btn-sm" onclick="compartirWishlist()">
-                <i class="fas fa-share-alt"></i> Compartir
-            </button>
+        <!-- SECCIÓN: SEGURIDAD -->
+        <section class="seccion" id="sec-seguridad">
+            <div class="card-perfil">
+                <div class="card-head">
+                    <h5><i class="fas fa-shield-alt"></i> Seguridad de la Cuenta</h5>
+                    <span style="background:#E8F5F0;color:var(--verde);padding:.25rem .75rem;border-radius:999px;font-size:.75rem;font-weight:700">
+                        <i class="fas fa-check-circle me-1"></i>Segura
+                    </span>
+                </div>
+                <div class="card-body-p">
+                    <div style="margin-bottom:1.5rem">
+                        <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.875rem">
+                            <i class="fas fa-key me-2" style="color:var(--cafe)"></i>Contraseña
+                        </h6>
+                        <div class="security-item">
+                            <div class="d-flex align-items-center" style="gap:.875rem">
+                                <div class="sec-icon cafe"><i class="fas fa-lock"></i></div>
+                                <div>
+                                    <strong style="font-size:.875rem">Contraseña actual</strong>
+                                    <p style="font-size:.775rem;color:var(--light-text);margin:0">Último cambio: {{ last_password_change|default:'Nunca registrado' }}</p>
+                                </div>
+                            </div>
+                            <button class="btn-prim" onclick="abrirModalPassword()">
+                                <i class="fas fa-edit"></i> Cambiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem">
+                        <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.875rem">
+                            <i class="fas fa-mobile-alt me-2" style="color:var(--cafe)"></i>Verificación en dos pasos
+                        </h6>
+                        <div class="security-item">
+                            <div class="d-flex align-items-center" style="gap:.875rem">
+                                <div class="sec-icon gold"><i class="fas fa-shield-alt"></i></div>
+                                <div>
+                                    <strong style="font-size:.875rem">Autenticación 2FA</strong>
+                                    <p style="font-size:.775rem;color:var(--light-text);margin:0">Protege tu cuenta con un código adicional</p>
+                                </div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle-2fa" {% if user.two_factor_enabled %}checked{% endif %}
+                                    onchange="toggle2FA(this)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.875rem">
+                            <i class="fas fa-laptop me-2" style="color:var(--cafe)"></i>Sesión activa
+                        </h6>
+                        <div class="security-item">
+                            <div class="d-flex align-items-center" style="gap:.875rem">
+                                <div class="sec-icon verde"><i class="fas fa-desktop"></i></div>
+                                <div>
+                                    <strong style="font-size:.875rem">Este dispositivo</strong>
+                                    <p style="font-size:.775rem;color:var(--light-text);margin:0">Bogotá, CO · Sesión actual</p>
+                                </div>
+                            </div>
+                            <span style="background:#E8F5F0;color:var(--verde);padding:.2rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700">Activa</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body-p">
-            <div class="fav-grid" id="fav-grid">
-                {% for item in wishlist_items %}
-                <div class="fav-card" id="fav-{{ item.id }}">
-                <button class="btn-remove-fav" onclick="quitarFavorito({{ item.id }}, event)" title="Quitar de favoritos">
-                    <i class="fas fa-times"></i>
-                </button>
-                <img src="{{ item.producto.imagen_principal }}" alt="{{ item.producto.nombre }}"
-                    onerror="this.src='https://via.placeholder.com/160?text=Producto'">
-                <div class="fav-card-body">
-                    <div class="fav-card-name">{{ item.producto.nombre }}</div>
-                    <div class="fav-card-price">${{ item.producto.precio_actual|floatformat:0|intcomma }}</div>
-                    <button class="btn-prim btn-sm mt-2 w-100" onclick="agregarAlCarrito({{ item.producto.id }})">
-                    <i class="fas fa-cart-plus"></i> Agregar
+        </section>
+
+        <!-- SECCIÓN: PEDIDOS -->
+        <section class="seccion" id="sec-pedidos">
+            <div class="card-perfil">
+                <div class="card-head">
+                    <h5><i class="fas fa-box-open"></i> Mis Pedidos</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn-sec btn-sm filtro-btn active" data-filtro="todos" onclick="filtrarPedidos(this)">Todos</button>
+                        <button class="btn-sec btn-sm filtro-btn" data-filtro="procesando" onclick="filtrarPedidos(this)">En proceso</button>
+                        <button class="btn-sec btn-sm filtro-btn" data-filtro="entregado" onclick="filtrarPedidos(this)">Entregados</button>
+                    </div>
+                </div>
+                <div class="card-body-p" id="lista-pedidos">
+                    {% for pedido in pedidos_recientes %}
+                    <div class="pedido-card estado-{{ pedido.estado|lower|slugify }}"
+                        data-estado="{{ pedido.estado|lower }}"
+                        onclick="verDetallePedido({{ pedido.id }})">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong style="font-size:.9rem">Pedido #{{ pedido.numero }}</strong>
+                                <span class="estado-badge badge-{{ pedido.estado_color|default:'gris' }} ms-2">
+                                    <i class="fas fa-circle" style="font-size:.4rem"></i> {{ pedido.estado }}
+                                </span>
+                            </div>
+                            <span style="font-size:.775rem;color:var(--light-text)">{{ pedido.fecha|date:"d M Y" }}</span>
+                        </div>
+                        <p style="font-size:.825rem;color:var(--mid);margin:0 0 .6rem">
+                            {{ pedido.total_items }} producto{{ pedido.total_items|pluralize }} ·
+                            <strong style="color:var(--cafe)">${{ pedido.total|floatformat:0|intcomma }}</strong>
+                        </p>
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width:{{ pedido.progreso_percent|default:0 }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span style="font-size:.775rem;color:var(--light-text)">{{ pedido.estado_detalle }}</span>
+                            <div class="d-flex gap-2" onclick="event.stopPropagation()">
+                                <button class="btn-sec btn-sm" onclick="verDetallePedido({{ pedido.id }})">
+                                    <i class="fas fa-eye"></i> Ver
+                                </button>
+                                {% if pedido.puede_rastrear %}
+                                <button class="btn-prim btn-sm" onclick="rastrearPedido({{ pedido.id }})">
+                                    <i class="fas fa-truck"></i> Rastrear
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <p>Aún no tienes pedidos realizados</p>
+                        <a href="{% url 'pagina:productos' %}" class="btn-prim">
+                            <i class="fas fa-shopping-bag"></i> Explorar productos
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: FAVORITOS -->
+        <section class="seccion" id="sec-favoritos">
+            <div class="card-perfil">
+                <div class="card-head">
+                    <h5><i class="fas fa-heart"></i> Mis Favoritos</h5>
+                    <button class="btn-sec btn-sm" onclick="compartirWishlist()">
+                        <i class="fas fa-share-alt"></i> Compartir
                     </button>
                 </div>
+                <div class="card-body-p">
+                    <div class="fav-grid" id="fav-grid">
+                        {% for item in wishlist_items %}
+                        <div class="fav-card" id="fav-{{ item.id }}">
+                            <button class="btn-remove-fav" onclick="quitarFavorito({{ item.id }}, event)" title="Quitar de favoritos">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <img src="{{ item.producto.imagen_principal }}" alt="{{ item.producto.nombre }}"
+                                onerror="this.src='https://via.placeholder.com/160?text=Producto'">
+                            <div class="fav-card-body">
+                                <div class="fav-card-name">{{ item.producto.nombre }}</div>
+                                <div class="fav-card-price">${{ item.producto.precio_actual|floatformat:0|intcomma }}</div>
+                                <button class="btn-prim btn-sm mt-2 w-100" onclick="agregarAlCarrito({{ item.producto.id }})">
+                                    <i class="fas fa-cart-plus"></i> Agregar
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state" style="grid-column:1/-1">
+                            <i class="fas fa-heart-broken"></i>
+                            <p>Tu lista de favoritos está vacía</p>
+                            <a href="{% url 'pagina:productos' %}" class="btn-prim">
+                                <i class="fas fa-plus"></i> Agregar productos
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                {% empty %}
-                <div class="empty-state" style="grid-column:1/-1">
-                <i class="fas fa-heart-broken"></i>
-                <p>Tu lista de favoritos está vacía</p>
-                <a href="{% url 'pagina:productos' %}" class="btn-prim">
-                    <i class="fas fa-plus"></i> Agregar productos
-                </a>
-                </div>
-                {% endfor %}
             </div>
-            </div>
-        </div>
         </section>
 
-        <!-- ════ SECCIÓN: NOTIFICACIONES ════ -->
+        <!-- SECCIÓN: NOTIFICACIONES -->
         <section class="seccion" id="sec-notificaciones">
-        <div class="card-perfil">
-            <div class="card-head">
-            <h5><i class="fas fa-bell"></i> Preferencias de Notificaciones</h5>
-            <button class="btn-sec btn-sm" onclick="marcarTodasLeidas()">
-                <i class="fas fa-check-double"></i> Marcar todo leído
-            </button>
-            </div>
-            <div class="card-body-p">
-            <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:1rem">Canales</h6>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-envelope me-2" style="color:var(--cafe)"></i>Correo electrónico</strong>
-                <span>Recibe resúmenes y confirmaciones por email</span>
+            <div class="card-perfil">
+                <div class="card-head">
+                    <h5><i class="fas fa-bell"></i> Preferencias de Notificaciones</h5>
+                    <button class="btn-sec btn-sm" onclick="marcarTodasLeidas()">
+                        <i class="fas fa-check-double"></i> Marcar todo leído
+                    </button>
                 </div>
-                <label class="toggle-switch">
-                <input type="checkbox" checked onchange="guardarPreferencia('email', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-mobile-alt me-2" style="color:var(--verde)"></i>SMS</strong>
-                <span>Alertas importantes en tu celular</span>
+                <div class="card-body-p">
+                    <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:1rem">Canales</h6>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-envelope me-2" style="color:var(--cafe)"></i>Correo electrónico</strong>
+                            <span>Recibe resúmenes y confirmaciones por email</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="guardarPreferencia('email', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-mobile-alt me-2" style="color:var(--verde)"></i>SMS</strong>
+                            <span>Alertas importantes en tu celular</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" onchange="guardarPreferencia('sms', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-bell me-2" style="color:var(--gold)"></i>Notificaciones push</strong>
+                            <span>Actualizaciones en tiempo real en tu navegador</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="guardarPreferencia('push', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin:1.5rem 0 1rem">Tipos</h6>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-truck me-2" style="color:var(--cafe)"></i>Actualizaciones de pedido</strong>
+                            <span>Cambios de estado y seguimiento</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="guardarPreferencia('pedidos', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-percent me-2" style="color:var(--verde)"></i>Ofertas y promociones</strong>
+                            <span>Descuentos exclusivos y temporadas</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="guardarPreferencia('ofertas', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-gift me-2" style="color:var(--rojo)"></i>Novedades y lanzamientos</strong>
+                            <span>Sé el primero en conocer nuevos productos</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" onchange="guardarPreferencia('novedades', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-wrap">
+                        <div class="toggle-info">
+                            <strong><i class="fas fa-star me-2" style="color:var(--gold)"></i>Recordatorios de carrito</strong>
+                            <span>Aviso si dejaste productos sin comprar</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="guardarPreferencia('carrito', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
                 </div>
-                <label class="toggle-switch">
-                <input type="checkbox" onchange="guardarPreferencia('sms', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
             </div>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-bell me-2" style="color:var(--gold)"></i>Notificaciones push</strong>
-                <span>Actualizaciones en tiempo real en tu navegador</span>
-                </div>
-                <label class="toggle-switch">
-                <input type="checkbox" checked onchange="guardarPreferencia('push', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
-            </div>
-
-            <h6 style="font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin:1.5rem 0 1rem">Tipos</h6>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-truck me-2" style="color:var(--cafe)"></i>Actualizaciones de pedido</strong>
-                <span>Cambios de estado y seguimiento</span>
-                </div>
-                <label class="toggle-switch">
-                <input type="checkbox" checked onchange="guardarPreferencia('pedidos', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-percent me-2" style="color:var(--verde)"></i>Ofertas y promociones</strong>
-                <span>Descuentos exclusivos y temporadas</span>
-                </div>
-                <label class="toggle-switch">
-                <input type="checkbox" checked onchange="guardarPreferencia('ofertas', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-gift me-2" style="color:var(--rojo)"></i>Novedades y lanzamientos</strong>
-                <span>Sé el primero en conocer nuevos productos</span>
-                </div>
-                <label class="toggle-switch">
-                <input type="checkbox" onchange="guardarPreferencia('novedades', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="toggle-wrap">
-                <div class="toggle-info">
-                <strong><i class="fas fa-star me-2" style="color:var(--gold)"></i>Recordatorios de carrito</strong>
-                <span>Aviso si dejaste productos sin comprar</span>
-                </div>
-                <label class="toggle-switch">
-                <input type="checkbox" checked onchange="guardarPreferencia('carrito', this.checked)">
-                <span class="toggle-slider"></span>
-                </label>
-            </div>
-            </div>
-        </div>
         </section>
 
-        <!-- ════ SECCIÓN: LOGROS ════ -->
+        <!-- SECCIÓN: LOGROS -->
         <section class="seccion" id="sec-logros">
-        <div class="card-perfil">
-            <div class="card-head">
-            <h5><i class="fas fa-trophy"></i> Logros y Recompensas</h5>
-            <span style="font-size:.78rem;color:var(--mid)">{{ puntos_lealtad|default:0 }} puntos disponibles</span>
-            </div>
-            <div class="card-body-p">
+            <div class="card-perfil">
+                <div class="card-head">
+                    <h5><i class="fas fa-trophy"></i> Logros y Recompensas</h5>
+                    <span style="font-size:.78rem;color:var(--mid)">{{ puntos_lealtad|default:0 }} puntos disponibles</span>
+                </div>
+                <div class="card-body-p">
+                    <div style="margin-bottom:1.75rem;padding:1.25rem;background:linear-gradient(135deg,var(--crema),var(--crema-d));border-radius:var(--r-lg);border:1px solid var(--border)">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong style="font-size:.9rem">Nivel {{ user_level|default:1 }} — Explorador</strong>
+                            <span style="font-size:.8rem;color:var(--mid)">{{ xp_current|default:0 }} / {{ xp_next|default:100 }} XP</span>
+                        </div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" id="xp-fill" style="width:{{ xp_percent|default:0 }}%"></div>
+                        </div>
+                        <p style="font-size:.78rem;color:var(--light-text);margin-top:.4rem;margin-bottom:0">
+                            {% if xp_to_next > 0 %}Faltan {{ xp_to_next }} XP para el siguiente nivel{% else %}¡Nivel completado! 🎉{% endif %}
+                        </p>
+                    </div>
 
-            <!-- Barra XP -->
-            <div style="margin-bottom:1.75rem;padding:1.25rem;background:linear-gradient(135deg,var(--crema),var(--crema-d));border-radius:var(--r-lg);border:1px solid var(--border)">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                <strong style="font-size:.9rem">Nivel {{ user_level|default:1 }} — Explorador</strong>
-                <span style="font-size:.8rem;color:var(--mid)">{{ xp_current|default:0 }} / {{ xp_next|default:100 }} XP</span>
-                </div>
-                <div class="xp-bar">
-                <div class="xp-fill" id="xp-fill" style="width:{{ xp_percent|default:0 }}%"></div>
-                </div>
-                <p style="font-size:.78rem;color:var(--light-text);margin-top:.4rem;margin-bottom:0">
-                {% if xp_to_next > 0 %}Faltan {{ xp_to_next }} XP para el siguiente nivel{% else %}¡Nivel completado! 🎉{% endif %}
-                </p>
-            </div>
+                    <div class="logro-grid">
+                        <div class="logro-item {% if total_pedidos > 0 %}desbloqueado{% else %}bloqueado{% endif %}">
+                            <span class="logro-icon">🛍️</span>
+                            <div class="logro-name">Primera compra</div>
+                            <div class="logro-desc">Realizaste tu primer pedido</div>
+                        </div>
+                        <div class="logro-item {% if total_pedidos >= 5 %}desbloqueado{% else %}bloqueado{% endif %}">
+                            <span class="logro-icon">⭐</span>
+                            <div class="logro-name">Cliente frecuente</div>
+                            <div class="logro-desc">5 pedidos realizados</div>
+                        </div>
+                        <div class="logro-item {% if wishlist_count >= 5 %}desbloqueado{% else %}bloqueado{% endif %}">
+                            <span class="logro-icon">❤️</span>
+                            <div class="logro-name">Coleccionista</div>
+                            <div class="logro-desc">5 favoritos guardados</div>
+                        </div>
+                        <div class="logro-item {% if cliente and cliente.telefono and cliente.direccion %}desbloqueado{% else %}bloqueado{% endif %}">
+                            <span class="logro-icon">🎂</span>
+                            <div class="logro-name">Perfil completo</div>
+                            <div class="logro-desc">Información de contacto registrada</div>
+                        </div>
+                        <div class="logro-item bloqueado">
+                            <span class="logro-icon">💎</span>
+                            <div class="logro-name">Cliente Premium</div>
+                            <div class="logro-desc">10 pedidos completados</div>
+                        </div>
+                        <div class="logro-item bloqueado">
+                            <span class="logro-icon">🏆</span>
+                            <div class="logro-name">Embajador</div>
+                            <div class="logro-desc">Refiere 3 amigos</div>
+                        </div>
+                    </div>
 
-            <!-- Grid de logros -->
-            <div class="logro-grid">
-                <div class="logro-item {% if total_pedidos > 0 %}desbloqueado{% else %}bloqueado{% endif %}">
-                <span class="logro-icon">🛍️</span>
-                <div class="logro-name">Primera compra</div>
-                <div class="logro-desc">Realizaste tu primer pedido</div>
-                </div>
-                <div class="logro-item {% if total_pedidos >= 5 %}desbloqueado{% else %}bloqueado{% endif %}">
-                <span class="logro-icon">⭐</span>
-                <div class="logro-name">Cliente frecuente</div>
-                <div class="logro-desc">5 pedidos realizados</div>
-                </div>
-                <div class="logro-item {% if wishlist_count >= 5 %}desbloqueado{% else %}bloqueado{% endif %}">
-                <span class="logro-icon">❤️</span>
-                <div class="logro-name">Coleccionista</div>
-                <div class="logro-desc">5 favoritos guardados</div>
-                </div>
-                <div class="logro-item {% if cliente and cliente.telefono and cliente.direccion %}desbloqueado{% else %}bloqueado{% endif %}">
-                <span class="logro-icon">🎂</span>
-                <div class="logro-name">Perfil completo</div>
-                <div class="logro-desc">Información de contacto registrada</div>
-                </div>
-                <div class="logro-item bloqueado">
-                <span class="logro-icon">💎</span>
-                <div class="logro-name">Cliente Premium</div>
-                <div class="logro-desc">10 pedidos completados</div>
-                </div>
-                <div class="logro-item bloqueado">
-                <span class="logro-icon">🏆</span>
-                <div class="logro-name">Embajador</div>
-                <div class="logro-desc">Refiere 3 amigos</div>
-                </div>
-            </div>
-
-            <!-- Canjear puntos -->
-            <div style="margin-top:1.75rem;padding:1.25rem;border:1px solid var(--gold);border-radius:var(--r-lg);background:linear-gradient(135deg,#FFF9F0,#fff)">
-                <h6 style="font-size:.875rem;font-weight:700;color:var(--dark);margin-bottom:1rem">
-                <i class="fas fa-gift me-2" style="color:var(--gold)"></i>Canjear puntos
-                </h6>
-                <div class="row g-2">
-                <div class="col-md-4">
-                    <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);background:#fff">
-                    <div style="font-size:1.5rem;margin-bottom:.3rem">🏷️</div>
-                    <div style="font-size:.82rem;font-weight:700;color:var(--dark)">10% Descuento</div>
-                    <div style="font-size:.72rem;color:var(--light-text);margin:.2rem 0 .6rem">500 puntos</div>
-                    <button class="btn-prim btn-sm w-100" onclick="canjearRecompensa(500,'10% de descuento')"
-                        {% if puntos_lealtad|default:0 < 500 %}disabled{% endif %}>Canjear</button>
+                    <div style="margin-top:1.75rem;padding:1.25rem;border:1px solid var(--gold);border-radius:var(--r-lg);background:linear-gradient(135deg,#FFF9F0,#fff)">
+                        <h6 style="font-size:.875rem;font-weight:700;color:var(--dark);margin-bottom:1rem">
+                            <i class="fas fa-gift me-2" style="color:var(--gold)"></i>Canjear puntos
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);background:#fff">
+                                    <div style="font-size:1.5rem;margin-bottom:.3rem">🏷️</div>
+                                    <div style="font-size:.82rem;font-weight:700;color:var(--dark)">10% Descuento</div>
+                                    <div style="font-size:.72rem;color:var(--light-text);margin:.2rem 0 .6rem">500 puntos</div>
+                                    <button class="btn-prim btn-sm w-100" onclick="canjearRecompensa(500,'10% de descuento')"
+                                        {% if puntos_lealtad|default:0 < 500 %}disabled{% endif %}>Canjear</button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);background:#fff">
+                                    <div style="font-size:1.5rem;margin-bottom:.3rem">🚚</div>
+                                    <div style="font-size:.82rem;font-weight:700;color:var(--dark)">Envío gratis</div>
+                                    <div style="font-size:.72rem;color:var(--light-text);margin:.2rem 0 .6rem">750 puntos</div>
+                                    <button class="btn-prim btn-sm w-100" onclick="canjearRecompensa(750,'Envío gratis')"
+                                        {% if puntos_lealtad|default:0 < 750 %}disabled{% endif %}>Canjear</button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);background:#fff">
+                                    <div style="font-size:1.5rem;margin-bottom:.3rem">🎁</div>
+                                    <div style="font-size:.82rem;font-weight:700;color:var(--dark)">Bono $50.000</div>
+                                    <div style="font-size:.72rem;color:var(--light-text);margin:.2rem 0 .6rem">1000 puntos</div>
+                                    <button class="btn-prim btn-sm w-100" onclick="canjearRecompensa(1000,'Bono $50.000')"
+                                        {% if puntos_lealtad|default:0 < 1000 %}disabled{% endif %}>Canjear</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);background:#fff">
-                    <div style="font-size:1.5rem;margin-bottom:.3rem">🚚</div>
-                    <div style="font-size:.82rem;font-weight:700;color:var(--dark)">Envío gratis</div>
-                    <div style="font-size:.72rem;color:var(--light-text);margin:.2rem 0 .6rem">750 puntos</div>
-                    <button class="btn-prim btn-sm w-100" onclick="canjearRecompensa(750,'Envío gratis')"
-                        {% if puntos_lealtad|default:0 < 750 %}disabled{% endif %}>Canjear</button>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div style="text-align:center;padding:1rem;border:1px solid var(--border);border-radius:var(--r-md);background:#fff">
-                    <div style="font-size:1.5rem;margin-bottom:.3rem">🎁</div>
-                    <div style="font-size:.82rem;font-weight:700;color:var(--dark)">Bono $50.000</div>
-                    <div style="font-size:.72rem;color:var(--light-text);margin:.2rem 0 .6rem">1000 puntos</div>
-                    <button class="btn-prim btn-sm w-100" onclick="canjearRecompensa(1000,'Bono $50.000')"
-                        {% if puntos_lealtad|default:0 < 1000 %}disabled{% endif %}>Canjear</button>
-                    </div>
-                </div>
-                </div>
             </div>
-
-            </div>
-        </div>
         </section>
 
     </main>
-    </div><!-- /perfil-layout -->
+</div>
 
-    <!-- ══════════════════════════════════════════
-        MODAL: CAMBIAR AVATAR
-    ══════════════════════════════════════════ -->
-    <div class="modal fade modal-perfil" id="modal-avatar" tabindex="-1">
+<!-- MODAL: CAMBIAR AVATAR -->
+<div class="modal fade modal-perfil" id="modal-avatar" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Cambiar foto de perfil</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-            <div style="text-align:center;margin-bottom:1.25rem">
-            <img id="av-preview" src="" alt="Preview"
-                style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--cafe-l)">
-            <p style="font-size:.75rem;color:var(--light-text);margin-top:.4rem">Vista previa</p>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Cambiar foto de perfil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <p style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.6rem">Elige un avatar</p>
-            <div class="avatar-options-grid mb-4" id="av-grid">
-            {% for i in "12345"|make_list %}
-            <div class="av-opt {% if forloop.first %}selected{% endif %}"
-                data-src="{% static 'img/avatars/default-avatar-' %}{{ forloop.counter }}.png"
-                onclick="seleccionarAvatar(this)">
-                <img src="{% static 'img/avatars/default-avatar-' %}{{ forloop.counter }}.png"
-                alt="Avatar {{ forloop.counter }}"
-                onerror="this.parentElement.style.display='none'">
+            <div class="modal-body">
+                <div style="text-align:center;margin-bottom:1.25rem">
+                    <img id="av-preview" src="" alt="Preview"
+                        style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--cafe-l)">
+                    <p style="font-size:.75rem;color:var(--light-text);margin-top:.4rem">Vista previa</p>
+                </div>
+                <p style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-bottom:.6rem">Elige un avatar</p>
+                <div class="avatar-options-grid mb-4" id="av-grid">
+                    {% for i in "12345"|make_list %}
+                    <div class="av-opt {% if forloop.first %}selected{% endif %}"
+                        data-src="{% static 'img/avatars/default-avatar-' %}{{ forloop.counter }}.png"
+                        onclick="seleccionarAvatar(this)">
+                        <img src="{% static 'img/avatars/default-avatar-' %}{{ forloop.counter }}.png"
+                            alt="Avatar {{ forloop.counter }}"
+                            onerror="this.parentElement.style.display='none'">
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="drop-zone" id="drop-zone" onclick="document.getElementById('av-file').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <strong style="font-size:.875rem;display:block;margin-bottom:.25rem">Sube tu propia foto</strong>
+                    <span style="font-size:.775rem;color:var(--light-text)">Arrastra o haz clic — JPG, PNG, WebP</span>
+                </div>
+                <input type="file" id="av-file" class="d-none" accept="image/*">
             </div>
-            {% endfor %}
+            <div class="modal-footer">
+                <button class="btn-sec" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-prim" id="btn-guardar-avatar" onclick="guardarAvatar()">
+                    <i class="fas fa-check"></i> Guardar foto
+                </button>
             </div>
-            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('av-file').click()">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <strong style="font-size:.875rem;display:block;margin-bottom:.25rem">Sube tu propia foto</strong>
-            <span style="font-size:.775rem;color:var(--light-text)">Arrastra o haz clic — JPG, PNG, WebP</span>
-            </div>
-            <input type="file" id="av-file" class="d-none" accept="image/*">
-        </div>
-        <div class="modal-footer">
-            <button class="btn-sec" data-bs-dismiss="modal">Cancelar</button>
-            <button class="btn-prim" id="btn-guardar-avatar" onclick="guardarAvatar()">
-            <i class="fas fa-check"></i> Guardar foto
-            </button>
-        </div>
         </div>
     </div>
-    </div>
+</div>
 
-    <!-- ══════════════════════════════════════════
-        MODAL: CAMBIAR CONTRASEÑA
-    ══════════════════════════════════════════ -->
-    <div class="modal fade modal-perfil" id="modal-password" tabindex="-1">
+<!-- MODAL: CAMBIAR CONTRASEÑA -->
+<div class="modal fade modal-perfil" id="modal-password" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title"><i class="fas fa-key me-2"></i>Cambiar contraseña</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-            <div class="field-wrap">
-            <label>Contraseña actual</label>
-            <div style="position:relative">
-                <input type="password" class="field-input" id="pwd-actual" placeholder="Tu contraseña actual">
-                <button onclick="verPassword('pwd-actual',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light-text);cursor:pointer">
-                <i class="fas fa-eye"></i>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-key me-2"></i>Cambiar contraseña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="field-wrap">
+                    <label>Contraseña actual</label>
+                    <div style="position:relative">
+                        <input type="password" class="field-input" id="pwd-actual" placeholder="Tu contraseña actual">
+                        <button onclick="verPassword('pwd-actual',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light-text);cursor:pointer">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="field-wrap">
+                    <label>Nueva contraseña</label>
+                    <div style="position:relative">
+                        <input type="password" class="field-input" id="pwd-nueva" placeholder="Mínimo 8 caracteres"
+                            oninput="evaluarFuerza(this.value)">
+                        <button onclick="verPassword('pwd-nueva',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light-text);cursor:pointer">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="pwd-strength-bar mt-1">
+                        <div class="pwd-strength-fill" id="pwd-strength-bar"></div>
+                    </div>
+                    <span id="pwd-strength-txt" style="font-size:.75rem;color:var(--light-text)">Mínimo 8 caracteres</span>
+                </div>
+                <div class="field-wrap">
+                    <label>Confirmar nueva contraseña</label>
+                    <div style="position:relative">
+                        <input type="password" class="field-input" id="pwd-confirm" placeholder="Repite la nueva contraseña">
+                        <button onclick="verPassword('pwd-confirm',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light-text);cursor:pointer">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sec" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn-prim" onclick="cambiarPassword()">
+                    <i class="fas fa-save"></i> Actualizar contraseña
                 </button>
             </div>
-            </div>
-            <div class="field-wrap">
-            <label>Nueva contraseña</label>
-            <div style="position:relative">
-                <input type="password" class="field-input" id="pwd-nueva" placeholder="Mínimo 8 caracteres"
-                oninput="evaluarFuerza(this.value)">
-                <button onclick="verPassword('pwd-nueva',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light-text);cursor:pointer">
-                <i class="fas fa-eye"></i>
-                </button>
-            </div>
-            <div class="pwd-strength-bar mt-1">
-                <div class="pwd-strength-fill" id="pwd-strength-bar"></div>
-            </div>
-            <span id="pwd-strength-txt" style="font-size:.75rem;color:var(--light-text)">Mínimo 8 caracteres</span>
-            </div>
-            <div class="field-wrap">
-            <label>Confirmar nueva contraseña</label>
-            <div style="position:relative">
-                <input type="password" class="field-input" id="pwd-confirm" placeholder="Repite la nueva contraseña">
-                <button onclick="verPassword('pwd-confirm',this)" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--light-text);cursor:pointer">
-                <i class="fas fa-eye"></i>
-                </button>
-            </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-sec" data-bs-dismiss="modal">Cancelar</button>
-            <button class="btn-prim" onclick="cambiarPassword()">
-            <i class="fas fa-save"></i> Actualizar contraseña
-            </button>
-        </div>
         </div>
     </div>
-    </div>
+</div>
 
-    <!-- ── TOAST STACK ── -->
-    <div class="toast-stack" id="toast-stack"></div>
+<!-- TOAST STACK -->
+<div class="toast-stack" id="toast-stack"></div>
 
-<!-- ════════════════════════════════════════
-    FOOTER
-════════════════════════════════════════ -->
+<!-- FOOTER -->
 <footer class="footer-moderno footer-bg text-dark">
     <div class="container">
         <div class="row g-4 g-lg-5">
@@ -1145,29 +1058,6 @@
                 </ul>
             </div>
         </div>
-        <div class="footer-badges mt-5 pt-4 border-top border-secondary">
-            <div class="row align-items-center g-3">
-                <div class="col-12 col-lg-6">
-                    <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
-                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
-                        <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
-                        <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
-                        <span class="payment-badge"><i class="fas fa-credit-card"></i> PSE</span>
-                        <span class="payment-badge"><i class="fas fa-mobile-alt"></i> Nequi</span>
-                        <span class="payment-badge"><i class="fas fa-wallet"></i> DaviPlata</span>
-                    </div>
-                </div>
-                <div class="col-12 col-lg-6 text-lg-end">
-                    <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
-                    <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
-                        <span class="cert-badge"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
-                        <span class="cert-badge"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
-                        <span class="cert-badge"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
             <p class="mb-0 small text-muted">&copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.</p>
             <a href="#" class="small text-muted text-decoration-none">Mapa del sitio</a>
@@ -1175,380 +1065,401 @@
     </div>
 </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/header.js' %}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/header.js' %}"></script>
 
-        // ── NAVEGACIÓN ──
-        const navLinks = document.querySelectorAll('.nav-link-item[data-section]');
-        navLinks.forEach(link => {
-            link.addEventListener('click', e => {
+<script>
+/* ════════════════════════════════════════
+   URLs centralizadas — todas correctas
+════════════════════════════════════════ */
+const URLS = {
+    perfilActualizar:    '{% url "pagina:perfil_actualizar" %}',
+    avatarActualizar:    '{% url "pagina:actualizar_avatar" %}',
+    passwordCambiar:     '{% url "pagina:password_cambiar" %}',
+    preferenciasGuardar: '{% url "pagina:preferencias_guardar" %}',
+    notifMarcarLeidas:   '{% url "pagina:notificaciones_marcar_leidas" %}',
+};
+
+/* ════════════════════════════════════════
+   CSRF
+════════════════════════════════════════ */
+function getCSRF() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+        document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
+}
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+function toast(msg, type = 'success') {
+    const icons  = { success:'fa-check-circle', error:'fa-exclamation-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
+    const colors = { success:'var(--verde)', error:'var(--rojo)', warning:'var(--gold)', info:'#60a5fa' };
+    const stack  = document.getElementById('toast-stack');
+    const el     = document.createElement('div');
+    el.className = `toast-item ${type}`;
+    el.innerHTML = `
+        <i class="fas ${icons[type]} toast-icon" style="color:${colors[type]}"></i>
+        <span class="toast-msg">${msg}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+    `;
+    stack.appendChild(el);
+    setTimeout(() => {
+        el.style.transition = '.3s';
+        el.style.opacity    = '0';
+        el.style.transform  = 'translateX(20px)';
+        setTimeout(() => el.remove(), 320);
+    }, 4000);
+}
+
+/* ════════════════════════════════════════
+   INIT
+════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+
+    // Navegación sidebar
+    document.querySelectorAll('.nav-link-item[data-section]').forEach(link => {
+        link.addEventListener('click', e => {
             e.preventDefault();
             const sec = link.dataset.section;
-            navLinks.forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.nav-link-item[data-section]').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
             document.querySelectorAll('.seccion').forEach(s => s.classList.remove('active'));
             const target = document.getElementById('sec-' + sec);
             if (target) {
                 target.classList.add('active');
-                if (window.innerWidth < 992) target.scrollIntoView({behavior:'smooth', block:'start'});
+                if (window.innerWidth < 992) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            });
         });
+    });
 
-        // ── INICIAR BARRA XP ──
-        setTimeout(() => {
-            const fill = document.getElementById('xp-fill');
-            if (fill) {
+    // Animar barra XP al cargar
+    setTimeout(() => {
+        const fill = document.getElementById('xp-fill');
+        if (fill) {
             const w = fill.style.width;
             fill.style.width = '0%';
             setTimeout(() => fill.style.width = w, 100);
-            }
-        }, 400);
-
-        // ── AVATAR MODAL: Drop zone ──
-        const dropZone = document.getElementById('drop-zone');
-        const avFile   = document.getElementById('av-file');
-        dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-        dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-        dropZone?.addEventListener('drop', e => {
-            e.preventDefault(); dropZone.classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            if (file?.type.startsWith('image/')) previewFile(file);
-        });
-        avFile?.addEventListener('change', e => {
-            if (e.target.files[0]) previewFile(e.target.files[0]);
-        });
-
-        // ── ABRIR MODAL AVATAR: precargar imagen actual ──
-        document.getElementById('modal-avatar')?.addEventListener('show.bs.modal', () => {
-            const current = document.getElementById('hero-avatar-img')?.src;
-            if (current) document.getElementById('av-preview').src = current;
-        });
-
-        // ── FUERZA CONTRASEÑA ──
-        document.getElementById('pwd-nueva')?.addEventListener('input', e => evaluarFuerza(e.target.value));
-        });
-
-        // ── SECCIONES ──
-        function irA(sec) {
-        document.querySelectorAll('.nav-link-item[data-section]').forEach(l => {
-            l.classList.toggle('active', l.dataset.section === sec);
-        });
-        document.querySelectorAll('.seccion').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById('sec-' + sec);
-        if (target) target.classList.add('active');
         }
+    }, 400);
 
-        // ── EDICIÓN PERFIL ──
-        function activarEdicion() {
-        document.querySelectorAll('#form-perfil .field-input').forEach(el => el.disabled = false);
-        document.getElementById('btn-editar').style.display = 'none';
-        document.getElementById('btn-guardar').style.display = 'inline-flex';
-        document.getElementById('btn-cancelar').style.display = 'inline-flex';
-        toast('Modo edición activado', 'info');
-        }
+    // Drop zone avatar
+    const dropZone = document.getElementById('drop-zone');
+    const avFile   = document.getElementById('av-file');
+    dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone?.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file?.type.startsWith('image/')) previewFile(file);
+    });
+    avFile?.addEventListener('change', e => {
+        if (e.target.files[0]) previewFile(e.target.files[0]);
+    });
 
-        function cancelarEdicion() {
-        document.querySelectorAll('#form-perfil .field-input').forEach(el => el.disabled = true);
-        document.getElementById('btn-editar').style.display = 'inline-flex';
-        document.getElementById('btn-guardar').style.display = 'none';
-        document.getElementById('btn-cancelar').style.display = 'none';
-        document.getElementById('form-perfil').reset();
-        toast('Cambios descartados', 'warning');
-        }
+    // Precargar imagen actual al abrir modal avatar
+    document.getElementById('modal-avatar')?.addEventListener('show.bs.modal', () => {
+        const current = document.getElementById('hero-avatar-img')?.src;
+        if (current) document.getElementById('av-preview').src = current;
+    });
+});
 
-        async function guardarPerfil() {
-        const btn = document.getElementById('btn-guardar');
-        const original = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-circle-notch spin"></i> Guardando...';
+/* ════════════════════════════════════════
+   PERFIL — EDICIÓN
+════════════════════════════════════════ */
+function activarEdicion() {
+    document.querySelectorAll('#form-perfil .field-input').forEach(el => el.disabled = false);
+    document.getElementById('btn-editar').style.display   = 'none';
+    document.getElementById('btn-guardar').style.display  = 'inline-flex';
+    document.getElementById('btn-cancelar').style.display = 'inline-flex';
+    toast('Modo edición activado', 'info');
+}
 
-        const fd = new FormData(document.getElementById('form-perfil'));
+function cancelarEdicion() {
+    document.querySelectorAll('#form-perfil .field-input').forEach(el => el.disabled = true);
+    document.getElementById('btn-editar').style.display   = 'inline-flex';
+    document.getElementById('btn-guardar').style.display  = 'none';
+    document.getElementById('btn-cancelar').style.display = 'none';
+    document.getElementById('form-perfil').reset();
+    toast('Cambios descartados', 'warning');
+}
 
-        try {
-            const res = await fetch('{% url "ventas:perfil_actualizar" %}', {
-            method:'POST', body:fd,
-            headers:{'X-CSRFToken': getCSRF()}
-            });
-            const data = await res.json();
-            if (data.success) {
+async function guardarPerfil() {
+    const btn      = document.getElementById('btn-guardar');
+    const original = btn.innerHTML;
+    btn.disabled   = true;
+    btn.innerHTML  = '<i class="fas fa-circle-notch spin"></i> Guardando...';
+
+    const fd = new FormData(document.getElementById('form-perfil'));
+
+    try {
+        const res  = await fetch(URLS.perfilActualizar, {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-CSRFToken': getCSRF() }
+        });
+        const data = await res.json();
+        if (data.success) {
             toast('Perfil actualizado correctamente ✓', 'success');
             cancelarEdicion();
-            } else {
+        } else {
             toast(data.error || 'Error al guardar', 'error');
-            }
-        } catch {
-            toast('Error de conexión', 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = original;
         }
-        }
+    } catch {
+        toast('Error de conexión', 'error');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = original;
+    }
+}
 
-        // ── AVATAR ──
-        let selectedAvatarSrc = '';
+/* ════════════════════════════════════════
+   AVATAR
+════════════════════════════════════════ */
+let selectedAvatarSrc = '';
 
-        function abrirModalAvatar() {
-        new bootstrap.Modal(document.getElementById('modal-avatar')).show();
-        }
+function abrirModalAvatar() {
+    new bootstrap.Modal(document.getElementById('modal-avatar')).show();
+}
 
-        function seleccionarAvatar(el) {
+function seleccionarAvatar(el) {
+    document.querySelectorAll('.av-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedAvatarSrc = el.dataset.src;
+    document.getElementById('av-preview').src = selectedAvatarSrc;
+}
+
+function previewFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        selectedAvatarSrc = e.target.result;
+        document.getElementById('av-preview').src = e.target.result;
         document.querySelectorAll('.av-opt').forEach(o => o.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedAvatarSrc = el.dataset.src;
-        document.getElementById('av-preview').src = selectedAvatarSrc;
-        }
+        toast('Imagen lista para guardar', 'info');
+    };
+    reader.readAsDataURL(file);
+}
 
-        function previewFile(file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            selectedAvatarSrc = e.target.result;
-            document.getElementById('av-preview').src = e.target.result;
-            document.querySelectorAll('.av-opt').forEach(o => o.classList.remove('selected'));
-            toast('Imagen lista para guardar', 'info');
-        };
-        reader.readAsDataURL(file);
-        }
+async function guardarAvatar() {
+    if (!selectedAvatarSrc) { toast('Selecciona una imagen', 'warning'); return; }
+    const btn      = document.getElementById('btn-guardar-avatar');
+    btn.disabled   = true;
+    btn.innerHTML  = '<i class="fas fa-circle-notch spin"></i> Guardando...';
 
-        async function guardarAvatar() {
-        if (!selectedAvatarSrc) { toast('Selecciona una imagen', 'warning'); return; }
-        const btn = document.getElementById('btn-guardar-avatar');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-circle-notch spin"></i> Guardando...';
-
-        try {
-            const res = await fetch('{% url "pagina:avatar_actualizar" %}', {
-            method:'POST',
-            headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
-            body: JSON.stringify({avatar_url: selectedAvatarSrc})
-            });
-            const data = await res.json();
-            if (data.success) {
-            document.getElementById('hero-avatar-img').src = selectedAvatarSrc;
+    try {
+        const res  = await fetch(URLS.avatarActualizar, {
+            method:  'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ avatar_url: selectedAvatarSrc })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('hero-avatar-img').src    = selectedAvatarSrc;
             document.getElementById('sidebar-avatar-img').src = selectedAvatarSrc;
             bootstrap.Modal.getInstance(document.getElementById('modal-avatar')).hide();
             toast('Foto de perfil actualizada ✓', 'success');
-            } else {
+        } else {
             toast(data.error || 'Error al guardar', 'error');
-            }
-        } catch {
-            toast('Error de conexión', 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check"></i> Guardar foto';
         }
-        }
+    } catch {
+        toast('Error de conexión', 'error');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Guardar foto';
+    }
+}
 
-        // ── CONTRASEÑA ──
-        function abrirModalPassword() {
-        new bootstrap.Modal(document.getElementById('modal-password')).show();
-        }
+/* ════════════════════════════════════════
+   CONTRASEÑA
+════════════════════════════════════════ */
+function abrirModalPassword() {
+    new bootstrap.Modal(document.getElementById('modal-password')).show();
+}
 
-        function verPassword(id, btn) {
-        const inp = document.getElementById(id);
-        const isText = inp.type === 'text';
-        inp.type = isText ? 'password' : 'text';
-        btn.querySelector('i').className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
-        }
+function verPassword(id, btn) {
+    const inp  = document.getElementById(id);
+    const isText = inp.type === 'text';
+    inp.type   = isText ? 'password' : 'text';
+    btn.querySelector('i').className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
 
-        function evaluarFuerza(pwd) {
-        let score = 0;
-        if (pwd.length >= 8) score += 25;
-        if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score += 25;
-        if (/[0-9]/.test(pwd)) score += 25;
-        if (/[^a-zA-Z0-9]/.test(pwd)) score += 25;
+function evaluarFuerza(pwd) {
+    let score = 0;
+    if (pwd.length >= 8)                              score += 25;
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd))      score += 25;
+    if (/[0-9]/.test(pwd))                            score += 25;
+    if (/[^a-zA-Z0-9]/.test(pwd))                    score += 25;
 
-        const bar = document.getElementById('pwd-strength-bar');
-        const txt = document.getElementById('pwd-strength-txt');
-        bar.style.width = score + '%';
-        if (score < 50) { bar.style.background = 'var(--rojo)'; txt.textContent = 'Contraseña débil'; txt.style.color = 'var(--rojo)'; }
-        else if (score < 75) { bar.style.background = 'var(--gold)'; txt.textContent = 'Contraseña media'; txt.style.color = '#8A6800'; }
-        else { bar.style.background = 'var(--verde)'; txt.textContent = 'Contraseña fuerte ✓'; txt.style.color = 'var(--verde)'; }
-        }
+    const bar = document.getElementById('pwd-strength-bar');
+    const txt = document.getElementById('pwd-strength-txt');
+    bar.style.width = score + '%';
+    if (score < 50) {
+        bar.style.background = 'var(--rojo)';
+        txt.textContent      = 'Contraseña débil';
+        txt.style.color      = 'var(--rojo)';
+    } else if (score < 75) {
+        bar.style.background = 'var(--gold)';
+        txt.textContent      = 'Contraseña media';
+        txt.style.color      = '#8A6800';
+    } else {
+        bar.style.background = 'var(--verde)';
+        txt.textContent      = 'Contraseña fuerte ✓';
+        txt.style.color      = 'var(--verde)';
+    }
+}
 
-        async function cambiarPassword() {
-        const actual   = document.getElementById('pwd-actual').value;
-        const nueva    = document.getElementById('pwd-nueva').value;
-        const confirm  = document.getElementById('pwd-confirm').value;
+async function cambiarPassword() {
+    const actual  = document.getElementById('pwd-actual').value;
+    const nueva   = document.getElementById('pwd-nueva').value;
+    const confirm = document.getElementById('pwd-confirm').value;
 
-        if (!actual || !nueva || !confirm) { toast('Completa todos los campos', 'warning'); return; }
-        if (nueva !== confirm) { toast('Las contraseñas no coinciden', 'error'); return; }
-        if (nueva.length < 8) { toast('La contraseña debe tener al menos 8 caracteres', 'warning'); return; }
+    if (!actual || !nueva || !confirm) { toast('Completa todos los campos', 'warning'); return; }
+    if (nueva !== confirm)             { toast('Las contraseñas no coinciden', 'error'); return; }
+    if (nueva.length < 8)             { toast('La contraseña debe tener al menos 8 caracteres', 'warning'); return; }
 
-        try {
-            const res = await fetch('{% url "pagina:password_cambiar" %}', {
-            method:'POST',
-            headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
-            body: JSON.stringify({current_password:actual, new_password:nueva})
-            });
-            const data = await res.json();
-            if (data.success) {
+    try {
+        const res  = await fetch(URLS.passwordCambiar, {
+            method:  'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ current_password: actual, new_password: nueva })
+        });
+        const data = await res.json();
+        if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('modal-password')).hide();
-            document.getElementById('pwd-actual').value = '';
-            document.getElementById('pwd-nueva').value = '';
-            document.getElementById('pwd-confirm').value = '';
+            ['pwd-actual','pwd-nueva','pwd-confirm'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('pwd-strength-bar').style.width = '0%';
             toast('Contraseña actualizada correctamente ✓', 'success');
-            } else {
+        } else {
             toast(data.error || 'Error al cambiar contraseña', 'error');
-            }
-        } catch {
-            toast('Error de conexión', 'error');
         }
-        }
+    } catch {
+        toast('Error de conexión', 'error');
+    }
+}
 
-        // ── TOGGLE 2FA ──
-        function toggle2FA(checkbox) {
-        toast(checkbox.checked ? '2FA activado' : '2FA desactivado',
-                checkbox.checked ? 'success' : 'warning');
-        }
-        // Aquí podrías agregar lógica adicional, como mostrar un QR para configurar 2FA si se activó, etc.
-        const URLS = {
-            perfilActualizar:      '{% url "ventas:perfil_actualizar" %}',
-            avatarActualizar:      '{% url "pagina:avatar_actualizar" %}',
-            passwordCambiar:       '{% url "pagina:password_cambiar" %}',
-            preferenciasGuardar:   '{% url "pagina:preferencias_guardar" %}',
-            notifMarcarLeidas:     '{% url "pagina:notificaciones_marcar_leidas" %}',
-            canjearPuntos:         '#',
-            // ── URLs que NO existen aún, ponlas en # por ahora ──
-            toggle2fa:             '#',   // Crear si lo necesitas
-            eliminarCuenta:        '#',  // o '#' si no existe
-        };
+/* ════════════════════════════════════════
+   2FA
+════════════════════════════════════════ */
+function toggle2FA(checkbox) {
+    toast(checkbox.checked ? '2FA activado' : '2FA desactivado',
+          checkbox.checked ? 'success' : 'warning');
+}
 
-        // ── PEDIDOS ──
-        function filtrarPedidos(btn) {
-        document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const filtro = btn.dataset.filtro;
-        document.querySelectorAll('.pedido-card').forEach(card => {
-            const estado = card.dataset.estado || '';
-            card.style.display = (filtro === 'todos' || estado.includes(filtro)) ? 'block' : 'none';
+/* ════════════════════════════════════════
+   PEDIDOS
+════════════════════════════════════════ */
+function filtrarPedidos(btn) {
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filtro = btn.dataset.filtro;
+    document.querySelectorAll('.pedido-card').forEach(card => {
+        const estado = card.dataset.estado || '';
+        card.style.display = (filtro === 'todos' || estado.includes(filtro)) ? 'block' : 'none';
+    });
+}
+
+function verDetallePedido(id) {
+    window.location.href = `/ventas/pedido/${id}/`;
+}
+
+function rastrearPedido(id) {
+    toast(`Rastreando pedido #${id}...`, 'info');
+}
+
+/* ════════════════════════════════════════
+   FAVORITOS
+════════════════════════════════════════ */
+async function quitarFavorito(id, event) {
+    event.stopPropagation();
+    if (!confirm('¿Quitar este producto de favoritos?')) return;
+    try {
+        const res  = await fetch(`/ventas/wishlist/quitar/${id}/`, {
+            method:  'POST',
+            headers: { 'X-CSRFToken': getCSRF() }
         });
-        }
-
-        function verDetallePedido(id) {
-        window.location.href = `/ventas/pedido/${id}/`;
-        }
-
-        function rastrearPedido(id) {
-        toast(`Rastreando pedido #${id}...`, 'info');
-        }
-
-        // ── FAVORITOS ──
-        async function quitarFavorito(id, event) {
-        event.stopPropagation();
-        if (!confirm('¿Quitar este producto de favoritos?')) return;
-        try {
-            const res = await fetch(`/ventas/wishlist/quitar/${id}/`, {
-            method:'POST',
-            headers:{'X-CSRFToken':getCSRF()}
-            });
-            const data = await res.json();
-            if (data.success) {
+        const data = await res.json();
+        if (data.success) {
             const card = document.getElementById('fav-' + id);
             card.style.transition = 'all .3s';
-            card.style.opacity = '0';
-            card.style.transform = 'scale(.8)';
+            card.style.opacity    = '0';
+            card.style.transform  = 'scale(.8)';
             setTimeout(() => card.remove(), 300);
             toast('Producto quitado de favoritos', 'warning');
-            // actualizar contador
             const cnt = document.getElementById('hs-favoritos');
             if (cnt) cnt.textContent = Math.max(0, parseInt(cnt.textContent) - 1);
-            }
-        } catch {
-            toast('Error al quitar favorito', 'error');
         }
-        }
+    } catch {
+        toast('Error al quitar favorito', 'error');
+    }
+}
 
-        async function agregarAlCarrito(id) {
-        try {
-            const res = await fetch(`/ventas/carrito/agregar/${id}/`, {
-            method:'POST',
-            headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
-            body: JSON.stringify({cantidad:1})
-            });
-            const data = await res.json();
-            if (data.success) {
+async function agregarAlCarrito(id) {
+    try {
+        const res  = await fetch(`/ventas/carrito/agregar/${id}/`, {
+            method:  'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ cantidad: 1 })
+        });
+        const data = await res.json();
+        if (data.success) {
             const cnt = document.getElementById('contador-carrito');
             if (cnt && data.carrito_cantidad) cnt.textContent = data.carrito_cantidad;
             toast('Producto agregado al carrito ✓', 'success');
-            } else {
+        } else {
             toast(data.error || 'Error al agregar', 'error');
-            }
-        } catch {
-            toast('Error de conexión', 'error');
         }
-        }
+    } catch {
+        toast('Error de conexión', 'error');
+    }
+}
 
-        function compartirWishlist() {
-        const url = window.location.origin + '{% url "pagina:perfil" %}?wishlist=share';
-        navigator.clipboard?.writeText(url)
-            .then(() => toast('Enlace copiado al portapapeles ✓', 'success'))
-            .catch(() => toast('No se pudo copiar', 'error'));
-        }
+function compartirWishlist() {
+    const url = window.location.origin + '{% url "pagina:perfil" %}?wishlist=share';
+    navigator.clipboard?.writeText(url)
+        .then(() => toast('Enlace copiado al portapapeles ✓', 'success'))
+        .catch(() => toast('No se pudo copiar', 'error'));
+}
 
-        // ── NOTIFICACIONES ──
-        async function guardarPreferencia(tipo, valor) {
-        try {
-            await fetch('{% url "pagina:preferencias_guardar" %}', {
-            method:'POST',
-            headers:{'X-CSRFToken':getCSRF(),'Content-Type':'application/json'},
-            body: JSON.stringify({tipo, valor})
-            });
-            toast('Preferencia guardada', 'success');
-        } catch {
-            toast('Error al guardar preferencia', 'error');
-        }
-        }
+/* ════════════════════════════════════════
+   NOTIFICACIONES
+════════════════════════════════════════ */
+async function guardarPreferencia(tipo, valor) {
+    try {
+        await fetch(URLS.preferenciasGuardar, {
+            method:  'POST',
+            headers: { 'X-CSRFToken': getCSRF(), 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ tipo, valor })
+        });
+        toast('Preferencia guardada', 'success');
+    } catch {
+        toast('Error al guardar preferencia', 'error');
+    }
+}
 
-        async function marcarTodasLeidas() {
-        try {
-            const res = await fetch('{% url "pagina:notificaciones_marcar_leidas" %}', {
-            method:'POST', headers:{'X-CSRFToken':getCSRF()}
-            });
-            const data = await res.json();
-            if (data.success) {
+async function marcarTodasLeidas() {
+    try {
+        const res  = await fetch(URLS.notifMarcarLeidas, {
+            method:  'POST',
+            headers: { 'X-CSRFToken': getCSRF() }
+        });
+        const data = await res.json();
+        if (data.success) {
             document.querySelectorAll('.nav-badge-dot').forEach(b => b.remove());
             const bb = document.getElementById('bell-badge');
             if (bb) bb.textContent = '0';
             toast('Notificaciones marcadas como leídas ✓', 'success');
-            }
-        } catch {
-            toast('Error al marcar notificaciones', 'error');
         }
-        }
-
-        // ── LOGROS ──
-        function canjearRecompensa(puntos, nombre) {
-        toast('Funcionalidad próximamente disponible', 'info');
-        }
-
-        // ── TOAST ──
-        function toast(msg, type = 'success') {
-        const icons = { success:'fa-check-circle', error:'fa-exclamation-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
-        const colors = { success:'var(--verde)', error:'var(--rojo)', warning:'var(--gold)', info:'#60a5fa' };
-        const stack = document.getElementById('toast-stack');
-        const el = document.createElement('div');
-        el.className = `toast-item ${type}`;
-        el.innerHTML = `
-            <i class="fas ${icons[type]} toast-icon" style="color:${colors[type]}"></i>
-            <span class="toast-msg">${msg}</span>
-            <button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-        `;
-        stack.appendChild(el);
-        setTimeout(() => {
-            el.style.transition = '.3s'; el.style.opacity = '0'; el.style.transform = 'translateX(20px)';
-            setTimeout(() => el.remove(), 320);
-        }, 4000);
-        }
-
-        // ── CSRF ──
-        function getCSRF() {
-        return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
-            document.cookie.split('; ').find(r => r.startsWith('csrftoken='))?.split('=')[1] || '';
+    } catch {
+        toast('Error al marcar notificaciones', 'error');
     }
-    </script>
+}
+
+/* ════════════════════════════════════════
+   LOGROS
+════════════════════════════════════════ */
+function canjearRecompensa(puntos, nombre) {
+    toast('Funcionalidad próximamente disponible', 'info');
+}
+</script>
 </body>
 </html>
