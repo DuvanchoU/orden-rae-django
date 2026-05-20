@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, Http404
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -1465,14 +1465,10 @@ def checkout(request):
         'cupon_activo':       cupon_activo,
         'hay_items':          len(carrito_items) > 0,
         'random_number':      ''.join(random.choices(string.ascii_uppercase + string.digits, k=6)),
+        'STRIPE_PUBLIC_KEY': getattr(settings, 'STRIPE_PUBLIC_KEY', '')
     }
  
     return render(request, 'pagina/checkout.html', context)
- 
- 
-# =============================================================================
-# API: api_checkout_procesar  — guarda Pedido + DetallePedido + Venta + DetalleVenta
-# =============================================================================
  
 @require_http_methods(["POST"])
 def api_checkout_procesar(request):
@@ -1488,7 +1484,6 @@ def api_checkout_procesar(request):
     from decimal import Decimal, ROUND_HALF_UP
     from django.db import transaction
     from django.utils import timezone
-    from django.db.models import Model as DjangoModel
  
     # ── Auth ──────────────────────────────────────────────────────────────────
     if not request.user.is_authenticated:
@@ -1506,11 +1501,11 @@ def api_checkout_procesar(request):
             Pedido, DetallePedido,
         )
         from inventario.models import Producto
+        from usuarios.models import Usuarios
  
         # ── 1. Obtener cliente ───────────────────────────────────────────────
-        # El cliente puede estar en request.user si se autenticó con ClientesAuthBackend
         cliente = None
-        if hasattr(request.user, 'id_cliente'):
+        if isinstance(request.user, Clientes):
             cliente = request.user
         else:
             cliente = Clientes.objects.filter(
@@ -1525,7 +1520,7 @@ def api_checkout_procesar(request):
             )
  
         # ── 2. Recopilar items del carrito (BD primero, sesión como fallback) ──
-        items_data = []  # [{'producto': obj, 'cantidad': int, 'precio_unitario': Decimal}]
+        items_data = []
  
         carrito_bd = (
             Carritos.objects.filter(cliente=cliente, deleted_at__isnull=True).first()
@@ -1578,26 +1573,34 @@ def api_checkout_procesar(request):
             )
  
         # ── 3. Calcular totales ──────────────────────────────────────────────
+        # Q garantiza exactamente 2 decimales en cada paso.
+        # Sin esto, la suma final puede tener precisión interna extra
+        # que Django DecimalField(decimal_places=2) rechaza con ValidationError.
+        Q = Decimal('0.01')
+ 
         subtotal = sum(
-            (item['precio_unitario'] * item['cantidad']).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
             for item in items_data
-        )
-        impuesto = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ).quantize(Q, rounding=ROUND_HALF_UP)
+ 
+        impuesto  = (subtotal * Decimal('0.19')).quantize(Q, rounding=ROUND_HALF_UP)
         descuento = Decimal('0.00')
  
         cupon = request.session.get('cupon_activo')
         if cupon:
-            tipo  = cupon.get('tipo', '')            
-            valor = Decimal(str(cupon.get('valor', 0)))  
-            total_con_iva = subtotal + impuesto
+            tipo  = cupon.get('tipo', '')
+            valor = Decimal(str(cupon.get('valor', 0)))
+            total_con_iva = (subtotal + impuesto).quantize(Q, rounding=ROUND_HALF_UP)
             if tipo == 'porcentaje':
                 descuento = (
                     total_con_iva * valor / 100
-                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                ).quantize(Q, rounding=ROUND_HALF_UP)
             elif tipo == 'fijo':
-                descuento = min(valor, total_con_iva)
+                descuento = min(valor, total_con_iva).quantize(Q, rounding=ROUND_HALF_UP)
  
-        total = subtotal + impuesto - descuento
+        # FIX: cuantizar el total final — la suma de Decimals puede generar
+        # precision interna extra que Django rechaza en DecimalField(decimal_places=2)
+        total = (subtotal + impuesto - descuento).quantize(Q, rounding=ROUND_HALF_UP)
  
         # ── 4. Método de pago ────────────────────────────────────────────────
         metodo_raw = data.get('pago', {}).get('metodo', '')
@@ -1617,14 +1620,13 @@ def api_checkout_procesar(request):
                 nombre__icontains=nombre_metodo,
                 deleted_at__isnull=True
             ).first()
-            # Si no existe en BD, crear uno básico para no romper el flujo
-            if not metodo_pago and nombre_metodo:
+            if not metodo_pago:
                 metodo_pago, _ = MetodosPago.objects.get_or_create(
                     nombre=nombre_metodo,
                     defaults={
                         'descripcion': f'Método de pago: {nombre_metodo}',
-                        'created_at': timezone.now(),
-                        'updated_at': timezone.now(),
+                        'created_at':  timezone.now(),
+                        'updated_at':  timezone.now(),
                     }
                 )
  
@@ -1648,11 +1650,15 @@ def api_checkout_procesar(request):
         if instrucciones:
             observaciones += f" | Instrucciones: {instrucciones}"
  
-        ahora = timezone.now()
+        ahora         = timezone.now()
         fecha_entrega = (ahora + timezone.timedelta(days=5)).date()
  
         # ── 6. Guardar todo en transacción atómica ───────────────────────────
         with transaction.atomic():
+ 
+            # FIX: usuario_id es NOT NULL en pedido y ventas.
+            # Usamos el usuario sistema (id=1). Cámbialo por el id de tu admin si prefieres.
+            usuario_sistema = Usuarios.objects.filter(pk=1).first()
  
             # ── 6a. Generar número de pedido único ───────────────────────────
             ultimo_pedido = Pedido.objects.filter(
@@ -1661,29 +1667,29 @@ def api_checkout_procesar(request):
             consec_pedido = (ultimo_pedido.id_pedido if ultimo_pedido else 0) + 1
             numero_pedido = f"PED-{consec_pedido:06d}"
  
-            # Verificar que no exista (por si acaso hay concurrencia)
             while Pedido.objects.filter(numero_pedido=numero_pedido).exists():
                 consec_pedido += 1
                 numero_pedido = f"PED-{consec_pedido:06d}"
  
-            # ── 6b. Crear Pedido (usando DjangoModel.save para evitar full_clean) ──
-            pedido = Pedido.__new__(Pedido)
-            Pedido.__init__(pedido)
- 
-            pedido.cliente                = cliente
-            pedido.usuario                = None
-            pedido.asesor                 = None
-            pedido.fecha_pedido           = ahora
-            pedido.fecha_entrega_estimada = fecha_entrega
-            pedido.total_pedido           = total
-            pedido.estado_pedido          = 'CONFIRMADO'
-            pedido.estado_facturacion     = 'NO_FACTURADO'
-            pedido.direccion_entrega      = direccion_envio
-            pedido.numero_pedido          = numero_pedido
-            pedido.created_at             = ahora
-            pedido.updated_at             = ahora
- 
-            DjangoModel.save(pedido)
+            # FIX 1: Reemplazado Pedido.__new__()/__init__() por constructor normal.
+            # FIX 2: estado_pedido='CONFIRMADO' no existe en el ENUM de la BD.
+            #         Valores válidos: 'PENDIENTE', 'EN PROCESO', 'ENTREGADO', 'CANCELADO'
+            # FIX 3: usuario=None rompe la FK NOT NULL → usar usuario_sistema.
+            pedido = Pedido(
+                cliente=cliente,
+                usuario=usuario_sistema,
+                asesor=None,
+                fecha_pedido=ahora,
+                fecha_entrega_estimada=fecha_entrega,
+                total_pedido=total,
+                estado_pedido='PENDIENTE',        # ← único valor correcto para pedidos nuevos
+                estado_facturacion='NO_FACTURADO',
+                direccion_entrega=direccion_envio,
+                numero_pedido=numero_pedido,
+                created_at=ahora,
+                updated_at=ahora,
+            )
+            pedido.save()
  
             # ── 6c. Crear DetallePedido ──────────────────────────────────────
             for item in items_data:
@@ -1691,54 +1697,51 @@ def api_checkout_procesar(request):
                     item['precio_unitario'] * item['cantidad']
                 ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
  
-                det_pedido = DetallePedido.__new__(DetallePedido)
-                DetallePedido.__init__(det_pedido)
- 
-                det_pedido.pedido          = pedido
-                det_pedido.producto        = item['producto']
-                det_pedido.cantidad        = item['cantidad']
-                det_pedido.precio_unitario = item['precio_unitario']
-                det_pedido.subtotal        = subtotal_item
-                det_pedido.created_at      = ahora
-                det_pedido.updated_at      = ahora
- 
-                DjangoModel.save(det_pedido)
+                DetallePedido(
+                    pedido=pedido,
+                    producto=item['producto'],
+                    cantidad=item['cantidad'],
+                    precio_unitario=item['precio_unitario'],
+                    subtotal=subtotal_item,
+                    created_at=ahora,
+                    updated_at=ahora,
+                ).save()
  
             # ── 6d. Generar número de factura único ──────────────────────────
-            prefijo = 'FAC'
+            prefijo      = 'FAC'
             ultimo_venta = Ventas.objects.filter(
                 prefijo=prefijo,
                 deleted_at__isnull=True
             ).order_by('-id_venta').first()
-            consec_venta = (ultimo_venta.id_venta if ultimo_venta else 0) + 1
+            consec_venta   = (ultimo_venta.id_venta if ultimo_venta else 0) + 1
             numero_factura = f"{prefijo}-{consec_venta:06d}"
  
             while Ventas.objects.filter(numero_factura=numero_factura).exists():
                 consec_venta += 1
                 numero_factura = f"{prefijo}-{consec_venta:06d}"
  
-            # ── 6e. Crear Venta vinculada al Pedido ──────────────────────────
-            venta = Ventas.__new__(Ventas)
-            Ventas.__init__(venta)
- 
-            venta.usuario        = None
-            venta.cliente        = cliente
-            venta.pedido         = pedido
-            venta.tipo_venta     = 'DIRECTA'
-            venta.fecha_venta    = ahora
-            venta.subtotal       = subtotal
-            venta.impuesto       = impuesto
-            venta.descuento      = descuento
-            venta.total          = total
-            venta.estado_venta   = 'PENDIENTE'
-            venta.metodo_pago    = metodo_pago
-            venta.observaciones  = observaciones
-            venta.numero_factura = numero_factura
-            venta.prefijo        = prefijo
-            venta.created_at     = ahora
-            venta.updated_at     = ahora
- 
-            DjangoModel.save(venta)
+            # FIX 1: Reemplazado Ventas.__new__()/__init__() por constructor normal.
+            # FIX 2: usuario=None rompe FK NOT NULL → usar usuario_sistema.
+            # FIX 3: estado_venta ENUM válidos: 'COMPLETADA', 'CANCELADA', 'PENDIENTE'
+            venta = Ventas(
+                usuario=usuario_sistema,
+                cliente=cliente,
+                pedido=pedido,
+                tipo_venta='DIRECTA',
+                fecha_venta=ahora,
+                subtotal=subtotal,
+                impuesto=impuesto,
+                descuento=descuento,
+                total=total,
+                estado_venta='PENDIENTE',          # ← valor válido en el ENUM
+                metodo_pago=metodo_pago,
+                observaciones=observaciones,
+                numero_factura=numero_factura,
+                prefijo=prefijo,
+                created_at=ahora,
+                updated_at=ahora,
+            )
+            venta.save()
  
             # ── 6f. Crear DetalleVenta ───────────────────────────────────────
             detalles_venta = []
@@ -1747,33 +1750,30 @@ def api_checkout_procesar(request):
                     item['precio_unitario'] * item['cantidad']
                 ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
  
-                detalle = DetalleVenta.__new__(DetalleVenta)
-                DetalleVenta.__init__(detalle)
- 
-                detalle.venta           = venta
-                detalle.producto        = item['producto']
-                detalle.cantidad        = item['cantidad']
-                detalle.precio_unitario = item['precio_unitario']
-                detalle.descuento       = Decimal('0.00')
-                detalle.subtotal        = subtotal_item
-                detalle.costo_estimado  = None
-                detalle.created_at      = ahora
-                detalle.updated_at      = ahora
- 
-                DjangoModel.save(detalle)
+                detalle = DetalleVenta(
+                    venta=venta,
+                    producto=item['producto'],
+                    cantidad=item['cantidad'],
+                    precio_unitario=item['precio_unitario'],
+                    descuento=Decimal('0.00'),
+                    subtotal=subtotal_item,
+                    costo_estimado=None,
+                    created_at=ahora,
+                    updated_at=ahora,
+                )
+                detalle.save()
                 detalles_venta.append(detalle)
  
             # ── 6g. Actualizar dirección del cliente si no tenía ─────────────
-            if direccion_envio and not cliente.direccion:
+            # FIX: usar getattr() para evitar AttributeError si el campo no existe
+            if direccion_envio and not getattr(cliente, 'direccion', None):
                 Clientes.objects.filter(pk=cliente.pk).update(
                     direccion=direccion_envio,
                     updated_at=ahora
                 )
  
-            # ── 6h. Actualizar pedido con venta creada (estado facturación) ──
-            Pedido.objects.filter(pk=pedido.pk).update(
-                updated_at=ahora
-            )
+            # ── 6h. Marcar timestamp de actualización en pedido ──────────────
+            Pedido.objects.filter(pk=pedido.pk).update(updated_at=ahora)
  
             # ── 6i. Vaciar carrito en BD ─────────────────────────────────────
             if carrito_bd:
@@ -1789,23 +1789,22 @@ def api_checkout_procesar(request):
             request.session.pop('cupon_activo', None)
             request.session.modified = True
  
-        # ── 7. Generar factura PDF interna (gratuita, sin API externa) ────────
-        # La URL de descarga de factura se incluye en la respuesta
-        factura_url = f"/ventas/factura/{venta.id_venta}/pdf/"  # Implementar esta vista si se desea
+        # ── 7. URL de factura PDF ─────────────────────────────────────────────
+        factura_url = f"/ventas/factura/{venta.id_venta}/pdf/"
  
         # ── 8. Respuesta exitosa ──────────────────────────────────────────────
         return JsonResponse({
-            'success':        True,
-            'order_number':   venta.numero_factura,
-            'pedido_number':  pedido.numero_pedido,
-            'total':          float(total),
-            'subtotal':       float(subtotal),
-            'impuesto':       float(impuesto),
-            'descuento':      float(descuento),
-            'items':          len(detalles_venta),
-            'metodo_pago':    nombre_metodo,
-            'factura_url':    factura_url,
-            'message':        '¡Pedido creado exitosamente! Recibirás la confirmación en tu correo.',
+            'success':       True,
+            'order_number':  venta.numero_factura,
+            'pedido_number': pedido.numero_pedido,
+            'total':         float(total),
+            'subtotal':      float(subtotal),
+            'impuesto':      float(impuesto),
+            'descuento':     float(descuento),
+            'items':         len(detalles_venta),
+            'metodo_pago':   nombre_metodo,
+            'factura_url':   factura_url,
+            'message':       '¡Pedido creado exitosamente! Recibirás la confirmación en tu correo.',
         })
  
     except Exception as e:
@@ -2004,3 +2003,55 @@ def blog_decoracion(request):
         'categorias_blog': categorias_blog,
     }
     return render(request, 'pagina/blog_decoracion.html', context)
+
+def pqrs(request):
+    """Vista de página PQRS - Formulario de contacto"""
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+    }
+    return render(request, 'pagina/pqrs.html', context)
+
+def rastrear_pedido(request):
+    """Vista de página Rastrear Pedido - Seguimiento en tiempo real"""
+    context = {
+        'carrito_cantidad': request.session.get('carrito_cantidad', 0),
+        'notificaciones_nuevas': 0,
+    }
+    return render(request, 'pagina/rastrear_pedido.html', context)
+
+
+def info_ayuda(request, slug):
+    """
+    Vista para páginas de ayuda.
+    slug: 'materiales', 'cuidado', 'envios', 'devoluciones', 'preguntas_frecuentes'
+    """
+    #  Slugs válidos → valor exacto que espera la plantilla
+    PAGINAS_VALIDAS = {
+        'materiales': 'materiales',
+        'cuidado': 'cuidado', 
+        'envios': 'envios',
+        'devoluciones': 'devoluciones',
+        'preguntas_frecuentes': 'preguntas_frecuentes',  
+    }
+    
+    # Validar slug
+    if slug not in PAGINAS_VALIDAS:
+        raise Http404("Página de ayuda no encontrada")
+    
+    # Títulos para SEO
+    TITULOS = {
+        'materiales': 'Guía de Materiales',
+        'cuidado': 'Cuidado de Muebles',
+        'envios': 'Política de Envíos',
+        'devoluciones': 'Devoluciones y Garantía',
+        'preguntas_frecuentes': 'Preguntas Frecuentes',
+    }
+    
+    context = {
+        'pagina': PAGINAS_VALIDAS[slug],     
+        'titulo_seccion': TITULOS[slug],
+        'slug_actual': slug,
+    }
+    
+    return render(request, 'partials/info_ayuda.html', context)

@@ -19,6 +19,7 @@
 
     <!-- Tu CSS con Django static -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/estilos_footer.css' %}?v=2.0">
 
     <!--  Tu JS global del carrito -->
     <script src="{% static 'js/carrito.js' %}?v=1.0"></script>
@@ -470,12 +471,12 @@
         }
         
         .accordion-button::after {
-            background-image: url("image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238B5E3C'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238B5E3C'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
         }
         
         .accordion-button:not(.collapsed)::after {
-            background-image: url("image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238B5E3C'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
-            transform: rotate(-180deg);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238B5E3C'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+            transform: rotate(-18₀deg);
         }
         
         .accordion-body {
@@ -621,7 +622,7 @@
         
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .contact-card .card-body { padding: 1.5rem; }
+            .contact-card .contact-body { padding: 1.5rem; }
             .asunto-selector { grid-template-columns: repeat(2, 1fr); }
             .contact-info-item { flex-direction: column; text-align: center; }
             .contact-info-icon { margin: 0 auto; }
@@ -632,7 +633,7 @@
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
 <!-- ════════════════════════════════════════
     HEADER
@@ -662,7 +663,7 @@
                         
                         <!-- Mensaje de éxito -->
                         {% if enviado %}
-                        <div class="alert alert-success-custom text-center mb-4" role="alert">
+                        <div class="alert alert-success text-center mb-4" role="alert">
                             <i class="fas fa-check-circle me-2"></i>
                             <strong>¡Mensaje enviado!</strong> Tu ticket es <strong>#{{ ticket_number }}</strong>
                         </div>
@@ -670,7 +671,7 @@
                         
                         <!-- Mensajes de error -->
                         {% if errores %}
-                        <div class="alert alert-danger-cotiza mb-4" role="alert">
+                        <div class="alert alert-danger mb-4" role="alert">
                             <i class="fas fa-exclamation-circle me-2"></i>
                             <strong>Por favor corrige:</strong>
                             <ul class="mb-0 mt-2 small">
@@ -721,7 +722,7 @@
                                 <input type="text" id="nombre" name="nombre" class="form-control"
                                         placeholder="Ej: María González"
                                         value="{{ form_data.nombre|default:'' }}" required
-                                        pattern="^[A-Za-zÁ-ú\s]{3,50}$">
+                                        pattern="^[A-Za-zÀ-ÿ\s]{3,50}$">
                                 <div class="invalid-feedback">Ingresa un nombre válido (mín. 3 letras)</div>
                             </div>
                             
@@ -737,7 +738,7 @@
                                     <label for="telefono" class="form-label">Teléfono</label>
                                     <input type="tel" id="telefono" name="telefono" class="form-control"
                                             placeholder="+57 300 123 4567"
-                                            value="{{ form_data.telefono|default:'' }}" required
+                                            value="{{ form_data.telefono|default:'' }}"
                                             pattern="^\+57\s?[0-9]{3}\s?[0-9]{3}\s?[0-9]{4}$">
                                     <div class="form-text">Opcional, para contacto rápido</div>
                                 </div>
@@ -761,7 +762,7 @@
                             <div class="form-check mb-4">
                                 <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
                                 <label class="form-check-label" for="terms">
-                                    Acepto la <a href="#" target="_blank">Política de Privacidad</a> <span class="required">*</span>
+                                    Acepto la <a href="#" target="_blank" rel="noopener noreferrer">Política de Privacidad</a> <span class="required">*</span>
                                 </label>
                             </div>
                             
@@ -802,7 +803,7 @@
                             <div class="contact-info-content">
                                 <h6>Nuestra sede</h6>
                                 <p>Carrera 13 # 65 - 10<br>Bogotá D.C., Colombia</p>
-                                <a href="https://maps.google.com/?q=Carrera+13+65-10+Bogota" target="_blank" class="small">
+                                <a href="https://maps.google.com/?q=Carrera+13+65-10+Bogota" target="_blank" class="small text-decoration-none" rel="noopener noreferrer">
                                     <i class="fas fa-external-link-alt me-1"></i>Ver en Google Maps
                                 </a>
                             </div>
@@ -818,7 +819,7 @@
                             </iframe>
                             <div class="map-overlay">
                                 <i class="fas fa-directions text-primary"></i>
-                                <a href="https://maps.google.com/?q=Carrera+13+65-10+Bogota" target="_blank">
+                                <a href="https://maps.google.com/?q=Carrera+13+65-10+Bogota" target="_blank" rel="noopener noreferrer">
                                     Cómo llegar
                                 </a>
                             </div>
@@ -853,7 +854,7 @@
                             </div>
                             <div class="contact-info-content">
                                 <h6>WhatsApp</h6>
-                                <a href="https://wa.me/573166712526" target="_blank">(+57) 316 671 2526</a>
+                                <a href="https://wa.me/573166712526" target="_blank" rel="noopener noreferrer">(+57) 316 671 2526</a>
                                 <p class="small text-success mt-1"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Respuesta en minutos</p>
                             </div>
                         </div>
@@ -866,16 +867,16 @@
                             <div class="contact-info-content">
                                 <h6>Síguenos en redes</h6>
                                 <div class="d-flex gap-3 mt-2">
-                                    <a href="#" class="text-decoration-none" aria-label="Facebook">
+                                    <a href="#" class="text-decoration-none" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
                                         <i class="fab fa-facebook fa-lg" style="color: #1877F2;"></i>
                                     </a>
-                                    <a href="#" class="text-decoration-none" aria-label="Instagram">
+                                    <a href="#" class="text-decoration-none" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
                                         <i class="fab fa-instagram fa-lg" style="color: #E4405F;"></i>
                                     </a>
-                                    <a href="#" class="text-decoration-none" aria-label="Pinterest">
+                                    <a href="#" class="text-decoration-none" aria-label="Pinterest" target="_blank" rel="noopener noreferrer">
                                         <i class="fab fa-pinterest fa-lg" style="color: #E60023;"></i>
                                     </a>
-                                    <a href="#" class="text-decoration-none" aria-label="TikTok">
+                                    <a href="#" class="text-decoration-none" aria-label="TikTok" target="_blank" rel="noopener noreferrer">
                                         <i class="fab fa-tiktok fa-lg" style="color: #000;"></i>
                                     </a>
                                 </div>
@@ -988,139 +989,8 @@
         </div>
     </div>
 
-        <footer class="footer-moderno footer-bg text-dark">
-        <div class="container">
-            <div class="row g-4 g-lg-5">
-                
-                <!-- Columna 1: Logo + Redes + Newsletter -->
-                <div class="col-12 col-lg-4">
-                    <div class="footer-brand mb-4">
-                        <img src="{% static 'img/emblema_bodega.png' %}" alt="ORDER R.A.E" class="footer-logo" />
-                        <p class="footer-description text-muted mt-3">
-                            "Diseños hechos con el alma: transformamos cada rincón con piezas únicas, exclusivas y confortables"
-                        </p>
-                    </div>
-                    
-                    <div class="footer-social mb-4">
-                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
-                        <div class="d-flex gap-3">
-                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
-                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="footer-newsletter">
-                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
-                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
-                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
-                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </form>
-                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
-                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
-                        </small>
-                    </div>
-                </div>
-                
-                <!-- Columna 2: Empresa -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">EMPRESA</h6>
-                    <ul class="footer-links list-unstyled">
-                        <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
-                        <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
-                        <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
-                        <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
-                        <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
-                    </ul>
-                </div>
-                
-                <!-- Columna 3: Ayuda -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">AYUDA</h6>
-                    <ul class="footer-links list-unstyled">
-                        <li><a href="#">Preguntas Frecuentes</a></li>
-                        <li><a href="#">Guía de tallas</a></li>
-                        <li><a href="#">Cuidado de muebles</a></li>
-                        <li><a href="#">Política de envíos</a></li>
-                        <li><a href="#">Devoluciones</a></li>
-                    </ul>
-                </div>
-                
-                <!-- Columna 4: Legal -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">LEGAL</h6>
-                    <ul class="footer-links list-unstyled">
-                        <li><a href="#">Términos y Condiciones</a></li>
-                        <li><a href="#">Política de Privacidad</a></li>
-                        <li><a href="#">Política de Cookies</a></li>
-                        <li><a href="#">Accesibilidad Web</a></li>
-                        <li><a href="#">PQRS</a></li>
-                    </ul>
-                </div>
-                
-                <!-- Columna 5: Contacto -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">CONTACTO</h6>
-                    <ul class="footer-contact list-unstyled">
-                        <li class="mb-3">
-                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
-                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
-                        </li>
-                        <li class="mb-3">
-                            <i class="fas fa-clock text-primary me-2"></i>
-                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
-                        </li>
-                        <li class="mb-3">
-                            <i class="fas fa-phone text-primary me-2"></i>
-                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
-                        </li>
-                        <li>
-                            <i class="fab fa-whatsapp text-primary me-2"></i>
-                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <!-- Métodos de pago y certificaciones -->
-            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
-                <div class="row align-items-center g-3">
-                    <div class="col-12 col-lg-6">
-                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
-                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
-                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
-                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
-                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
-                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
-                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6 text-lg-end">
-                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
-                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
-                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
-                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
-                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Copyright + Back to top -->
-            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
-                <p class="mb-0 small text-muted">
-                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
-                </p>
-                <div class="d-flex align-items-center gap-3">
-                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer -->
+    {% include 'partials/footer.html' %}
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1131,9 +1001,9 @@
         {
             "carrito_cantidad": {{ carrito_cantidad|default:0 }},
             "notificaciones_nuevas": {{ notificaciones_nuevas|default:0 }},
-            "enviado": {{ enviado|default:'false' }},
+            "enviado": {{ enviado|yesno:"true,false" }},
             "ticket_number": "{{ ticket_number|default:'ABCD12' }}",
-            "form_data": {{ form_data_json|default:'{}'|safe }},
+            "form_data": {"form_data_json": json.dumps(form_data)},
             "response_times": {
                 "general": "2-4 horas hábiles",
                 "pedido": "1-2 horas hábiles",
@@ -1187,7 +1057,7 @@
             setupEventListeners();
             
             // Si ya fue enviado, mostrar modal
-            if (djangoData.enviado === 'true') {
+            if (djangoData.enviado) {
                 showConfirmationModal();
             }
             

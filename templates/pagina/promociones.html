@@ -16,7 +16,10 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Estilos específicos para esta página -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/estilos_footer.css' %}?v=2.0">
 
     <style>
     /* ═══════════════════════════════════════════════
@@ -77,8 +80,8 @@
         top: -120px; right: -120px;
         width: 550px; height: 550px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(212,175,111,.25) 0%, transparent 70%);
-        animation: heroFloat 6s ease-in-out infinite;
+        background: radial-gradient(ellipse 50% 70% at 85% 50%, rgba(212,175,111,.2) 0%, transparent 70%),
+            url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
     }
     .promo-hero::after {
         content: '';
@@ -86,8 +89,10 @@
         bottom: -80px; left: -80px;
         width: 380px; height: 380px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(255,209,102,.15) 0%, transparent 70%);
-        animation: heroFloat 8s ease-in-out infinite reverse;
+        background:
+        radial-gradient(ellipse 50% 70% at 85% 50%, rgba(212,175,111,.2) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+
     }
 
     @keyframes heroFloat {
@@ -1434,76 +1439,8 @@
 <!-- Back to top -->
 <button class="btt-btn" id="btt"><i class="fas fa-arrow-up"></i></button>
 
-<!-- ══════════════════════════════════════════
-     FOOTER
-══════════════════════════════════════════ -->
-<footer class="footer-moderno footer-bg text-dark">
-    <div class="container">
-        <div class="row g-4 g-lg-5">
-            <div class="col-12 col-lg-4">
-                <div class="footer-brand mb-4">
-                    <img src="{% static 'img/emblema_bodega.png' %}" alt="ORDER R.A.E" class="footer-logo">
-                    <p class="footer-description text-muted mt-3">
-                        "Diseños hechos con el alma: transformamos cada rincón con piezas únicas, exclusivas y confortables"
-                    </p>
-                </div>
-                <div class="footer-social mb-4">
-                    <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
-                    <div class="d-flex gap-3">
-                        <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="social-icon"><i class="fab fa-pinterest-p"></i></a>
-                        <a href="#" class="social-icon"><i class="fab fa-tiktok"></i></a>
-                    </div>
-                </div>
-                <div class="footer-newsletter">
-                    <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
-                    <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
-                        <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
-                        <button type="submit" class="btn btn-newsletter"><i class="fas fa-arrow-right"></i></button>
-                    </form>
-                </div>
-            </div>
-            <div class="col-6 col-lg-2">
-                <h6 class="footer-column-title">EMPRESA</h6>
-                <ul class="footer-links list-unstyled">
-                    <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
-                    <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
-                    <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
-                    <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
-                    <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
-                </ul>
-            </div>
-            <div class="col-6 col-lg-2">
-                <h6 class="footer-column-title">AYUDA</h6>
-                <ul class="footer-links list-unstyled">
-                    <li><a href="#">Preguntas Frecuentes</a></li>
-                    <li><a href="#">Política de envíos</a></li>
-                    <li><a href="#">Devoluciones</a></li>
-                </ul>
-            </div>
-            <div class="col-6 col-lg-2">
-                <h6 class="footer-column-title">LEGAL</h6>
-                <ul class="footer-links list-unstyled">
-                    <li><a href="#">Términos y Condiciones</a></li>
-                    <li><a href="#">Política de Privacidad</a></li>
-                    <li><a href="#">PQRS</a></li>
-                </ul>
-            </div>
-            <div class="col-6 col-lg-2">
-                <h6 class="footer-column-title">CONTACTO</h6>
-                <ul class="footer-contact list-unstyled">
-                    <li class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i><span>Carrera 13 # 65-10, Bogotá</span></li>
-                    <li class="mb-2"><i class="fas fa-phone text-primary me-2"></i><a href="tel:+5717977090" class="text-decoration-none">797 7090</a></li>
-                    <li><i class="fab fa-whatsapp text-primary me-2"></i><a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <p class="mb-0 small text-muted">&copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.</p>
-        </div>
-    </div>
-</footer>
+<!-- FOOTER -->
+{% include 'partials/footer.html' %}
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

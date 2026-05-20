@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>¡Pago confirmado! - ORDER RAE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cafe: #8B5E3C; --cafe-dark: #6B462C; --crema: #FAF6F1;
+            --verde: #2A7A5B; --border: #E8DDD4;
+        }
+        body { background: var(--crema); font-family: 'DM Sans', sans-serif; }
+        .success-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .success-card {
+            background: #fff;
+            border-radius: 2rem;
+            padding: 3rem 2.5rem;
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 12px 56px rgba(139,94,60,.18);
+        }
+        .success-icon {
+            width: 90px; height: 90px;
+            background: #F0FFF6;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem; color: var(--verde);
+        }
+        h1 { font-family: 'Playfair Display', serif; color: #1C1510; }
+        .order-box {
+            background: var(--crema);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .order-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #9B8878; }
+        .order-value { font-size: 1.4rem; font-weight: 800; color: var(--cafe); font-family: monospace; }
+        .btn-home {
+            background: linear-gradient(135deg, var(--cafe), var(--cafe-dark));
+            color: #fff; border: none; border-radius: 1rem;
+            padding: .9rem 2rem; font-weight: 700; font-size: 1rem;
+            width: 100%; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .btn-home:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,94,60,.35); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="success-wrapper">
+    <div class="success-card">
+        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+        <h1>¡Pago confirmado!</h1>
+        <p class="text-muted">Gracias por tu compra en ORDER RAE. Recibirás un correo con los detalles de tu pedido.</p>
+
+        {% if pago %}
+        <div class="order-box">
+            <div class="order-label">Referencia de pago</div>
+            <div class="order-value">{{ pago.payment_intent_id|slice:":20" }}…</div>
+            {% if pago.venta_id %}
+            <hr style="border-color: var(--border); margin: .75rem 0;">
+            <div class="order-label">Número de factura</div>
+            <div class="order-value">FAC-{{ pago.venta_id|stringformat:"06d" }}</div>
+            {% endif %}
+        </div>
+        <p class="small text-muted"><i class="fas fa-calendar-check me-1"></i> Entrega estimada: <strong>3–5 días hábiles</strong></p>
+        {% endif %}
+
+        <a href="{% url 'pagina:home' %}" class="btn-home mt-3">
+            <i class="fas fa-home"></i> Volver al inicio
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-secondary w-100 mt-2">
+            <i class="fas fa-print me-1"></i> Imprimir comprobante
+        </button>
+    </div>
+</div>
+</body>
+</html>

@@ -17,10 +17,14 @@ urlpatterns = [
     path('sostenibilidad/', views.sostenibilidad, name='sostenibilidad'),
     path('trabaja-con-nosotros/', views.trabaja_con_nosotros, name='trabaja_con_nosotros'),
     path('blog-decoracion/', views.blog_decoracion, name='blog_decoracion'),
+    path('pqrs/', views.pqrs, name='pqrs'),
+    path('rastrear-pedido/', views.rastrear_pedido, name='rastrear_pedido'),
+    path('info-ayuda/<slug:slug>/', views.info_ayuda, name='info_ayuda'),
 
     # Checkout
     path('checkout/', views.checkout, name='checkout'),
     path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
+
 
     # Usuario y Autenticación
     path('login/', views.login_view, name='login'),

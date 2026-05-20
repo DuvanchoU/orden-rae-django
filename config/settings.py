@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
+from decouple import config
 
 # ==========================================
 # CARGA DE VARIABLES DE ENTORNO (.env)
@@ -34,6 +35,11 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# ── Stripe (modo PRUEBAS) ─────────────────────────────────────────────
+STRIPE_PUBLIC_KEY     = 'pk_test_51TYVv0CGUP1IqyPzfEb75sDRQnUvbvbIDI9l7YoQv7Wd4xjziycCWgBBwCPeAvRycDLdedk8D1SmKMdXRhh6IXR800PUiOUGls' 
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = 'whsec_TU_SECRETO_WEBHOOK_AQUI'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -54,6 +60,7 @@ INSTALLED_APPS = [
     'produccion',
     'pagina',
     'reports',
+    'pagos',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +87,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+                'pagos.context_processors.stripe_settings',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'ventas.context_processors.carrito_context',
@@ -328,3 +336,4 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+

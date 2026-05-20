@@ -9,7 +9,8 @@ urlpatterns = [
     
     # APLICACIONES PRINCIPALES
     path('', include('pagina.urls')),                
-    path('dashboard/', include('dashboard.urls')), 
+    path('dashboard/', include('dashboard.urls')),
+    path('pagos/', include('pagos.urls', namespace='pagos')),
 
     # OTRAS APLICACIONES
     path('produccion/', include('produccion.urls', namespace='produccion')),

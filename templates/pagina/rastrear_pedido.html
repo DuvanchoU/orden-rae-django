@@ -1,0 +1,629 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rastrear Pedido - ORDER RAE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/estilos_footer.css' %}?v=2.0">
+<style>
+:root{--cafe:#8B5E3C;--cafe-dark:#6B462C;--cafe-light:#C49A6C;--crema:#FAF6F1;--crema-dark:#F0E8DC;--gold:#D4AF6F;--gold-light:#F5D78C;--verde:#2A7A5B;--verde-light:#E8F8F1;--rojo:#C94040;--azul:#1D6FA8;--azul-light:#E8F4FD;--text-dark:#1C1510;--text-mid:#5C4A38;--text-light:#9B8878;--border:#E8DDD4;--shadow-soft:0 2px 24px rgba(139,94,60,.10);--shadow-md:0 8px 36px rgba(139,94,60,.16);--r-md:16px;--r-lg:24px;--r-xl:36px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--crema);font-family:'Outfit',sans-serif;color:var(--text-dark);overflow-x:hidden}
+
+/* HERO */
+.track-hero{background:linear-gradient(135deg,var(--cafe-dark) 0%,var(--cafe) 55%,var(--cafe-light) 100%);padding:5rem 0 7rem;position:relative;overflow:hidden;text-align:center;color:#fff}
+.track-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")}
+.hero-wave{position:absolute;bottom:-2px;left:0;right:0;line-height:0}
+.hero-badge{display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:var(--gold-light);padding:.4rem 1.1rem;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.25rem}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,5vw,4rem);font-style:italic;line-height:1.1;margin-bottom:.75rem}
+.hero-title strong{font-style:normal;color:var(--gold-light);font-family:'Outfit',sans-serif;font-weight:700}
+.hero-desc{color:rgba(255,255,255,.85);max-width:500px;margin:0 auto;line-height:1.7}
+
+/* SEARCH CARD — flotante sobre el hero */
+.search-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-md);padding:2.25rem 2.5rem;margin-top:-3rem;position:relative;z-index:10;margin-bottom:2.5rem}
+.search-card h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--text-dark);font-style:italic;margin-bottom:.3rem}
+.search-card p{font-size:.88rem;color:var(--text-light);margin-bottom:1.5rem}
+.field-label{display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-mid);margin-bottom:.5rem}
+.field-label .req{color:var(--rojo)}
+.field-input{width:100%;border:1.5px solid var(--border);border-radius:var(--r-md);padding:.8rem 1.1rem;font-size:.95rem;font-family:'Outfit',sans-serif;color:var(--text-dark);background:var(--crema);outline:none;transition:all .22s;-webkit-appearance:none}
+.field-input:focus{border-color:var(--cafe);background:#fff;box-shadow:0 0 0 3px rgba(139,94,60,.1)}
+.field-input.error{border-color:var(--rojo)}
+.btn-buscar{width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem;background:linear-gradient(135deg,var(--cafe),var(--cafe-dark));border:none;border-radius:var(--r-md);padding:.9rem;font-size:1rem;font-weight:700;color:#fff;cursor:pointer;transition:all .25s;font-family:'Outfit',sans-serif;margin-top:1.25rem}
+.btn-buscar:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,94,60,.35)}
+.btn-buscar:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-buscar.loading .btn-text{display:none}
+.btn-buscar.loading::after{content:'';width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* RESULTADO */
+.result-area{display:none}
+.result-area.visible{display:block;animation:fadeSlide .4s cubic-bezier(.16,1,.3,1)}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Header del pedido */
+.order-header{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);padding:2rem 2.5rem;box-shadow:var(--shadow-soft);margin-bottom:1.5rem}
+.order-number{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--text-dark);font-style:italic;margin-bottom:.25rem}
+.order-date{font-size:.83rem;color:var(--text-light)}
+.status-pill{display:inline-flex;align-items:center;gap:.45rem;padding:.4rem 1.1rem;border-radius:999px;font-size:.8rem;font-weight:700;margin-top:.75rem}
+.sp-produccion{background:#FFFBEB;color:#92400E;border:1px solid #FCD34D}
+.sp-listo{background:var(--azul-light);color:var(--azul);border:1px solid #93C5FD}
+.sp-enviado{background:#EEF2FF;color:#3730A3;border:1px solid #A5B4FC}
+.sp-entregado{background:var(--verde-light);color:var(--verde);border:1px solid #6EE7B7}
+.sp-cancelado{background:#FFF0F0;color:var(--rojo);border:1px solid #FCA5A5}
+
+/* Timeline de estado */
+.track-timeline{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);padding:2rem 2.5rem;box-shadow:var(--shadow-soft);margin-bottom:1.5rem}
+.track-steps{position:relative}
+.track-steps::before{content:'';position:absolute;left:20px;top:0;bottom:0;width:2px;background:var(--border)}
+.track-step{display:flex;align-items:flex-start;gap:1.25rem;padding:1rem 0;position:relative}
+.track-step:last-child{padding-bottom:0}
+.step-dot{width:42px;height:42px;border-radius:50%;border:2px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;position:relative;z-index:2;transition:all .3s}
+.step-dot.done{background:var(--verde);border-color:var(--verde);color:#fff}
+.step-dot.active{background:var(--cafe);border-color:var(--cafe);color:#fff;box-shadow:0 0 0 5px rgba(139,94,60,.12);animation:pulse 2s ease-in-out infinite}
+.step-dot.pending{background:var(--crema-dark);border-color:var(--border);color:var(--text-light)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 5px rgba(139,94,60,.12)}50%{box-shadow:0 0 0 9px rgba(139,94,60,.04)}}
+.step-content{}
+.step-title{font-weight:700;font-size:.95rem;color:var(--text-dark);margin-bottom:.2rem}
+.step-dot.pending ~ .step-content .step-title{color:var(--text-light)}
+.step-subtitle{font-size:.82rem;color:var(--text-light)}
+.step-date{font-size:.75rem;color:var(--text-light);margin-top:.15rem;display:flex;align-items:center;gap:.35rem}
+.step-date i{font-size:.7rem}
+.step-badge-new{display:inline-block;background:var(--cafe);color:#fff;font-size:.65rem;font-weight:800;padding:.15rem .55rem;border-radius:999px;text-transform:uppercase;letter-spacing:.06em;margin-left:.5rem;vertical-align:middle}
+
+/* Detalles del pedido */
+.order-details{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);padding:2rem 2.5rem;box-shadow:var(--shadow-soft);margin-bottom:1.5rem}
+.detail-section-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--text-light);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.detail-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;font-size:.88rem;padding:.5rem 0;border-bottom:1px dashed var(--border)}
+.detail-row:last-child{border-bottom:none}
+.detail-key{color:var(--text-light)}
+.detail-val{font-weight:600;color:var(--text-dark);text-align:right;max-width:55%}
+
+/* Productos del pedido */
+.product-line{display:flex;align-items:center;gap:1rem;padding:.85rem 0;border-bottom:1px dashed var(--border)}
+.product-line:last-child{border-bottom:none}
+.product-thumb{width:60px;height:60px;border-radius:var(--r-md);object-fit:cover;background:var(--crema-dark);flex-shrink:0}
+.product-name{font-weight:600;font-size:.9rem;color:var(--text-dark);margin-bottom:.15rem}
+.product-meta{font-size:.78rem;color:var(--text-light)}
+.product-price{font-weight:700;font-size:.9rem;color:var(--cafe);margin-left:auto;white-space:nowrap}
+
+/* Entrega info */
+.delivery-card{background:var(--verde-light);border:1px solid rgba(42,122,91,.2);border-radius:var(--r-lg);padding:1.25rem 1.5rem;display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}
+.delivery-icon{width:44px;height:44px;border-radius:50%;background:var(--verde);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0}
+.delivery-title{font-weight:700;font-size:.95rem;color:var(--verde);margin-bottom:.2rem}
+.delivery-sub{font-size:.83rem;color:#276749}
+
+.shipping-card{background:var(--azul-light);border:1px solid rgba(29,111,168,.2);border-radius:var(--r-lg);padding:1.25rem 1.5rem;display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.5rem}
+.shipping-icon{width:44px;height:44px;border-radius:50%;background:var(--azul);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0}
+.shipping-title{font-weight:700;font-size:.95rem;color:var(--azul);margin-bottom:.2rem}
+.shipping-sub{font-size:.83rem;color:#1E4D7B}
+.tracking-number{font-family:monospace;background:#fff;border:1px solid rgba(29,111,168,.25);border-radius:.5rem;padding:.25rem .75rem;font-size:.88rem;font-weight:700;color:var(--azul);display:inline-block;margin-top:.35rem;letter-spacing:.06em}
+
+/* Acciones */
+.action-bar{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1.25rem}
+.btn-action{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.4rem;border-radius:var(--r-md);font-size:.86rem;font-weight:600;cursor:pointer;transition:all .22s;text-decoration:none;font-family:'Outfit',sans-serif}
+.btn-primary-action{background:linear-gradient(135deg,var(--cafe),var(--cafe-dark));color:#fff;border:none}
+.btn-primary-action:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,94,60,.3);color:#fff}
+.btn-secondary-action{background:#fff;color:var(--text-mid);border:1.5px solid var(--border)}
+.btn-secondary-action:hover{border-color:var(--cafe);color:var(--cafe)}
+.btn-wa-action{background:#25D366;color:#fff;border:none}
+.btn-wa-action:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,211,102,.3);color:#fff}
+
+/* Estado no encontrado */
+.not-found-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);padding:3rem 2rem;text-align:center;box-shadow:var(--shadow-soft)}
+.not-found-icon{width:72px;height:72px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:1.8rem;color:var(--text-light)}
+
+/* ETA banner */
+.eta-banner{background:linear-gradient(135deg,rgba(139,94,60,.08),rgba(212,175,111,.1));border:1px solid rgba(212,175,111,.4);border-radius:var(--r-lg);padding:1.1rem 1.5rem;display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+.eta-icon{font-size:1.5rem;flex-shrink:0}
+.eta-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);font-weight:700}
+.eta-date{font-weight:700;font-size:1.1rem;color:var(--cafe)}
+.eta-sub{font-size:.8rem;color:var(--text-light)}
+
+/* Notificaciones */
+.notif-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);padding:2rem 2.5rem;box-shadow:var(--shadow-soft);margin-bottom:1.5rem}
+.notif-title{font-weight:700;font-size:.95rem;color:var(--text-dark);margin-bottom:1rem}
+.notif-options{display:flex;flex-direction:column;gap:.65rem}
+.notif-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1rem;background:var(--crema);border-radius:var(--r-md)}
+.notif-label{font-size:.88rem;color:var(--text-mid)}
+.toggle-switch{position:relative;width:42px;height:24px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:12px;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input:checked+.toggle-slider{background:var(--cafe)}
+input:checked+.toggle-slider::before{transform:translateX(18px)}
+
+/* Print */
+@media print{.no-print{display:none!important}.result-area{display:block!important}}
+.toast-stack{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;pointer-events:none}
+.toast-item{background:var(--text-dark);color:#fff;border-radius:var(--r-md);padding:.85rem 1.2rem;display:flex;align-items:center;gap:.75rem;min-width:260px;pointer-events:auto;animation:toastIn .35s cubic-bezier(.16,1,.3,1)}
+.toast-item.success{border-left:4px solid var(--verde)}.toast-item.error{border-left:4px solid var(--rojo)}.toast-item.info{border-left:4px solid #60a5fa}.toast-item.warning{border-left:4px solid var(--gold)}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.whatsapp-float{position:fixed;bottom:2rem;left:2rem;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:all .3s;z-index:100;text-decoration:none}
+.whatsapp-float:hover{transform:scale(1.1)}
+@media(max-width:576px){.search-card{padding:1.5rem}.order-header,.order-details,.track-timeline,.notif-card{padding:1.5rem 1.25rem}.action-bar{flex-direction:column}.btn-action{width:100%;justify-content:center}}
+</style>
+</head>
+<body>
+{% include 'partials/header.html' %}
+
+<section class="track-hero">
+    <div class="hero-wave"><svg viewBox="0 0 1440 70" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" fill="var(--crema)"/></svg></div>
+    <div class="container" style="position:relative;z-index:1;" data-aos="fade-up">
+        <div class="hero-badge"><i class="fas fa-map-marker-alt"></i> Rastreo en tiempo real</div>
+        <h1 class="hero-title">Rastrea tu <strong>pedido</strong></h1>
+        <p class="hero-desc">Sigue el estado de tu mueble desde la producción hasta la instalación en tu hogar.</p>
+    </div>
+</section>
+
+<div class="container no-print" style="max-width:820px;padding:0 1.5rem 5rem;">
+
+    <!-- FORMULARIO DE BÚSQUEDA -->
+    <div class="search-card" data-aos="fade-up">
+        <h2>Buscar mi pedido</h2>
+        <p>Ingresa tu número de orden y el correo con el que realizaste la compra.</p>
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="field-label">Número de orden <span class="req">*</span></label>
+                <input type="text" class="field-input" id="f-orden" placeholder="ORD-2025-0123"
+                       value="{{ query_orden|default:'' }}"
+                       oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div class="col-md-5">
+                <label class="field-label">Correo electrónico <span class="req">*</span></label>
+                <input type="email" class="field-input" id="f-email" placeholder="tu@correo.com"
+                       value="{{ query_email|default:'' }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn-buscar" id="btn-buscar" onclick="buscarPedido()" style="margin-top:0;">
+                    <span class="btn-text"><i class="fas fa-search"></i></span>
+                </button>
+            </div>
+        </div>
+        <div style="margin-top:1rem;font-size:.8rem;color:var(--text-light);">
+            <i class="fas fa-info-circle me-1"></i>
+            Tu número de orden está en el correo de confirmación de compra (formato ORD-AAAA-XXXX).
+        </div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div class="result-area" id="result-area">
+
+        <!-- Pedido no encontrado -->
+        <div class="not-found-card" id="not-found" style="display:none;">
+            <div class="not-found-icon"><i class="fas fa-search"></i></div>
+            <h3 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-style:italic;margin-bottom:.5rem;">Pedido no encontrado</h3>
+            <p style="color:var(--text-light);font-size:.9rem;max-width:400px;margin:0 auto 1.5rem;">Verifica que el número de orden y el correo sean correctos. Si el problema persiste, contáctanos.</p>
+            <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+                <a href="https://wa.me/573166712526" target="_blank" class="btn-action btn-wa-action"><i class="fab fa-whatsapp"></i> Ayuda por WhatsApp</a>
+                <a href="{% url 'pagina:pqrs' %}" class="btn-action btn-secondary-action"><i class="fas fa-comments"></i> Abrir PQRS</a>
+            </div>
+        </div>
+
+        <!-- Pedido encontrado -->
+        <div id="order-result" style="display:none;">
+
+            <!-- ETA -->
+            <div class="eta-banner" id="eta-banner">
+                <div class="eta-icon">📦</div>
+                <div>
+                    <div class="eta-label">Entrega estimada</div>
+                    <div class="eta-date" id="eta-date">—</div>
+                    <div class="eta-sub" id="eta-sub">Calculando...</div>
+                </div>
+            </div>
+
+            <!-- Header pedido -->
+            <div class="order-header">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+                    <div>
+                        <div class="order-number" id="ord-number">ORD-2025-0000</div>
+                        <div class="order-date" id="ord-date">Realizado el —</div>
+                        <div id="ord-status-pill"></div>
+                    </div>
+                    <div class="action-bar" style="margin-top:0;">
+                        <button class="btn-action btn-secondary-action" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                        <button class="btn-action btn-secondary-action" onclick="copiarSeguimiento()"><i class="fas fa-copy"></i> Copiar enlace</button>
+                        <a id="wa-support" href="#" target="_blank" class="btn-action btn-wa-action"><i class="fab fa-whatsapp"></i> Soporte</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping info (si aplica) -->
+            <div class="shipping-card" id="shipping-banner" style="display:none;">
+                <div class="shipping-icon"><i class="fas fa-truck"></i></div>
+                <div>
+                    <div class="shipping-title">En camino con <span id="courier-name">—</span></div>
+                    <div class="shipping-sub">Número de guía: <span class="tracking-number" id="guia-number">—</span></div>
+                    <div style="margin-top:.5rem;"><a id="courier-link" href="#" target="_blank" style="font-size:.82rem;color:var(--azul);font-weight:600;">Rastrear en la transportadora <i class="fas fa-external-link-alt" style="font-size:.7rem;"></i></a></div>
+                </div>
+            </div>
+
+            <!-- Entrega confirmada (si aplica) -->
+            <div class="delivery-card" id="delivery-banner" style="display:none;">
+                <div class="delivery-icon"><i class="fas fa-check"></i></div>
+                <div>
+                    <div class="delivery-title">¡Pedido entregado!</div>
+                    <div class="delivery-sub" id="delivery-date">Entregado el —</div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="track-timeline">
+                <div style="font-weight:700;font-size:1rem;color:var(--text-dark);margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;">
+                    <i class="fas fa-route" style="color:var(--cafe);"></i> Estado del pedido
+                    <button onclick="refrescarPedido()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:var(--r-md);padding:.35rem .85rem;font-size:.78rem;font-weight:600;color:var(--text-mid);cursor:pointer;display:flex;align-items:center;gap:.4rem;font-family:'Outfit',sans-serif;transition:all .2s;" onmouseover="this.style.borderColor='var(--cafe)';this.style.color='var(--cafe)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-mid)'">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+                <div class="track-steps" id="track-steps">
+                    <!-- Se llena dinámicamente con JS -->
+                </div>
+            </div>
+
+            <!-- Detalles del pedido -->
+            <div class="order-details">
+                <!-- Productos -->
+                <div class="detail-section-title"><i class="fas fa-box" style="color:var(--cafe);"></i> Productos</div>
+                <div id="products-list"></div>
+
+                <!-- Resumen económico -->
+                <div class="detail-section-title" style="margin-top:1.75rem;"><i class="fas fa-receipt" style="color:var(--cafe);"></i> Resumen de pago</div>
+                <div class="detail-row"><span class="detail-key">Subtotal productos</span><span class="detail-val" id="s-subtotal">—</span></div>
+                <div class="detail-row"><span class="detail-key">Envío e instalación</span><span class="detail-val" id="s-envio">—</span></div>
+                <div class="detail-row"><span class="detail-key">Descuento aplicado</span><span class="detail-val" id="s-descuento" style="color:var(--verde);">—</span></div>
+                <div class="detail-row" style="border-bottom:none;"><span class="detail-key" style="font-weight:700;color:var(--text-dark);">Total pagado</span><span class="detail-val" id="s-total" style="font-size:1.05rem;color:var(--cafe);">—</span></div>
+
+                <!-- Envío -->
+                <div class="detail-section-title" style="margin-top:1.75rem;"><i class="fas fa-map-marker-alt" style="color:var(--cafe);"></i> Dirección de entrega</div>
+                <div class="detail-row"><span class="detail-key">Destinatario</span><span class="detail-val" id="s-destinatario">—</span></div>
+                <div class="detail-row"><span class="detail-key">Dirección</span><span class="detail-val" id="s-direccion">—</span></div>
+                <div class="detail-row"><span class="detail-key">Ciudad</span><span class="detail-val" id="s-ciudad">—</span></div>
+                <div class="detail-row"><span class="detail-key">Teléfono de contacto</span><span class="detail-val" id="s-telefono">—</span></div>
+                <div class="detail-row" style="border-bottom:none;"><span class="detail-key">Método de pago</span><span class="detail-val" id="s-pago">—</span></div>
+            </div>
+
+            <!-- Notificaciones -->
+            <div class="notif-card">
+                <div class="notif-title"><i class="fas fa-bell me-2" style="color:var(--cafe);"></i> Notificaciones de seguimiento</div>
+                <div class="notif-options">
+                    <div class="notif-row"><span class="notif-label"><i class="fas fa-envelope me-2" style="color:var(--cafe);"></i>Correo electrónico</span><label class="toggle-switch"><input type="checkbox" id="notif-email" checked><span class="toggle-slider"></span></label></div>
+                    <div class="notif-row"><span class="notif-label"><i class="fab fa-whatsapp me-2" style="color:#25D366;"></i>WhatsApp</span><label class="toggle-switch"><input type="checkbox" id="notif-wa"><span class="toggle-slider"></span></label></div>
+                    <div class="notif-row"><span class="notif-label"><i class="fas fa-sms me-2" style="color:var(--azul);"></i>SMS</span><label class="toggle-switch"><input type="checkbox" id="notif-sms"><span class="toggle-slider"></span></label></div>
+                </div>
+                <button onclick="guardarNotificaciones()" style="margin-top:1rem;padding:.55rem 1.35rem;background:var(--crema-dark);border:1px solid var(--border);border-radius:var(--r-md);font-size:.83rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;color:var(--text-mid);transition:all .2s;" onmouseover="this.style.background='var(--cafe)';this.style.color='#fff';this.style.borderColor='var(--cafe)'" onmouseout="this.style.background='var(--crema-dark)';this.style.color='var(--text-mid)';this.style.borderColor='var(--border)'">
+                    <i class="fas fa-save me-1"></i> Guardar preferencias
+                </button>
+            </div>
+
+            <!-- Acciones finales -->
+            <div class="action-bar" style="justify-content:center;margin-bottom:3rem;">
+                <a href="{% url 'pagina:productos' %}" class="btn-action btn-primary-action"><i class="fas fa-shopping-bag"></i> Ver más productos</a>
+                <a href="{% url 'pagina:pqrs' %}" class="btn-action btn-secondary-action"><i class="fas fa-comments"></i> ¿Algún problema?</a>
+                <button onclick="nuevaBusqueda()" class="btn-action btn-secondary-action"><i class="fas fa-search"></i> Buscar otro pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips / Ayuda -->
+    <div class="row g-3 no-print" style="margin-top:1.5rem;" data-aos="fade-up">
+        <div class="col-md-4">
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:1.5rem;text-align:center;box-shadow:var(--shadow-soft);">
+                <div style="width:48px;height:48px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;font-size:1.1rem;color:var(--cafe);"><i class="fas fa-envelope"></i></div>
+                <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Confirmación por correo</div>
+                <div style="font-size:.8rem;color:var(--text-light);">Revisa tu bandeja de entrada y spam por el correo de confirmación con tu número de orden.</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:1.5rem;text-align:center;box-shadow:var(--shadow-soft);">
+                <div style="width:48px;height:48px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;font-size:1.1rem;color:var(--cafe);"><i class="fas fa-clock"></i></div>
+                <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">Tiempos de producción</div>
+                <div style="font-size:.8rem;color:var(--text-light);">Muebles a medida toman 15–30 días hábiles. Productos en stock: 2–5 días.</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div style="background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:1.5rem;text-align:center;box-shadow:var(--shadow-soft);">
+                <div style="width:48px;height:48px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;font-size:1.1rem;color:var(--cafe);"><i class="fab fa-whatsapp" style="color:#25D366;"></i></div>
+                <div style="font-weight:700;font-size:.9rem;margin-bottom:.3rem;">¿Necesitas ayuda?</div>
+                <div style="font-size:.8rem;color:var(--text-light);">Escríbenos por WhatsApp al (+57) 316 671 2526. Atención L–S 9am–6pm.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+{% include 'partials/footer.html' %}
+<a href="https://wa.me/573166712526" target="_blank" class="whatsapp-float no-print"><i class="fab fa-whatsapp"></i></a>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/header.js' %}"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<!-- Datos pasados desde Django -->
+<script id="track-data" type="application/json">
+{
+    "query_orden": "{{ query_orden|default:''|escapejs }}",
+    "query_email": "{{ query_email|default:''|escapejs }}",
+    "pedido": {% if pedido %}{{ pedido_json|safe }}{% else %}null{% endif %}
+}
+</script>
+
+<script>
+AOS.init({duration:700,once:true,offset:60});
+
+/* ══════════════════════════════════════════════
+   DATOS DE ESTADO
+   Los iconos/textos de cada etapa del timeline
+═══════════════════════════════════════════════ */
+const STEPS_CONFIG = [
+    { key:'confirmado',   icon:'fa-check',           label:'Pedido confirmado',      sub:'Pago verificado y orden registrada' },
+    { key:'produccion',   icon:'fa-tools',            label:'En producción',          sub:'Tu mueble está siendo fabricado' },
+    { key:'calidad',      icon:'fa-clipboard-check',  label:'Control de calidad',     sub:'Inspección final de acabados' },
+    { key:'listo',        icon:'fa-box',              label:'Listo para despacho',    sub:'Empacado y preparado para envío' },
+    { key:'enviado',      icon:'fa-truck',            label:'En camino',              sub:'Con transportadora en ruta' },
+    { key:'entregado',    icon:'fa-home',             label:'Entregado',              sub:'Instalado en tu hogar' },
+];
+
+const STATUS_PILLS = {
+    confirmado: {cls:'sp-produccion', text:'Pedido confirmado'},
+    produccion: {cls:'sp-produccion', text:'En producción'},
+    calidad:    {cls:'sp-produccion', text:'Control de calidad'},
+    listo:      {cls:'sp-listo',      text:'Listo para despacho'},
+    enviado:    {cls:'sp-enviado',    text:'En tránsito'},
+    entregado:  {cls:'sp-entregado',  text:'Entregado'},
+    cancelado:  {cls:'sp-cancelado',  text:'Cancelado'},
+};
+
+async function buscarPedido() {
+    const orden = document.getElementById('f-orden').value.trim().toUpperCase();
+    const email = document.getElementById('f-email').value.trim().toLowerCase();
+
+    // Validaciones
+    if (!orden) { showToast('Ingresa el número de orden','warning'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Ingresa un correo válido','warning'); return; }
+
+    const btn = document.getElementById('btn-buscar');
+    btn.classList.add('loading'); btn.disabled = true;
+
+    try {
+        /* 
+         * INTEGRACIÓN CON DJANGO:
+         * Reemplaza la demo de abajo con:
+         *   const res = await fetch(`/api/rastrear-pedido/?orden=${orden}&email=${encodeURIComponent(email)}`);
+         *   const data = await res.json();
+         *   if (!data.found) { mostrarNoEncontrado(); return; }
+         *   mostrarPedido(data.pedido);
+         */
+        await new Promise(r => setTimeout(r, 900)); // Simula latencia
+
+        // Demo: genera datos de muestra según el número ingresado
+        const demo = generarDemoPedido(orden, email);
+        if (!demo) { mostrarNoEncontrado(); return; }
+        mostrarPedido(demo);
+
+        // Actualizar URL con parámetros (permite compartir/bookmarkear)
+        const url = new URL(window.location);
+        url.searchParams.set('orden', orden);
+        url.searchParams.set('email', email);
+        window.history.pushState({}, '', url);
+
+    } catch(e) {
+        showToast('Error de conexión. Intenta de nuevo.', 'error');
+    } finally {
+        btn.classList.remove('loading'); btn.disabled = false;
+    }
+}
+
+/* Demo: en producción elimina esta función y usa datos reales del backend */
+function generarDemoPedido(orden, email) {
+    if (!orden.startsWith('ORD')) return null;
+    const seed = orden.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % 6;
+    const estados = ['confirmado','produccion','calidad','listo','enviado','entregado'];
+    const estado = estados[seed];
+    const hoy = new Date();
+    const fechaPedido = new Date(hoy.getTime() - (seed+1)*4*86400000);
+    const fechaETA    = new Date(hoy.getTime() + (5-seed)*2*86400000);
+    return {
+        orden, email,
+        estado,
+        fecha_pedido: fechaPedido.toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'}),
+        eta:          estado === 'entregado' ? null : fechaETA.toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+        fecha_entrega: estado === 'entregado' ? hoy.toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'}) : null,
+        courier: estado === 'enviado' ? 'Coordinadora' : null,
+        guia: estado === 'enviado' ? 'COO-' + Math.random().toString(36).slice(2,10).toUpperCase() : null,
+        courier_url: estado === 'enviado' ? 'https://www.coordinadora.com' : null,
+        eventos: generarEventos(estado, fechaPedido),
+        productos: [
+            { nombre:'Sofá Fátima 3 puestos — Beige Arena', cantidad:1, precio:'$1.890.000', img:'' },
+            { nombre:'Mesa de centro Roble — Natural', cantidad:1, precio:'$680.000', img:'' },
+        ],
+        subtotal:    '$2.570.000',
+        envio:       'Gratis',
+        descuento:   '-$257.000',
+        total:       '$2.313.000',
+        destinatario:'María González',
+        direccion:   'Cra 15 #87-32 Apto 401',
+        ciudad:      'Bogotá D.C.',
+        telefono:    '+57 310 456 7890',
+        pago:        'Tarjeta de crédito Visa ****1234',
+    };
+}
+
+function generarEventos(estado, fechaInicio) {
+    const estados = ['confirmado','produccion','calidad','listo','enviado','entregado'];
+    const idx = estados.indexOf(estado);
+    return estados.slice(0, idx+1).map((e, i) => {
+        const d = new Date(fechaInicio.getTime() + i*2*86400000);
+        return { step: e, fecha: d.toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'}), hora: `${8+i*2}:${String(Math.floor(Math.random()*59)).padStart(2,'0')}` };
+    });
+}
+
+function mostrarNoEncontrado() {
+    document.getElementById('result-area').classList.add('visible');
+    document.getElementById('not-found').style.display = 'block';
+    document.getElementById('order-result').style.display = 'none';
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+    showToast('Pedido no encontrado. Verifica los datos.', 'error');
+}
+
+function mostrarPedido(p) {
+    document.getElementById('result-area').classList.add('visible');
+    document.getElementById('not-found').style.display = 'none';
+    document.getElementById('order-result').style.display = 'block';
+
+    // Header
+    document.getElementById('ord-number').textContent = p.orden;
+    document.getElementById('ord-date').textContent = `Realizado el ${p.fecha_pedido}`;
+
+    const sp = STATUS_PILLS[p.estado] || STATUS_PILLS.confirmado;
+    document.getElementById('ord-status-pill').innerHTML =
+        `<span class="status-pill ${sp.cls}"><i class="fas fa-circle" style="font-size:.5rem;"></i> ${sp.text}</span>`;
+
+    // ETA
+    if (p.eta) {
+        document.getElementById('eta-date').textContent = p.eta;
+        document.getElementById('eta-sub').textContent = 'Sujeto a disponibilidad del transportista';
+        document.getElementById('eta-banner').style.display = 'flex';
+        document.getElementById('delivery-banner').style.display = 'none';
+    } else if (p.estado === 'entregado') {
+        document.getElementById('eta-banner').style.display = 'none';
+        document.getElementById('delivery-banner').style.display = 'flex';
+        document.getElementById('delivery-date').textContent = `Entregado el ${p.fecha_entrega}`;
+    } else {
+        document.getElementById('eta-banner').style.display = 'none';
+    }
+
+    // Shipping banner
+    if (p.courier) {
+        document.getElementById('courier-name').textContent = p.courier;
+        document.getElementById('guia-number').textContent = p.guia;
+        document.getElementById('courier-link').href = p.courier_url || '#';
+        document.getElementById('shipping-banner').style.display = 'flex';
+    } else {
+        document.getElementById('shipping-banner').style.display = 'none';
+    }
+
+    // WhatsApp support link
+    const waMsg = encodeURIComponent(`Hola, tengo consulta sobre mi pedido ${p.orden}`);
+    document.getElementById('wa-support').href = `https://wa.me/573166712526?text=${waMsg}`;
+
+    // Timeline
+    const stepsEl = document.getElementById('track-steps');
+    stepsEl.innerHTML = '';
+    const stepIdx = STEPS_CONFIG.findIndex(s=>s.key===p.estado);
+
+    STEPS_CONFIG.forEach((step, i) => {
+        const evento = (p.eventos||[]).find(e=>e.step===step.key);
+        let dotClass = 'pending';
+        if (i < stepIdx) dotClass = 'done';
+        else if (i === stepIdx) dotClass = 'active';
+
+        const isNew = i === stepIdx;
+        stepsEl.innerHTML += `
+        <div class="track-step">
+            <div class="step-dot ${dotClass}">
+                <i class="fas ${i <= stepIdx ? step.icon : 'fa-circle'}" style="font-size:${i<=stepIdx?'.85rem':'.4rem'};"></i>
+            </div>
+            <div class="step-content">
+                <div class="step-title">
+                    ${step.label}
+                    ${isNew ? '<span class="step-badge-new">Ahora</span>' : ''}
+                </div>
+                <div class="step-subtitle" style="${i<=stepIdx?'':'color:var(--text-light);'}">${step.sub}</div>
+                ${evento ? `<div class="step-date"><i class="fas fa-calendar-alt"></i>${evento.fecha} · ${evento.hora}</div>` : ''}
+            </div>
+        </div>`;
+    });
+
+    // Productos
+    const prodEl = document.getElementById('products-list');
+    prodEl.innerHTML = '';
+    (p.productos||[]).forEach(prod => {
+        prodEl.innerHTML += `
+        <div class="product-line">
+            <div class="product-thumb" style="background:var(--crema-dark);display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:1.3rem;"><i class="fas fa-couch"></i></div>
+            <div>
+                <div class="product-name">${prod.nombre}</div>
+                <div class="product-meta">Cant: ${prod.cantidad}</div>
+            </div>
+            <div class="product-price">${prod.precio}</div>
+        </div>`;
+    });
+
+    // Resumen pago
+    ['subtotal','envio','descuento','total','destinatario','direccion','ciudad','telefono','pago'].forEach(k=>{
+        const el = document.getElementById(`s-${k}`);
+        if(el) el.textContent = p[k] || '—';
+    });
+
+    document.getElementById('result-area').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function refrescarPedido() {
+    const orden = document.getElementById('f-orden').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    if(orden && email) { buscarPedido(); showToast('Actualizando estado...','info'); }
+}
+
+function nuevaBusqueda() {
+    document.getElementById('result-area').classList.remove('visible');
+    document.getElementById('order-result').style.display = 'none';
+    document.getElementById('not-found').style.display = 'none';
+    document.getElementById('f-orden').value = '';
+    document.getElementById('f-email').value = '';
+    document.getElementById('f-orden').focus();
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function copiarSeguimiento() {
+    navigator.clipboard.writeText(window.location.href).then(()=>showToast('Enlace copiado al portapapeles','success'));
+}
+
+function guardarNotificaciones() {
+    const prefs = {
+        email: document.getElementById('notif-email').checked,
+        wa:    document.getElementById('notif-wa').checked,
+        sms:   document.getElementById('notif-sms').checked,
+    };
+    localStorage.setItem('notif_prefs', JSON.stringify(prefs));
+    showToast('Preferencias guardadas','success');
+}
+
+// Si Django ya tiene la query en el contexto, ejecutar automáticamente
+const trackData = JSON.parse(document.getElementById('track-data').textContent||'{}');
+if (trackData.pedido) {
+    mostrarPedido(trackData.pedido);
+} else if (trackData.query_orden && trackData.query_email) {
+    document.getElementById('f-orden').value  = trackData.query_orden;
+    document.getElementById('f-email').value  = trackData.query_email;
+    buscarPedido();
+}
+
+// Cargar preferencias notificaciones
+const savedPrefs = localStorage.getItem('notif_prefs');
+if(savedPrefs){const p=JSON.parse(savedPrefs);document.getElementById('notif-email').checked=p.email??true;document.getElementById('notif-wa').checked=p.wa??false;document.getElementById('notif-sms').checked=p.sms??false;}
+
+// Enter para buscar
+['f-orden','f-email'].forEach(id=>document.getElementById(id)?.addEventListener('keydown',e=>{if(e.key==='Enter')buscarPedido();}));
+
+window.showToast=function(msg,type='info'){
+    const icons={success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle',warning:'fa-exclamation-triangle'};
+    const stack=document.getElementById('toast-stack');
+    const t=document.createElement('div');
+    t.className=`toast-item ${type}`;
+    t.innerHTML=`<i class="fas ${icons[type]||icons.info}" style="font-size:.95rem;"></i><span style="flex:1;font-size:.85rem;font-weight:500;">${msg}</span>`;
+    stack.appendChild(t);
+    setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';t.style.transform='translateY(8px)';setTimeout(()=>t.remove(),320);},3800);
+};
+</script>
+</body>
+</html>

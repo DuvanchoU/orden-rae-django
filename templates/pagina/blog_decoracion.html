@@ -1,406 +1,321 @@
 {% load static %}
 {% load humanize %}
 {% load custom_auth %}
-
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Quiénes Somos - ORDEN RAE</title>
-    <meta name="description" content="Conoce al equipo detrás de ORDER RAE: artesanos colombianos dedicados a crear muebles únicos desde 2015.">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
-    
-    <!-- Bootstrap + Font Awesome -->
+    <title>Blog de Decoración - ORDER RAE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    
-    <!-- AOS Animation Library -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    
-    <!-- Tu CSS -->
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
-    
-    <!-- Estilos específicos -->
-    <style>
-        :root {
-            --color-primario: #8B5E3C;
-            --color-primario-dark: #6B462C;
-            --color-secundario: #7A4B32;
-            --color-acento: #ffd166;
-            --color-exito: #06d6a0;
-            --bg-primary: #ffffff;
-            --bg-secondary: #f8f9fa;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --border-color: #dee2e6;
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
-            --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
-            --radius-lg: 24px;
-            --transition-normal: 300ms ease;
-        }
-        [data-theme="dark"] {
-            --bg-primary: #1a1a2e;
-            --bg-secondary: #16213e;
-            --text-primary: #f8f9fa;
-            --text-secondary: #adb5bd;
-            --border-color: #3a3a5a;
-        }
-        body {
-            background: var(--bg-secondary);
-            font-family: 'Figtree', sans-serif;
-            color: var(--text-primary);
-            transition: background var(--transition-normal), color var(--transition-normal);
-        }
-        
-        /* Hero Section */
-        .about-hero {
-            position: relative;
-            height: 70vh;
-            min-height: 500px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, rgba(139,94,60,0.9) 0%, rgba(122,75,50,0.8) 100%),
-                        url('{% static "img/taller_madera.jpg" %}') center/cover;
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--color-acento);
-            color: #333;
-            padding: 0.5rem 1.5rem;
-            border-radius: 9999px;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            animation: float 3s ease infinite;
-        }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .hero-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin-bottom: 1rem; }
-        .hero-subtitle { font-size: clamp(1rem, 2.5vw, 1.25rem); opacity: 0.95; max-width: 700px; margin: 0 auto 2rem; }
-        
-        /* Team Grid */
-        .team-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 2rem;
-            margin: 3rem 0;
-        }
-        .team-card {
-            background: var(--bg-primary);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-            text-align: center;
-            transition: transform var(--transition-normal);
-        }
-        .team-card:hover { transform: translateY(-10px); }
-        .team-avatar {
-            width: 120px; height: 120px;
-            border-radius: 50%;
-            margin: 1.5rem auto 1rem;
-            border: 4px solid var(--color-acento);
-            object-fit: cover;
-        }
-        .team-name { font-weight: 700; margin-bottom: 0.25rem; }
-        .team-role { color: var(--color-primario); font-weight: 500; }
-        
-        /* Values Cards */
-        .values-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-            margin: 3rem 0;
-        }
-        .value-card {
-            background: var(--bg-primary);
-            padding: 2rem;
-            border-radius: var(--radius-lg);
-            text-align: center;
-            border: 2px solid transparent;
-            transition: all var(--transition-normal);
-        }
-        .value-card:hover {
-            border-color: var(--color-primario);
-            transform: translateY(-5px);
-        }
-        .value-icon {
-            font-size: 2.5rem;
-            color: var(--color-primario);
-            margin-bottom: 1rem;
-        }
-        
-        /* CTA Section */
-        .cta-section {
-            background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
-            color: white;
-            padding: 4rem 2rem;
-            text-align: center;
-            border-radius: var(--radius-lg);
-            margin: 4rem 0;
-        }
-        .btn-cta {
-            background: var(--color-acento);
-            color: #333;
-            padding: 1rem 2.5rem;
-            border-radius: 9999px;
-            font-weight: 700;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: transform var(--transition-normal);
-        }
-        .btn-cta:hover { transform: translateY(-3px); }
-        
-        /* Dark Mode Toggle & WhatsApp */
-        .theme-toggle {
-            position: fixed; bottom: 2rem; left: 2rem;
-            width: 50px; height: 50px; border-radius: 50%;
-            background: var(--bg-primary); border: 2px solid var(--border-color);
-            color: var(--text-primary); cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.25rem; z-index: 100;
-        }
-        .btn-flotante-whatsapp {
-            position: fixed; bottom: 2rem; right: 2rem;
-            width: 60px; height: 60px; border-radius: 50%;
-            background: linear-gradient(135deg, #25D366, #128C7E);
-            color: white; border: none; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.75rem; z-index: 100; text-decoration: none;
-        }
-        
-        @media (max-width: 768px) {
-            .team-grid, .values-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/estilos_footer.css' %}?v=2.0">
+<style>
+:root{--cafe:#8B5E3C;--cafe-dark:#6B462C;--cafe-light:#C49A6C;--crema:#FAF6F1;--crema-dark:#F0E8DC;--gold:#D4AF6F;--gold-light:#F5D78C;--verde:#2A7A5B;--rojo:#C94040;--text-dark:#1C1510;--text-mid:#5C4A38;--text-light:#9B8878;--border:#E8DDD4;--shadow-soft:0 2px 24px rgba(139,94,60,.10);--shadow-md:0 8px 36px rgba(139,94,60,.16);--r-md:16px;--r-lg:24px;--r-xl:36px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--crema);font-family:'Outfit',sans-serif;color:var(--text-dark);overflow-x:hidden}
+
+.blog-hero{background:linear-gradient(135deg,var(--cafe-dark) 0%,var(--cafe) 55%,var(--cafe-light) 100%);padding:5rem 0 6rem;position:relative;overflow:hidden;text-align:center;color:#fff}
+.blog-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")}
+.hero-wave{position:absolute;bottom:-2px;left:0;right:0;line-height:0}
+.hero-badge{display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:var(--gold-light);padding:.4rem 1.1rem;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.25rem}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,5vw,4rem);font-style:italic;line-height:1.1;margin-bottom:.75rem}
+.hero-title strong{font-style:normal;color:var(--gold-light);font-family:'Outfit',sans-serif;font-weight:700}
+.hero-desc{color:rgba(255,255,255,.85);max-width:520px;margin:0 auto 2rem;line-height:1.7;font-size:1rem}
+
+.search-bar{max-width:560px;margin:0 auto;position:relative}
+.search-bar input{width:100%;padding:.85rem 1.2rem .85rem 3rem;border-radius:999px;border:none;font-size:.95rem;font-family:'Outfit',sans-serif;outline:none;box-shadow:0 4px 24px rgba(0,0,0,.15)}
+.search-bar i{position:absolute;left:1.1rem;top:50%;transform:translateY(-50%);color:var(--text-light)}
+
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin:2.5rem 0}
+.filter-btn{padding:.5rem 1.25rem;border:2px solid var(--border);background:#fff;color:var(--text-mid);border-radius:999px;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .22s;font-family:'Outfit',sans-serif}
+.filter-btn:hover,.filter-btn.active{background:var(--cafe);border-color:var(--cafe);color:#fff}
+
+.blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.75rem;margin:2rem 0}
+.blog-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-soft);transition:transform .3s,box-shadow .3s;cursor:pointer}
+.blog-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-md)}
+.blog-card-img{width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--crema-dark);display:block}
+.blog-card-body{padding:1.5rem}
+.blog-cat{display:inline-block;background:var(--crema-dark);color:var(--cafe);padding:.25rem .85rem;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.85rem}
+.blog-card-title{font-family:'Cormorant Garamond',serif;font-size:1.25rem;font-weight:600;color:var(--text-dark);margin-bottom:.5rem;line-height:1.3}
+.blog-excerpt{font-size:.86rem;color:var(--text-light);line-height:1.65;margin-bottom:1rem}
+.blog-meta{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;color:var(--text-light);border-top:1px solid var(--border);padding-top:.85rem;margin-top:.85rem}
+.blog-meta-author{display:flex;align-items:center;gap:.5rem}
+.blog-meta-author .av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--cafe),var(--cafe-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700;flex-shrink:0}
+.read-more{display:inline-flex;align-items:center;gap:.35rem;color:var(--cafe);font-weight:600;font-size:.82rem;text-decoration:none;transition:gap .2s}
+.read-more:hover{gap:.6rem;color:var(--cafe-dark)}
+
+.featured-card{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-md)}
+.featured-card .blog-card-img{aspect-ratio:auto;height:100%;min-height:300px}
+.featured-card .blog-card-body{padding:2.5rem}
+.featured-card .blog-card-title{font-size:1.8rem}
+@media(max-width:768px){.featured-card{grid-template-columns:1fr}.featured-card .blog-card-img{min-height:220px}.blog-grid{grid-template-columns:1fr}}
+
+.sidebar-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-soft);overflow:hidden;margin-bottom:1.25rem}
+.sidebar-header{background:linear-gradient(135deg,var(--cafe-dark),var(--cafe));padding:1.1rem 1.5rem;color:#fff}
+.sidebar-header h4{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-style:italic;margin:0}
+.sidebar-body{padding:1.25rem 1.5rem}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:.5rem}
+.tag{display:inline-block;background:var(--crema-dark);color:var(--text-mid);padding:.3rem .85rem;border-radius:999px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;border:1px solid var(--border)}
+.tag:hover{background:var(--cafe);color:#fff;border-color:var(--cafe)}
+.popular-item{display:flex;align-items:center;gap:.85rem;padding:.7rem 0;border-bottom:1px dashed var(--border)}
+.popular-item:last-child{border-bottom:none}
+.popular-num{width:28px;height:28px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:var(--cafe);flex-shrink:0}
+.popular-title{font-size:.85rem;font-weight:600;color:var(--text-dark);line-height:1.35}
+.popular-date{font-size:.75rem;color:var(--text-light)}
+
+.toast-stack{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;pointer-events:none}
+.toast-item{background:var(--text-dark);color:#fff;border-radius:var(--r-md);padding:.85rem 1.2rem;display:flex;align-items:center;gap:.75rem;min-width:260px;pointer-events:auto;animation:toastIn .35s cubic-bezier(.16,1,.3,1)}
+.toast-item.success{border-left:4px solid var(--verde)}.toast-item.info{border-left:4px solid #60a5fa}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.whatsapp-float{position:fixed;bottom:2rem;left:2rem;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:all .3s;z-index:100;text-decoration:none}
+.whatsapp-float:hover{transform:scale(1.1)}
+.newsletter-band{background:linear-gradient(135deg,var(--cafe-dark),var(--cafe));color:#fff;padding:3rem 1.5rem;text-align:center;border-radius:var(--r-xl);margin:3rem 0;position:relative;overflow:hidden}
+.newsletter-band::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.nl-form{display:flex;gap:.75rem;max-width:460px;margin:1.5rem auto 0;position:relative}
+.nl-form input{flex:1;padding:.8rem 1.25rem;border-radius:999px;border:none;font-size:.95rem;font-family:'Outfit',sans-serif;outline:none}
+.nl-form button{padding:.8rem 1.75rem;background:var(--gold-light);color:var(--text-dark);border:none;border-radius:999px;font-weight:700;font-size:.9rem;cursor:pointer;transition:transform .25s;white-space:nowrap;font-family:'Outfit',sans-serif}
+.nl-form button:hover{transform:translateY(-2px)}
+@media(max-width:480px){.nl-form{flex-direction:column}}
+</style>
 </head>
 <body>
-
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toast-container"></div>
-
-<!-- ════════════════════════════════════════
-    HEADER
-════════════════════════════════════════ -->
 {% include 'partials/header.html' %}
 
-    <!-- Contenido Principal -->
-    <main class="container main-with-fixed-header">
-        
-        <!-- Filtros de categorías -->
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 2rem 0; justify-content: center;">
-            {% for cat in categorias_blog %}
-            <button class="filter-btn {% if forloop.first %}active{% endif %}" data-filter="{{ cat|lower }}">{{ cat }}</button>
-            {% endfor %}
+<section class="blog-hero">
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 70" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" fill="var(--crema)"/></svg>
+    </div>
+    <div class="container" style="position:relative;z-index:1;">
+        <div class="hero-badge"><i class="fas fa-pen-nib"></i> Blog de decoración</div>
+        <h1 class="hero-title">Ideas para tu <strong>hogar</strong></h1>
+        <p class="hero-desc">Tendencias, consejos de expertos y guías de estilo para transformar cada rincón de tu espacio.</p>
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Buscar artículos..." oninput="buscarArticulos(this.value)">
         </div>
+    </div>
+</section>
 
-        <!-- Grid de artículos -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem;">
-            {% for articulo in articulos %}
-            <article class="blog-card" data-categoria="{{ articulo.categoria|lower }}" style="background: var(--bg-primary); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
-                <img src="{{ MEDIA_URL }}{{ articulo.imagen }}" alt="{{ articulo.titulo }}" style="width: 100%; height: 200px; object-fit: cover;">
-                <div style="padding: 1.5rem;">
-                    <span style="background: rgba(139,94,60,0.1); color: var(--color-primario); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 500;">{{ articulo.categoria }}</span>
-                    <h3 style="font-weight: 700; margin: 0.75rem 0;">{{ articulo.titulo }}</h3>
-                    <p class="text-muted">{{ articulo.excerpt }}</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-                        <span><i class="fas fa-user me-1"></i> {{ articulo.autor }}</span>
-                        <span><i class="fas fa-calendar me-1"></i> {{ articulo.fecha }}</span>
-                    </div>
-                    <a href="{{ articulo.leer_mas }}" style="display: inline-block; margin-top: 1rem; color: var(--color-primario); font-weight: 600; text-decoration: none;">Leer más <i class="fas fa-arrow-right ms-1"></i></a>
-                </div>
-            </article>
-            {% endfor %}
-        </div>
-
-    </main>
-
-    <!-- Footer (igual que home) -->
-    <footer class="footer-moderno footer-bg text-dark">
-        <!-- ... contenido del footer (igual que antes) ... -->
-        <div class="container">
-            <div class="row g-4 g-lg-5">
-                <!-- Columna 1: Logo + Redes + Newsletter -->
-                <div class="col-12 col-lg-4">
-                    <div class="footer-brand mb-4">
-                        <img src="{% static 'img/emblema_bodega.png' %}" alt="ORDER R.A.E" class="footer-logo" />
-                        <p class="footer-description text-muted mt-3">
-                            "Diseños hechos con el alma: transformamos cada rincón con piezas únicas, exclusivas y confortables"
-                        </p>
-                    </div>
-                    
-                    <div class="footer-social mb-4">
-                        <span class="footer-social-title small text-muted d-block mb-2">SÍGUENOS:</span>
-                        <div class="d-flex gap-3">
-                            <a href="#" class="social-icon" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-icon" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-icon" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
-                            <a href="#" class="social-icon" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
-                        </div>
-                    </div>
-                    
-                    <div class="footer-newsletter">
-                        <span class="footer-social-title small text-muted d-block mb-2">RECIBE OFERTAS EXCLUSIVAS</span>
-                        <form class="newsletter-form d-flex gap-2" onsubmit="return false;">
-                            <input type="email" class="form-control newsletter-input" placeholder="Tu correo electrónico">
-                            <button type="submit" class="btn btn-newsletter" aria-label="Suscribirse">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </form>
-                        <small class="text-muted d-block mt-2" style="font-size: 0.75rem;">
-                            <i class="fas fa-shield-alt me-1"></i>Tus datos están seguros. Sin spam.
-                        </small>
-                    </div>
-                </div>
-                
-                <!-- Columna 2: Empresa -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">EMPRESA</h6>
-                    <ul class="footer-links list-unstyled">
-                        <li><a href="{% url 'pagina:quienes_somos' %}">Quiénes somos</a></li>
-                        <li><a href="{% url 'pagina:nuestra_historia' %}">Nuestra historia</a></li>
-                        <li><a href="{% url 'pagina:sostenibilidad' %}">Sostenibilidad</a></li>
-                        <li><a href="{% url 'pagina:trabaja_con_nosotros' %}">Trabaja con nosotros</a></li>
-                        <li><a href="{% url 'pagina:blog_decoracion' %}">Blog de decoración</a></li>
-                    </ul>
-                </div>
-                
-                <!-- Columna 3: Ayuda -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">AYUDA</h6>
-                    <ul class="footer-links list-unstyled">
-                        <li><a href="#">Preguntas Frecuentes</a></li>
-                        <li><a href="#">Guía de tallas</a></li>
-                        <li><a href="#">Cuidado de muebles</a></li>
-                        <li><a href="#">Política de envíos</a></li>
-                        <li><a href="#">Devoluciones</a></li>
-                    </ul>
-                </div>
-                
-                <!-- Columna 4: Legal -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">LEGAL</h6>
-                    <ul class="footer-links list-unstyled">
-                        <li><a href="#">Términos y Condiciones</a></li>
-                        <li><a href="#">Política de Privacidad</a></li>
-                        <li><a href="#">Política de Cookies</a></li>
-                        <li><a href="#">Accesibilidad Web</a></li>
-                        <li><a href="#">PQRS</a></li>
-                    </ul>
-                </div>
-                
-                <!-- Columna 5: Contacto -->
-                <div class="col-6 col-lg-2">
-                    <h6 class="footer-column-title">CONTACTO</h6>
-                    <ul class="footer-contact list-unstyled">
-                        <li class="mb-3">
-                            <i class="fas fa-map-marker-alt text-primary me-2"></i>
-                            <span>Carrera 13 # 65 - 10<br>Bogotá - Colombia</span>
-                        </li>
-                        <li class="mb-3">
-                            <i class="fas fa-clock text-primary me-2"></i>
-                            <span>Lun-Sáb: 9AM – 6PM<br>Dom: 10AM – 2PM</span>
-                        </li>
-                        <li class="mb-3">
-                            <i class="fas fa-phone text-primary me-2"></i>
-                            <a href="tel:+5717977090" class="text-decoration-none">797 7090</a>
-                        </li>
-                        <li>
-                            <i class="fab fa-whatsapp text-primary me-2"></i>
-                            <a href="https://wa.me/573166712526" class="text-decoration-none" target="_blank">(+57) 316 671 2526</a>
-                        </li>
-                    </ul>
-                </div>
+<div class="container" style="padding:3rem 1.5rem 5rem;">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="filter-bar">
+                <button class="filter-btn active" data-cat="all" onclick="filtrarBlog(this)">Todos</button>
+                {% for cat in categorias_blog %}
+                <button class="filter-btn" data-cat="{{ cat|lower }}" onclick="filtrarBlog(this)">{{ cat }}</button>
+                {% empty %}
+                <button class="filter-btn" data-cat="guías" onclick="filtrarBlog(this)">Guías</button>
+                <button class="filter-btn" data-cat="tendencias" onclick="filtrarBlog(this)">Tendencias</button>
+                <button class="filter-btn" data-cat="productividad" onclick="filtrarBlog(this)">Productividad</button>
+                <button class="filter-btn" data-cat="sostenibilidad" onclick="filtrarBlog(this)">Sostenibilidad</button>
+                {% endfor %}
             </div>
-            
-            <!-- Métodos de pago y certificaciones -->
-            <div class="footer-badges mt-5 pt-4 border-top border-secondary">
-                <div class="row align-items-center g-3">
-                    <div class="col-12 col-lg-6">
-                        <span class="small text-muted d-block mb-2">MÉTODOS DE PAGO SEGUROS:</span>
-                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                            <span class="payment-badge"><i class="fab fa-cc-visa"></i></span>
-                            <span class="payment-badge"><i class="fab fa-cc-mastercard"></i></span>
-                            <span class="payment-badge"><i class="fab fa-cc-amex"></i></span>
-                            <span class="payment-badge"><i class="fas fa-credit-card"></i>PSE</span>
-                            <span class="payment-badge"><i class="fas fa-mobile-alt"></i>Nequi</span>
-                            <span class="payment-badge"><i class="fas fa-wallet"></i>DaviPlata</span>
+
+            <div class="blog-grid" id="blog-grid">
+                {% for art in articulos %}
+                <div class="blog-card" data-cat="{{ art.categoria|lower }}" data-title="{{ art.titulo|lower }}">
+                    <img src="{{ MEDIA_URL }}{{ art.imagen }}" alt="{{ art.titulo }}" class="blog-card-img" onerror="this.src='https://via.placeholder.com/640x360?text=ORDER+RAE'">
+                    <div class="blog-card-body">
+                        <span class="blog-cat">{{ art.categoria }}</span>
+                        <h2 class="blog-card-title">{{ art.titulo }}</h2>
+                        <p class="blog-excerpt">{{ art.excerpt }}</p>
+                        <div class="blog-meta">
+                            <div class="blog-meta-author">
+                                <div class="av">{{ art.autor|slice:":1" }}</div>
+                                <span>{{ art.autor }}</span>
+                            </div>
+                            <span>{{ art.fecha }}</span>
                         </div>
-                    </div>
-                    <div class="col-12 col-lg-6 text-lg-end">
-                        <span class="small text-muted d-block mb-2">CERTIFICACIONES:</span>
-                        <div class="d-flex flex-wrap gap-3 justify-content-lg-end">
-                            <span class="cert-badge" title="Envío garantizado"><i class="fas fa-truck-fast me-1"></i>Envío Seguro</span>
-                            <span class="cert-badge" title="Garantía de calidad"><i class="fas fa-certificate me-1"></i>Calidad Premium</span>
-                            <span class="cert-badge" title="Datos protegidos"><i class="fas fa-lock me-1"></i>SSL Seguro</span>
-                        </div>
+                        <a href="{{ art.leer_mas }}" class="read-more" style="margin-top:1rem;display:inline-flex;">Leer más <i class="fas fa-arrow-right"></i></a>
                     </div>
                 </div>
+                {% empty %}
+                <!-- Artículos de muestra -->
+                <div class="blog-card featured-card" data-cat="decoracion" data-title="cómo elegir el sofá perfecto">
+                    <img src="{% static 'img/Sofá2.jpg' %}" alt="Sofá" class="blog-card-img" onerror="this.src='https://via.placeholder.com/640x360?text=ORDER+RAE'">
+                    <div class="blog-card-body">
+                        <span class="blog-cat">Decoración</span>
+                        <h2 class="blog-card-title">Cómo elegir el sofá perfecto para tu sala</h2>
+                        <p class="blog-excerpt">El sofá es el corazón de la sala. Te contamos los factores clave: medidas, tapizado, estructura y cómo combinarlo con tu estilo de vida y decoración actual.</p>
+                        <div class="blog-meta">
+                            <div class="blog-meta-author"><div class="av">L</div><span>Laura Méndez</span></div>
+                            <span>12 mayo, 2025</span>
+                        </div>
+                        <a href="#" class="read-more" style="margin-top:1rem;display:inline-flex;">Leer más <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card" data-cat="materiales" data-title="madera sólida vs aglomerado">
+                    <img src="{% static 'img/Escritorio1.jpg' %}" alt="Madera" class="blog-card-img" onerror="this.src='https://via.placeholder.com/640x360?text=ORDER+RAE'">
+                    <div class="blog-card-body">
+                        <span class="blog-cat">Materiales</span>
+                        <h2 class="blog-card-title">Madera sólida vs aglomerado: ¿cuál es mejor?</h2>
+                        <p class="blog-excerpt">Analizamos las diferencias reales entre ambos materiales para que tomes la mejor decisión al comprar tus muebles.</p>
+                        <div class="blog-meta">
+                            <div class="blog-meta-author"><div class="av">C</div><span>Carlos Ríos</span></div>
+                            <span>3 abr, 2025</span>
+                        </div>
+                        <a href="#" class="read-more" style="margin-top:1rem;display:inline-flex;">Leer más <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card" data-cat="tendencias" data-title="estilo japandi en colombia">
+                    <img src="{% static 'img/Cama5.jpg' %}" alt="Japandi" class="blog-card-img" onerror="this.src='https://via.placeholder.com/640x360?text=ORDER+RAE'">
+                    <div class="blog-card-body">
+                        <span class="blog-cat">Tendencias</span>
+                        <h2 class="blog-card-title">Estilo Japandi: minimalismo cálido en tu hogar</h2>
+                        <p class="blog-excerpt">La fusión japonesa-escandinava llega a Colombia. Descubre cómo aplicar esta tendencia con muebles artesanales de madera.</p>
+                        <div class="blog-meta">
+                            <div class="blog-meta-author"><div class="av">M</div><span>María Torres</span></div>
+                            <span>18 mar, 2025</span>
+                        </div>
+                        <a href="#" class="read-more" style="margin-top:1rem;display:inline-flex;">Leer más <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card" data-cat="consejos" data-title="cómo medir tu espacio">
+                    <img src="{% static 'img/Comedor3.jpeg' %}" alt="Medidas" class="blog-card-img" onerror="this.src='https://via.placeholder.com/640x360?text=ORDER+RAE'">
+                    <div class="blog-card-body">
+                        <span class="blog-cat">Consejos</span>
+                        <h2 class="blog-card-title">Cómo medir tu espacio antes de comprar muebles</h2>
+                        <p class="blog-excerpt">Evita errores costosos. Nuestra guía paso a paso para tomar medidas correctas y planificar la distribución de cualquier habitación.</p>
+                        <div class="blog-meta">
+                            <div class="blog-meta-author"><div class="av">A</div><span>Andrés Vargas</span></div>
+                            <span>5 feb, 2025</span>
+                        </div>
+                        <a href="#" class="read-more" style="margin-top:1rem;display:inline-flex;">Leer más <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                <div class="blog-card" data-cat="mantenimiento" data-title="cuidado de la madera en climas húmedos">
+                    <img src="{% static 'img/Sofá2.jpg' %}" alt="Cuidado" class="blog-card-img" onerror="this.src='https://via.placeholder.com/640x360?text=ORDER+RAE'">
+                    <div class="blog-card-body">
+                        <span class="blog-cat">Mantenimiento</span>
+                        <h2 class="blog-card-title">Cuidado de la madera en climas húmedos</h2>
+                        <p class="blog-excerpt">Colombia tiene climas muy variados. Aprende qué productos usar y qué errores evitar para preservar tus muebles de madera por décadas.</p>
+                        <div class="blog-meta">
+                            <div class="blog-meta-author"><div class="av">C</div><span>Carlos Ríos</span></div>
+                            <span>20 ene, 2025</span>
+                        </div>
+                        <a href="#" class="read-more" style="margin-top:1rem;display:inline-flex;">Leer más <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            
-            <!-- Copyright + Back to top -->
-            <div class="footer-bottom mt-4 pt-3 border-top border-secondary d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
-                <p class="mb-0 small text-muted">
-                    &copy; {% now "Y" %} <strong>ORDER RAE</strong>. Todos los derechos reservados.
-                </p>
-                <div class="d-flex align-items-center gap-3">
-                    <a href="#" class="small text-muted text-decoration-none hover-underline">Mapa del sitio</a>
+
+            <div id="no-results" style="display:none;text-align:center;padding:3rem;color:var(--text-light);">
+                <i class="fas fa-search" style="font-size:2.5rem;margin-bottom:1rem;display:block;"></i>
+                <p>No se encontraron artículos. Intenta con otra búsqueda.</p>
+            </div>
+
+            <div class="newsletter-band" data-aos="fade-up">
+                <div style="position:relative;z-index:1;">
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-style:italic;margin-bottom:.5rem;">Recibe inspiración en tu correo</div>
+                    <p style="opacity:.85;font-size:.9rem;">Artículos exclusivos, tendencias y ofertas especiales cada semana.</p>
+                    <form class="nl-form" onsubmit="suscribir(event)">
+                        <input type="email" id="nl-email" placeholder="tu@correo.com" required>
+                        <button type="submit"><i class="fas fa-paper-plane me-1"></i> Suscribirme</button>
+                    </form>
                 </div>
             </div>
         </div>
-    </footer>
 
-    <!-- Botones Flotantes -->
-    <button class="theme-toggle" id="theme-toggle" aria-label="Alternar modo oscuro">
-        <i class="fas fa-moon"></i>
-    </button>
-    <a href="https://wa.me/573166712526" class="btn-flotante-whatsapp" target="_blank" aria-label="WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-    </a>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="sidebar-card" style="position:sticky;top:110px;">
+                <div class="sidebar-header"><h4>Artículos populares</h4></div>
+                <div class="sidebar-body">
+                    <div class="popular-item">
+                        <div class="popular-num">1</div>
+                        <div><div class="popular-title">Cómo elegir el sofá perfecto para tu sala</div><div class="popular-date">12 mayo, 2025 · 5 min</div></div>
+                    </div>
+                    <div class="popular-item">
+                        <div class="popular-num">2</div>
+                        <div><div class="popular-title">Madera sólida vs aglomerado</div><div class="popular-date">3 abr, 2025 · 4 min</div></div>
+                    </div>
+                    <div class="popular-item">
+                        <div class="popular-num">3</div>
+                        <div><div class="popular-title">Estilo Japandi en tu hogar</div><div class="popular-date">18 mar, 2025 · 6 min</div></div>
+                    </div>
+                    <div class="popular-item">
+                        <div class="popular-num">4</div>
+                        <div><div class="popular-title">Cómo medir tu espacio</div><div class="popular-date">5 feb, 2025 · 3 min</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-card" style="margin-top:1.25rem;">
+                <div class="sidebar-header"><h4>Temas</h4></div>
+                <div class="sidebar-body">
+                    <div class="tag-cloud">
+                        <span class="tag" onclick="filtrarPorTag('guías')">Guías</span>
+                        <span class="tag" onclick="filtrarPorTag('tendencias')">Tendencias</span>
+                        <span class="tag" onclick="filtrarPorTag('productividad')">Productividad</span>
+                        <span class="tag" onclick="filtrarPorTag('sostenibilidad')">Sostenibilidad</span>
+                        <span class="tag" onclick="filtrarPorTag('all')">Ver todos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/header.js' %}"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        // Inicializar AOS
-        AOS.init({ duration: 800, once: true });
-        
-        // Dark Mode Toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle?.addEventListener('click', () => {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-            themeToggle.querySelector('i').className = isDark ? 'fas fa-moon' : 'fas fa-sun';
-            localStorage.setItem('theme', isDark ? 'light' : 'dark');
-        });
-        
-        // Aplicar tema guardado
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            themeToggle.querySelector('i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        }
-        
-        // Toast simple
-        window.showToast = function(msg, type='info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast-modern ${type}`;
-            toast.style.cssText = `background:var(--bg-primary); border-left:4px solid var(--color-${type==='success'?'exito':'primario'}); border-radius:16px; padding:1rem 1.5rem; box-shadow:0 8px 25px rgba(0,0,0,0.15); display:flex; align-items:center; gap:0.75rem; min-width:320px; max-width:400px; animation:slideInRight 0.3s ease, fadeOut 0.3s ease 4.7s forwards;`;
-            toast.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'info-circle'}"></i><div>${msg}</div>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
-        };
-    </script>
+<div class="toast-stack" id="toast-stack"></div>
+{% include 'partials/footer.html' %}
+<a href="https://wa.me/573166712526" target="_blank" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/header.js' %}"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+AOS.init({duration:700,once:true,offset:60});
+
+function filtrarBlog(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const cat = btn.dataset.cat;
+    let visible=0;
+    document.querySelectorAll('.blog-card').forEach(c=>{
+        const show = cat==='all' || c.dataset.cat===cat;
+        c.style.display = show?'':'none';
+        if(show) visible++;
+    });
+    document.getElementById('no-results').style.display = visible?'none':'block';
+}
+
+function buscarArticulos(q) {
+    q = q.toLowerCase().trim();
+    let visible=0;
+    document.querySelectorAll('.blog-card').forEach(c=>{
+        const show = !q || c.dataset.title.includes(q);
+        c.style.display = show?'':'none';
+        if(show) visible++;
+    });
+    document.getElementById('no-results').style.display = visible?'none':'block';
+}
+
+function filtrarPorTag(cat) {
+    const btn = document.querySelector(`.filter-btn[data-cat="${cat}"]`);
+    if(btn) filtrarBlog(btn);
+    window.scrollTo({top:document.getElementById('blog-grid').offsetTop-120,behavior:'smooth'});
+}
+
+function suscribir(e) {
+    e.preventDefault();
+    const email = document.getElementById('nl-email').value;
+    showToast(`✉️ ¡Suscrito con ${email}! Bienvenido al blog.`, 'success');
+    document.getElementById('nl-email').value='';
+}
+
+window.showToast = function(msg,type='info'){
+    const icons={success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle'};
+    const stack=document.getElementById('toast-stack');
+    const t=document.createElement('div');
+    t.className=`toast-item ${type}`;
+    t.innerHTML=`<i class="fas ${icons[type]||icons.info}" style="font-size:.95rem;"></i><span style="flex:1;font-size:.85rem;font-weight:500;">${msg}</span>`;
+    stack.appendChild(t);
+    setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';t.style.transform='translateY(8px)';setTimeout(()=>t.remove(),320);},3800);
+};
+</script>
 </body>
 </html>

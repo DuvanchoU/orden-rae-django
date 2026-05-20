@@ -1,0 +1,369 @@
+{% load static %}
+{% load humanize %}
+{% load custom_auth %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PQRS - ORDER RAE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/estilos_footer.css' %}?v=2.0">
+<style>
+:root{--cafe:#8B5E3C;--cafe-dark:#6B462C;--cafe-light:#C49A6C;--crema:#FAF6F1;--crema-dark:#F0E8DC;--gold:#D4AF6F;--gold-light:#F5D78C;--verde:#2A7A5B;--rojo:#C94040;--text-dark:#1C1510;--text-mid:#5C4A38;--text-light:#9B8878;--border:#E8DDD4;--shadow-soft:0 2px 24px rgba(139,94,60,.10);--shadow-md:0 8px 36px rgba(139,94,60,.16);--r-md:16px;--r-lg:24px;--r-xl:36px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--crema);font-family:'Outfit',sans-serif;color:var(--text-dark);overflow-x:hidden}
+
+.pqrs-hero{background:linear-gradient(135deg,var(--cafe-dark) 0%,var(--cafe) 55%,var(--cafe-light) 100%);padding:5rem 0 6rem;position:relative;overflow:hidden;text-align:center;color:#fff}
+.pqrs-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")}
+.hero-wave{position:absolute;bottom:-2px;left:0;right:0;line-height:0}
+.hero-badge{display:inline-flex;align-items:center;gap:.45rem;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:var(--gold-light);padding:.4rem 1.1rem;border-radius:999px;font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.25rem}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,5vw,4rem);font-style:italic;line-height:1.1;margin-bottom:.75rem}
+.hero-title strong{font-style:normal;color:var(--gold-light);font-family:'Outfit',sans-serif;font-weight:700}
+.hero-desc{color:rgba(255,255,255,.85);max-width:560px;margin:0 auto;line-height:1.7}
+
+/* Tipo cards */
+.tipo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin:2.5rem 0}
+.tipo-card{background:#fff;border:2px solid var(--border);border-radius:var(--r-lg);padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:all .22s}
+.tipo-card:hover,.tipo-card.selected{border-color:var(--cafe);background:#FFF8F3;transform:translateY(-3px);box-shadow:var(--shadow-soft)}
+.tipo-card.selected{box-shadow:0 0 0 3px rgba(139,94,60,.15)}
+.tipo-icon{width:52px;height:52px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;font-size:1.25rem;color:var(--cafe);transition:all .22s}
+.tipo-card.selected .tipo-icon,.tipo-card:hover .tipo-icon{background:var(--cafe);color:#fff}
+.tipo-name{font-size:.82rem;font-weight:700;color:var(--text-mid)}
+.tipo-card.selected .tipo-name{color:var(--cafe)}
+.tipo-tag{font-size:.68rem;color:var(--text-light);margin-top:.2rem}
+
+/* Form */
+.pqrs-form-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-md);overflow:hidden}
+.form-section-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--text-light);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem}
+.form-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.field-label{display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-mid);margin-bottom:.5rem}
+.field-label .req{color:var(--rojo)}
+.field-input{width:100%;border:1.5px solid var(--border);border-radius:var(--r-md);padding:.8rem 1.1rem;font-size:.95rem;font-family:'Outfit',sans-serif;color:var(--text-dark);background:var(--crema);outline:none;transition:all .22s;-webkit-appearance:none}
+.field-input:focus{border-color:var(--cafe);background:#fff;box-shadow:0 0 0 3px rgba(139,94,60,.1)}
+.field-input.error{border-color:var(--rojo)}
+textarea.field-input{resize:vertical;min-height:130px}
+.field-hint{font-size:.75rem;color:var(--text-light);margin-top:.3rem}
+.char-counter{font-size:.72rem;color:var(--text-light);text-align:right;margin-top:.2rem}
+.char-counter.warn{color:var(--gold)}.char-counter.over{color:var(--rojo)}
+
+.check-row{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.85rem;cursor:pointer}
+.check-box{width:20px;height:20px;border:2px solid var(--border);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:.1rem}
+.check-box.checked{background:var(--cafe);border-color:var(--cafe);color:#fff}
+.check-box.checked::after{content:'✓';font-size:.75rem;font-weight:800}
+.check-text{font-size:.88rem;color:var(--text-mid);line-height:1.5}
+.check-text a{color:var(--cafe)}
+
+.btn-submit{display:flex;align-items:center;gap:.5rem;background:linear-gradient(135deg,var(--cafe),var(--cafe-dark));border:none;border-radius:var(--r-md);padding:.85rem 2.25rem;font-size:.95rem;font-weight:700;color:#fff;cursor:pointer;transition:all .25s;font-family:'Outfit',sans-serif}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(139,94,60,.35)}
+.btn-submit:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-submit.loading .btn-text{display:none}
+.btn-submit.loading::after{content:'';width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Radicado / éxito */
+.success-screen{display:none;text-align:center;padding:3rem 2rem}
+.success-screen.active{display:block;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.success-icon{width:90px;height:90px;background:linear-gradient(135deg,var(--verde),#1f5c44);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.2rem;color:#fff;box-shadow:0 8px 30px rgba(42,122,91,.3);animation:popIn .5s cubic-bezier(.16,1,.3,1)}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.radicado-box{display:inline-block;background:var(--crema-dark);border:1px solid var(--border);border-radius:var(--r-md);padding:.65rem 1.75rem;font-family:monospace;font-size:1.15rem;font-weight:700;color:var(--cafe);margin:1rem 0;letter-spacing:.08em}
+
+/* Sidebar info */
+.info-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-soft);overflow:hidden;margin-bottom:1.25rem;position:sticky;top:110px}
+.info-header{background:linear-gradient(135deg,var(--cafe-dark),var(--cafe));padding:1.1rem 1.5rem;color:#fff}
+.info-header h4{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-style:italic;margin:0}
+.info-body{padding:1.25rem 1.5rem}
+.info-item{display:flex;align-items:flex-start;gap:.75rem;padding:.7rem 0;border-bottom:1px dashed var(--border)}
+.info-item:last-child{border-bottom:none}
+.info-icon{width:36px;height:36px;border-radius:50%;background:var(--crema-dark);display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--cafe);flex-shrink:0}
+.info-text strong{display:block;font-size:.88rem;font-weight:600;color:var(--text-dark)}
+.info-text span{font-size:.78rem;color:var(--text-light)}
+
+.toast-stack{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;pointer-events:none}
+.toast-item{background:var(--text-dark);color:#fff;border-radius:var(--r-md);padding:.85rem 1.2rem;display:flex;align-items:center;gap:.75rem;min-width:260px;pointer-events:auto;animation:toastIn .35s cubic-bezier(.16,1,.3,1)}
+.toast-item.success{border-left:4px solid var(--verde)}.toast-item.error{border-left:4px solid var(--rojo)}.toast-item.info{border-left:4px solid #60a5fa}.toast-item.warning{border-left:4px solid var(--gold)}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.whatsapp-float{position:fixed;bottom:2rem;left:2rem;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 20px rgba(37,211,102,.4);transition:all .3s;z-index:100;text-decoration:none}
+.whatsapp-float:hover{transform:scale(1.1)}
+@media(max-width:768px){.tipo-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+{% csrf_token %}
+{% include 'partials/header.html' %}
+
+<section class="pqrs-hero">
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 70" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,35 C360,70 1080,0 1440,35 L1440,70 L0,70 Z" fill="var(--crema)"/></svg>
+    </div>
+    <div class="container" style="position:relative;z-index:1;" data-aos="fade-up">
+        <div class="hero-badge"><i class="fas fa-comments"></i> Atención al cliente</div>
+        <h1 class="hero-title">Peticiones, Quejas,<br><strong>Reclamos y Sugerencias</strong></h1>
+        <p class="hero-desc">Tu opinión transforma nuestra empresa. Nos comprometemos a responder en menos de <strong style="color:var(--gold-light);">3 días hábiles</strong>.</p>
+    </div>
+</section>
+
+<div class="container" style="padding:3rem 1.5rem 5rem;">
+    <div class="row g-4">
+        <div class="col-lg-8">
+
+            {% if enviado %}
+            <div class="alert alert-success d-flex align-items-center gap-2 mb-3 rounded-3" style="border:none;background:#F0FFF6;border-left:4px solid var(--verde);color:var(--text-dark);">
+                <i class="fas fa-check-circle" style="color:var(--verde);font-size:1.2rem;"></i>
+                <span>¡PQRS recibida! Tu radicado es <strong>PQR-{{ radicado }}</strong>. Responderemos en 3 días hábiles.</span>
+            </div>
+            {% endif %}
+
+            <div class="pqrs-form-card">
+                <!-- Formulario -->
+                <div id="pqrs-form-view" style="padding:2.5rem;">
+
+                    <!-- Tipo -->
+                    <div class="form-section-title"><i class="fas fa-tag" style="color:var(--cafe);"></i> Tipo de solicitud</div>
+                    <div class="tipo-grid">
+                        <div class="tipo-card selected" data-tipo="Petición" onclick="seleccionarTipo(this)">
+                            <div class="tipo-icon"><i class="fas fa-hand-paper"></i></div>
+                            <div class="tipo-name">Petición</div>
+                            <div class="tipo-tag">Solicitud general</div>
+                        </div>
+                        <div class="tipo-card" data-tipo="Queja" onclick="seleccionarTipo(this)">
+                            <div class="tipo-icon"><i class="fas fa-frown"></i></div>
+                            <div class="tipo-name">Queja</div>
+                            <div class="tipo-tag">Mal servicio</div>
+                        </div>
+                        <div class="tipo-card" data-tipo="Reclamo" onclick="seleccionarTipo(this)">
+                            <div class="tipo-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="tipo-name">Reclamo</div>
+                            <div class="tipo-tag">Incumplimiento</div>
+                        </div>
+                        <div class="tipo-card" data-tipo="Sugerencia" onclick="seleccionarTipo(this)">
+                            <div class="tipo-icon"><i class="fas fa-lightbulb"></i></div>
+                            <div class="tipo-name">Sugerencia</div>
+                            <div class="tipo-tag">Mejora</div>
+                        </div>
+                        <div class="tipo-card" data-tipo="Felicitación" onclick="seleccionarTipo(this)">
+                            <div class="tipo-icon"><i class="fas fa-star"></i></div>
+                            <div class="tipo-name">Felicitación</div>
+                            <div class="tipo-tag">Reconocimiento</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="tipo-hidden" value="Petición">
+
+                    <!-- Datos de contacto -->
+                    <div class="form-section-title" style="margin-top:2rem;"><i class="fas fa-user" style="color:var(--cafe);"></i> Tus datos</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="field-label">Nombre completo <span class="req">*</span></label>
+                            <input type="text" class="field-input" id="f-nombre" placeholder="María González" value="{{ user_full_name|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label">Correo electrónico <span class="req">*</span></label>
+                            <input type="email" class="field-input" id="f-email" placeholder="tu@correo.com" value="{{ user_email|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label">Teléfono</label>
+                            <input type="tel" class="field-input" id="f-telefono" placeholder="+57 300 123 4567">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="field-label">Número de pedido (opcional)</label>
+                            <input type="text" class="field-input" id="f-pedido" placeholder="Ej: ORD-2025-0123">
+                        </div>
+                    </div>
+
+                    <!-- Detalle -->
+                    <div class="form-section-title" style="margin-top:2rem;"><i class="fas fa-file-alt" style="color:var(--cafe);"></i> Descripción</div>
+                    <div style="margin-bottom:1.25rem;">
+                        <label class="field-label">Asunto <span class="req">*</span></label>
+                        <input type="text" class="field-input" id="f-asunto" placeholder="Resumen breve de tu solicitud">
+                    </div>
+                    <div>
+                        <label class="field-label">Descripción detallada <span class="req">*</span></label>
+                        <textarea class="field-input" id="f-descripcion" maxlength="800" placeholder="Describe con detalle tu solicitud, incluyendo fechas, referencias de producto u otro contexto relevante..."></textarea>
+                        <div class="char-counter" id="char-counter">0/800</div>
+                    </div>
+
+                    <!-- Archivo adjunto -->
+                    <div style="margin-top:1.25rem;">
+                        <label class="field-label">Archivo adjunto (opcional)</label>
+                        <input type="file" class="field-input" id="f-archivo" accept=".pdf,.jpg,.jpeg,.png" style="padding:.6rem 1rem;">
+                        <div class="field-hint">PDF, JPG o PNG · máx. 5 MB</div>
+                    </div>
+
+                    <!-- Términos -->
+                    <div style="margin-top:1.75rem;">
+                        <div class="check-row" onclick="toggleCheck('check-terms')">
+                            <div class="check-box" id="check-terms"></div>
+                            <span class="check-text">Autorizo el tratamiento de mis datos personales conforme a la <a href="#">Política de Privacidad</a> de ORDER RAE. <span class="req" style="color:var(--rojo);">*</span></span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:2rem;display:flex;justify-content:flex-end;">
+                        <button class="btn-submit" id="btn-submit" onclick="enviarPQRS()">
+                            <span class="btn-text"><i class="fas fa-paper-plane me-1"></i> Enviar solicitud</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pantalla éxito -->
+                <div class="success-screen" id="success-screen">
+                    <div class="success-icon"><i class="fas fa-check"></i></div>
+                    <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;margin-bottom:.5rem;">¡Solicitud recibida!</h2>
+                    <p style="color:var(--text-light);margin-bottom:.5rem;">Hemos registrado tu <strong id="tipo-result">Petición</strong>.</p>
+                    <div class="radicado-box" id="radicado-box">PQR-2026-XXXX</div>
+                    <p style="font-size:.85rem;color:var(--text-light);margin-bottom:1.5rem;">Guarda este número. Te responderemos en máximo <strong>3 días hábiles</strong> al correo registrado.</p>
+                    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+                        <a href="{% url 'pagina:home' %}" style="display:inline-flex;align-items:center;gap:.5rem;background:linear-gradient(135deg,var(--cafe),var(--cafe-dark));color:#fff;border:none;border-radius:var(--r-md);padding:.75rem 1.5rem;font-weight:700;font-size:.9rem;text-decoration:none;">
+                            <i class="fas fa-home"></i> Inicio
+                        </a>
+                        <button onclick="nuevaSolicitud()" style="display:inline-flex;align-items:center;gap:.5rem;background:transparent;border:1.5px solid var(--border);border-radius:var(--r-md);padding:.75rem 1.5rem;font-weight:600;font-size:.9rem;cursor:pointer;color:var(--text-mid);font-family:'Outfit',sans-serif;">
+                            <i class="fas fa-plus"></i> Nueva solicitud
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="info-card">
+                <div class="info-header"><h4>¿Cómo funciona?</h4></div>
+                <div class="info-body">
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-edit"></i></div>
+                        <div class="info-text"><strong>1. Completa el formulario</strong><span>Selecciona el tipo y describe tu solicitud con el mayor detalle posible.</span></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-ticket-alt"></i></div>
+                        <div class="info-text"><strong>2. Recibe tu radicado</strong><span>Te asignamos un número único para dar seguimiento a tu caso.</span></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-headset"></i></div>
+                        <div class="info-text"><strong>3. Revisión interna</strong><span>Nuestro equipo analiza tu solicitud y toma las acciones necesarias.</span></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-envelope-check"></i></div>
+                        <div class="info-text"><strong>4. Respuesta en 3 días</strong><span>Te notificamos por correo con la resolución de tu caso.</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="info-card" style="margin-top:1.25rem;">
+                <div class="info-header"><h4>¿Prefieres escribirnos?</h4></div>
+                <div class="info-body">
+                    <a href="https://wa.me/573166712526" target="_blank" style="display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--text-dark);padding:.75rem;background:var(--crema);border-radius:var(--r-md);border:1px solid var(--border);margin-bottom:.75rem;transition:border-color .2s;" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+                        <div style="width:36px;height:36px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;"><i class="fab fa-whatsapp"></i></div>
+                        <div><div style="font-weight:700;font-size:.88rem;">WhatsApp</div><div style="font-size:.75rem;color:var(--text-light);">(+57) 316 671 2526</div></div>
+                    </a>
+                    <a href="mailto:pqrs@orderrae.com" style="display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--text-dark);padding:.75rem;background:var(--crema);border-radius:var(--r-md);border:1px solid var(--border);transition:border-color .2s;" onmouseover="this.style.borderColor='var(--cafe)'" onmouseout="this.style.borderColor='var(--border)'">
+                        <div style="width:36px;height:36px;border-radius:50%;background:var(--cafe);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;"><i class="fas fa-envelope"></i></div>
+                        <div><div style="font-weight:700;font-size:.88rem;">Correo directo</div><div style="font-size:.75rem;color:var(--text-light);">pqrs@orderrae.com</div></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+{% include 'partials/footer.html' %}
+<a href="https://wa.me/573166712526" target="_blank" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/header.js' %}"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+AOS.init({duration:700,once:true});
+
+const textarea = document.getElementById('f-descripcion');
+const counter  = document.getElementById('char-counter');
+textarea?.addEventListener('input',()=>{
+    const n=textarea.value.length;
+    counter.textContent=`${n}/800`;
+    counter.className='char-counter'+(n>650?' over':n>500?' warn':'');
+});
+
+function seleccionarTipo(el){
+    document.querySelectorAll('.tipo-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('tipo-hidden').value = el.dataset.tipo;
+}
+
+function toggleCheck(id){
+    const el=document.getElementById(id);
+    el.classList.toggle('checked');
+}
+
+function generateRadicado(){
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let r='';for(let i=0;i<6;i++) r+=chars[Math.floor(Math.random()*chars.length)];
+    return `PQR-2026-${r}`;
+}
+
+async function enviarPQRS(){
+    const nombre=document.getElementById('f-nombre').value.trim();
+    const email=document.getElementById('f-email').value.trim();
+    const asunto=document.getElementById('f-asunto').value.trim();
+    const desc=document.getElementById('f-descripcion').value.trim();
+    const terms=document.getElementById('check-terms').classList.contains('checked');
+
+    if(!nombre||nombre.length<3){showToast('Ingresa tu nombre completo','warning');return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showToast('Ingresa un correo válido','warning');return;}
+    if(!asunto){showToast('Escribe un asunto','warning');return;}
+    if(desc.length<15){showToast('La descripción debe tener al menos 15 caracteres','warning');return;}
+    if(!terms){showToast('Debes aceptar el tratamiento de datos','warning');return;}
+
+    const btn=document.getElementById('btn-submit');
+    btn.classList.add('loading');btn.disabled=true;
+
+    const fd=new FormData();
+    fd.append('csrfmiddlewaretoken',document.querySelector('[name=csrfmiddlewaretoken]')?.value||'');
+    fd.append('tipo',document.getElementById('tipo-hidden').value);
+    fd.append('nombre',nombre);fd.append('email',email);
+    fd.append('telefono',document.getElementById('f-telefono').value);
+    fd.append('pedido',document.getElementById('f-pedido').value);
+    fd.append('asunto',asunto);fd.append('descripcion',desc);
+    const archivo=document.getElementById('f-archivo').files[0];
+    if(archivo) fd.append('archivo',archivo);
+
+    try{
+        const res=await fetch(window.location.href,{method:'POST',body:fd});
+        const radicado=generateRadicado();
+        document.getElementById('radicado-box').textContent=radicado;
+        document.getElementById('tipo-result').textContent=document.getElementById('tipo-hidden').value;
+        document.getElementById('pqrs-form-view').style.display='none';
+        document.getElementById('success-screen').classList.add('active');
+    }catch(e){
+        showToast('Error de conexión. Intenta de nuevo.','error');
+    }finally{
+        btn.classList.remove('loading');btn.disabled=false;
+    }
+}
+
+function nuevaSolicitud(){
+    document.getElementById('pqrs-form-view').style.display='block';
+    document.getElementById('success-screen').classList.remove('active');
+    document.getElementById('f-nombre').value='';
+    document.getElementById('f-email').value='';
+    document.getElementById('f-asunto').value='';
+    document.getElementById('f-descripcion').value='';
+    counter.textContent='0/800';
+    document.getElementById('check-terms').classList.remove('checked');
+}
+
+window.showToast=function(msg,type='info'){
+    const icons={success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle',warning:'fa-exclamation-triangle'};
+    const stack=document.getElementById('toast-stack');
+    const t=document.createElement('div');
+    t.className=`toast-item ${type}`;
+    t.innerHTML=`<i class="fas ${icons[type]||icons.info}" style="font-size:.95rem;"></i><span style="flex:1;font-size:.85rem;font-weight:500;">${msg}</span>`;
+    stack.appendChild(t);
+    setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';t.style.transform='translateY(8px)';setTimeout(()=>t.remove(),320);},3800);
+};
+</script>
+</body>
+</html>

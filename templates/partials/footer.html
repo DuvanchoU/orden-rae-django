@@ -68,19 +68,19 @@
                     <div class="ft-col-collapsible is-open">
                         <div class="ft-col-title">Ayuda</div>
                         <ul class="ft-links">
-                            <li><a href="#">Preguntas frecuentes</a></li>
-                            <li><a href="#">Guía de materiales</a></li>
-                            <li><a href="#">Cuidado de muebles</a></li>
-                            <li><a href="#">Política de envíos</a></li>
-                            <li><a href="#">Devoluciones</a></li>
+                            <li><a href="{% url 'pagina:info_ayuda' slug='preguntas_frecuentes' %}">Preguntas frecuentes</a></li>
+                            <li><a href="{% url 'pagina:info_ayuda' slug='materiales' %}">Guía de materiales</a></li>
+                            <li><a href="{% url 'pagina:info_ayuda' slug='cuidado' %}">Cuidado de muebles</a></li>
+                            <li><a href="{% url 'pagina:info_ayuda' slug='envios' %}">Política de envíos</a></li>
+                            <li><a href="{% url 'pagina:info_ayuda' slug='devoluciones' %}">Devoluciones</a></li>
                             <li>
-                                <a href="#">
+                                <a href="{% url 'pagina:rastrear_pedido' %}">
                                     Rastrear pedido
                                     <i class="fas fa-arrow-right" style="font-size:.65rem;margin-left:.25rem"></i>
                                 </a>
                             </li>
                             <li><a href="#">Términos y condiciones</a></li>
-                            <li><a href="#">PQRS</a></li>
+                            <li><a href="{% url 'pagina:pqrs' %}">PQRS</a></li>
                         </ul>
                     </div>
                 </div>

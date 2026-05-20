@@ -14,646 +14,252 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/estilos_web.css' %}?v=3.0">
+    <link rel="stylesheet" href="{% static 'css/estilos_footer.css' %}?v=2.0">
+
+    {# ── Stripe.js – siempre desde js.stripe.com ── #}
+    <script src="https://js.stripe.com/v3/"></script>
 
 <style>
 :root {
-    --cafe:        #8B5E3C;
-    --cafe-dark:   #6B462C;
-    --cafe-light:  #C49A6C;
-    --crema:       #FAF6F1;
-    --crema-dark:  #F0E8DC;
-    --gold:        #D4AF6F;
-    --gold-light:  #F5D78C;
-    --verde:       #2A7A5B;
-    --rojo:        #C94040;
-    --text-dark:   #1C1510;
-    --text-mid:    #5C4A38;
-    --text-light:  #9B8878;
-    --border:      #E8DDD4;
+    --cafe: #8B5E3C; --cafe-dark: #6B462C; --cafe-light: #C49A6C;
+    --crema: #FAF6F1; --crema-dark: #F0E8DC; --gold: #D4AF6F;
+    --verde: #2A7A5B; --rojo: #C94040; --text-dark: #1C1510;
+    --text-mid: #5C4A38; --text-light: #9B8878; --border: #E8DDD4;
     --shadow-soft: 0 2px 20px rgba(139,94,60,.10);
-    --shadow-md:   0 6px 32px rgba(139,94,60,.16);
-    --shadow-lg:   0 12px 56px rgba(139,94,60,.22);
-    --r-sm: 8px;
-    --r-md: 16px;
-    --r-lg: 24px;
-    --r-xl: 36px;
+    --shadow-md: 0 6px 32px rgba(139,94,60,.16);
+    --shadow-lg: 0 12px 56px rgba(139,94,60,.22);
+    --r-md: 16px; --r-lg: 24px; --r-xl: 36px;
 }
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--crema); font-family: 'DM Sans', sans-serif; color: var(--text-dark); min-height: 100vh; }
 
-body {
-    background: var(--crema);
-    font-family: 'DM Sans', sans-serif;
-    color: var(--text-dark);
-    min-height: 100vh;
-}
-
-/* ── PROGRESS BAR ── */
+/* ── PROGRESS ── */
 .checkout-progress {
-    background: #fff;
-    border-bottom: 1px solid var(--border);
-    padding: 1.25rem 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    background: #fff; border-bottom: 1px solid var(--border);
+    padding: 1.25rem 0; position: sticky; top: 0; z-index: 100;
     box-shadow: var(--shadow-soft);
 }
-
 .progress-steps {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 0 1rem;
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; max-width: 600px; margin: 0 auto; padding: 0 1rem;
 }
-
-.progress-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: .4rem;
-    flex: 1;
-    position: relative;
-}
-
+.progress-step { display: flex; flex-direction: column; align-items: center; gap: .4rem; flex: 1; position: relative; }
 .progress-step:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: 18px;
-    left: 60%;
-    right: -40%;
-    height: 2px;
-    background: var(--border);
-    z-index: 0;
-    transition: background .4s;
+    content: ''; position: absolute; top: 18px; left: 60%; right: -40%;
+    height: 2px; background: var(--border); z-index: 0; transition: background .4s;
 }
-
 .progress-step.completed:not(:last-child)::after { background: var(--verde); }
-
 .step-circle {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: var(--crema-dark);
-    border: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .85rem;
-    font-weight: 700;
-    color: var(--text-light);
-    z-index: 1;
-    position: relative;
-    transition: all .3s;
+    width: 36px; height: 36px; border-radius: 50%; background: var(--crema-dark);
+    border: 2px solid var(--border); display: flex; align-items: center;
+    justify-content: center; font-size: .85rem; font-weight: 700;
+    color: var(--text-light); z-index: 1; position: relative; transition: all .3s;
 }
-
-.step-circle.active {
-    background: var(--cafe);
-    border-color: var(--cafe);
-    color: #fff;
-    box-shadow: 0 0 0 4px rgba(139,94,60,.2);
-}
-
-.step-circle.completed {
-    background: var(--verde);
-    border-color: var(--verde);
-    color: #fff;
-}
-
-.step-label {
-    font-size: .72rem;
-    font-weight: 600;
-    color: var(--text-light);
-    text-align: center;
-    transition: color .3s;
-}
-
+.step-circle.active  { background: var(--cafe); border-color: var(--cafe); color: #fff; box-shadow: 0 0 0 4px rgba(139,94,60,.2); }
+.step-circle.completed { background: var(--verde); border-color: var(--verde); color: #fff; }
+.step-label { font-size: .72rem; font-weight: 600; color: var(--text-light); text-align: center; transition: color .3s; }
 .step-label.active    { color: var(--cafe); }
 .step-label.completed { color: var(--verde); }
 
 /* ── LAYOUT ── */
 .checkout-wrapper {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 1.5rem 5rem;
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 2rem;
-    align-items: start;
+    max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem 5rem;
+    display: grid; grid-template-columns: 1fr 400px; gap: 2rem; align-items: start;
 }
 
 /* ── SECCIONES ── */
 .checkout-section {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--r-xl);
-    box-shadow: var(--shadow-soft);
-    overflow: hidden;
-    margin-bottom: 1.25rem;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-soft);
+    overflow: hidden; margin-bottom: 1.25rem;
 }
-
 .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.75rem;
-    background: var(--crema);
-    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.75rem; background: var(--crema); border-bottom: 1px solid var(--border);
 }
-
 .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    color: var(--text-dark);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: .6rem;
+    font-family: 'Playfair Display', serif; font-size: 1.1rem;
+    color: var(--text-dark); margin: 0; display: flex; align-items: center; gap: .6rem;
 }
-
 .section-title i { color: var(--cafe); font-size: .95rem; }
 .section-body { padding: 1.5rem 1.75rem; }
 
-/* ── FORMULARIO ── */
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
+/* ── FORM ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 .form-group { display: flex; flex-direction: column; }
-
-.form-label {
-    font-size: .78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--text-light);
-    margin-bottom: .4rem;
-}
-
+.form-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-light); margin-bottom: .4rem; }
 .required { color: var(--rojo); }
-
 .form-control {
-    border: 1.5px solid var(--border);
-    border-radius: var(--r-md);
-    padding: .7rem 1rem;
-    font-size: .92rem;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border-color .2s, box-shadow .2s;
-    color: var(--text-dark);
-    background: #fff;
-    width: 100%;
+    border: 1.5px solid var(--border); border-radius: var(--r-md);
+    padding: .7rem 1rem; font-size: .92rem; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color .2s, box-shadow .2s; color: var(--text-dark); background: #fff; width: 100%;
 }
-
-.form-control:focus {
-    border-color: var(--cafe);
-    box-shadow: 0 0 0 3px rgba(139,94,60,.12);
-}
-
-.form-control.is-invalid {
-    border-color: var(--rojo);
-    box-shadow: 0 0 0 3px rgba(201,64,64,.1);
-}
-
+.form-control:focus { border-color: var(--cafe); box-shadow: 0 0 0 3px rgba(139,94,60,.12); }
+.form-control.is-invalid { border-color: var(--rojo); box-shadow: 0 0 0 3px rgba(201,64,64,.1); }
 .form-control.is-valid { border-color: var(--verde); }
-
-.invalid-feedback {
-    font-size: .75rem;
-    color: var(--rojo);
-    margin-top: .3rem;
-    display: none;
-}
-
-.form-control.is-invalid + .invalid-feedback,
+.invalid-feedback { font-size: .75rem; color: var(--rojo); margin-top: .3rem; display: none; }
 .form-control.is-invalid ~ .invalid-feedback { display: block; }
-
 .form-text { font-size: .75rem; color: var(--text-light); margin-top: .25rem; }
-
 textarea.form-control { resize: vertical; min-height: 70px; }
-select.form-control    { cursor: pointer; }
+select.form-control { cursor: pointer; }
 
 /* ── MÉTODOS DE PAGO ── */
 .payment-list { display: flex; flex-direction: column; gap: .6rem; }
-
 .payment-option {
-    border: 2px solid var(--border);
-    border-radius: var(--r-md);
-    padding: 1rem 1.25rem;
-    cursor: pointer;
-    transition: all .2s;
-    display: flex;
-    align-items: center;
-    gap: .9rem;
-    user-select: none;
+    border: 2px solid var(--border); border-radius: var(--r-md); padding: 1rem 1.25rem;
+    cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: .9rem; user-select: none;
 }
-
-.payment-option:hover   { border-color: var(--cafe-light); background: var(--crema); }
-.payment-option.selected {
-    border-color: var(--cafe);
-    background: #FFF8F3;
-    box-shadow: 0 0 0 3px rgba(139,94,60,.08);
-}
-
-.payment-icon {
-    width: 42px; height: 42px;
-    border-radius: var(--r-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-}
-
+.payment-option:hover    { border-color: var(--cafe-light); background: var(--crema); }
+.payment-option.selected { border-color: var(--cafe); background: #FFF8F3; box-shadow: 0 0 0 3px rgba(139,94,60,.08); }
+.payment-icon { width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
 .pay-icon-card { background: #EEF2FF; color: #4F46E5; }
 .pay-icon-pse  { background: #EFF6FF; color: #2563EB; }
 .pay-icon-cash { background: #F0FFF4; color: var(--verde); }
 .pay-icon-wa   { background: #F0FFF4; color: #25D366; }
-
-.payment-info { flex: 1; }
-.payment-name { font-weight: 700; font-size: .92rem; color: var(--text-dark); }
-.payment-desc { font-size: .78rem; color: var(--text-light); margin-top: .1rem; }
-
+.payment-info  { flex: 1; }
+.payment-name  { font-weight: 700; font-size: .92rem; color: var(--text-dark); }
+.payment-desc  { font-size: .78rem; color: var(--text-light); margin-top: .1rem; }
 .payment-check {
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all .2s;
+    width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; transition: all .2s;
 }
+.payment-option.selected .payment-check { background: var(--cafe); border-color: var(--cafe); color: #fff; font-size: .6rem; }
 
-.payment-option.selected .payment-check {
-    background: var(--cafe);
-    border-color: var(--cafe);
-    color: #fff;
-    font-size: .6rem;
-}
-
-.card-form {
-    background: var(--crema);
-    border-radius: var(--r-md);
-    padding: 1.25rem;
-    margin-top: .5rem;
-    border: 1px solid var(--border);
+/* ── STRIPE ELEMENTS ── */
+#stripe-card-panel {
+    background: var(--crema); border-radius: var(--r-md);
+    padding: 1.25rem; margin-top: .5rem; border: 1px solid var(--border);
     display: none;
 }
+#stripe-card-panel.active { display: block; }
 
-.card-form.active { display: block; }
-
-.card-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+#stripe-card-element {
+    background: #fff; border: 1.5px solid var(--border);
+    border-radius: var(--r-md); padding: .85rem 1rem;
+    transition: border-color .2s; min-height: 44px;
 }
+#stripe-card-element.StripeElement--focus  { border-color: var(--cafe); box-shadow: 0 0 0 3px rgba(139,94,60,.12); }
+#stripe-card-element.StripeElement--invalid { border-color: var(--rojo); }
+
+.stripe-error {
+    color: var(--rojo); font-size: .8rem; margin-top: .5rem;
+    display: none; align-items: center; gap: .4rem;
+}
+.stripe-error.visible { display: flex; }
+
+.stripe-badge {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .72rem; color: var(--text-light); margin-top: .75rem;
+}
+.stripe-badge img { height: 20px; }
 
 /* ── RESUMEN ── */
 .order-summary {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--r-xl);
-    box-shadow: var(--shadow-soft);
-    overflow: hidden;
-    position: sticky;
-    top: 90px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--r-xl); box-shadow: var(--shadow-soft);
+    overflow: hidden; position: sticky; top: 90px;
 }
-
-.summary-head {
-    background: linear-gradient(135deg, var(--cafe-dark), var(--cafe));
-    padding: 1.25rem 1.75rem;
-    color: #fff;
-}
-
-.summary-head h4 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-style: italic;
-    margin: 0;
-}
-
+.summary-head { background: linear-gradient(135deg, var(--cafe-dark), var(--cafe)); padding: 1.25rem 1.75rem; color: #fff; }
+.summary-head h4 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-style: italic; margin: 0; }
 .summary-content { padding: 1.25rem 1.75rem; }
-
-.summary-item {
-    display: flex;
-    align-items: center;
-    gap: .9rem;
-    padding: .75rem 0;
-    border-bottom: 1px solid var(--border);
-}
-
+.summary-item { display: flex; align-items: center; gap: .9rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
 .summary-item:last-of-type { border-bottom: none; }
-
-/* Placeholder SVG inline cuando la imagen falla */
-.summary-item-img {
-    width: 56px; height: 56px;
-    border-radius: var(--r-sm);
-    object-fit: cover;
-    background: var(--crema-dark);
-    flex-shrink: 0;
-}
-
-.summary-item-details  { flex: 1; min-width: 0; }
-.summary-item-name {
-    font-size: .85rem;
-    font-weight: 600;
-    color: var(--text-dark);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.summary-item-qty   { font-size: .75rem; color: var(--text-light); margin-top: .15rem; }
+.summary-item-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--crema-dark); flex-shrink: 0; }
+.summary-item-details { flex: 1; min-width: 0; }
+.summary-item-name { font-size: .85rem; font-weight: 600; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summary-item-qty  { font-size: .75rem; color: var(--text-light); margin-top: .15rem; }
 .summary-item-price { font-size: .88rem; font-weight: 700; color: var(--cafe); flex-shrink: 0; }
-
 .summary-divider { border-color: var(--border); margin: .75rem 0; }
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: .5rem 0;
-    font-size: .88rem;
-}
-
-.summary-label          { color: var(--text-mid); }
-.summary-value          { font-weight: 600; color: var(--text-dark); }
+.summary-row { display: flex; justify-content: space-between; align-items: center; padding: .5rem 0; font-size: .88rem; }
+.summary-label { color: var(--text-mid); }
+.summary-value  { font-weight: 600; color: var(--text-dark); }
 .summary-value.green    { color: var(--verde); }
 .summary-value.discount { color: var(--verde); }
-
 .summary-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.75rem;
-    background: var(--crema);
-    border-top: 2px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 1.75rem; background: var(--crema); border-top: 2px solid var(--border);
     margin: 0 -1.75rem;
 }
-
-.total-label {
-    font-size: .82rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    color: var(--text-mid);
-}
-
-.total-amount {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--cafe);
-}
+.total-label { font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-mid); }
+.total-amount { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--cafe); }
 
 /* ── BOTÓN PAGAR ── */
 .btn-pay {
-    width: 100%;
-    background: linear-gradient(135deg, var(--cafe), var(--cafe-dark));
-    border: none;
-    color: #fff;
-    font-weight: 700;
-    font-size: 1rem;
-    padding: 1rem 1.5rem;
-    border-radius: var(--r-md);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .6rem;
-    transition: all .25s;
-    margin: 1.25rem 0 .75rem;
-    position: relative;
-    overflow: hidden;
+    width: 100%; background: linear-gradient(135deg, var(--cafe), var(--cafe-dark));
+    border: none; color: #fff; font-weight: 700; font-size: 1rem;
+    padding: 1rem 1.5rem; border-radius: var(--r-md); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: .6rem;
+    transition: all .25s; margin: 1.25rem 0 .75rem; position: relative; overflow: hidden;
 }
-
-.btn-pay::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
-    opacity: 0;
-    transition: opacity .25s;
-}
-
-.btn-pay:hover::before    { opacity: 1; }
-.btn-pay:hover            { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,94,60,.4); }
-.btn-pay:disabled,
-.btn-pay.processing       { opacity: .75; cursor: not-allowed; transform: none; box-shadow: none; pointer-events: none; }
-
+.btn-pay::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.15), transparent); opacity: 0; transition: opacity .25s; }
+.btn-pay:hover::before { opacity: 1; }
+.btn-pay:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,94,60,.4); }
+.btn-pay:disabled, .btn-pay.processing { opacity: .75; cursor: not-allowed; transform: none; box-shadow: none; pointer-events: none; }
 .btn-pay .btn-text    { display: flex; align-items: center; gap: .5rem; }
 .btn-pay .btn-spinner { display: none; }
 .btn-pay.processing .btn-text    { display: none; }
 .btn-pay.processing .btn-spinner { display: flex; align-items: center; gap: .5rem; }
-
 @keyframes spin { to { transform: rotate(360deg); } }
-
-.spinner-ring {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(255,255,255,.4);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-}
-
-.trust-row {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: .75rem;
-}
-
+.spinner-ring { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+.trust-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: .75rem; }
 .trust-item { display: flex; align-items: center; gap: .35rem; font-size: .75rem; color: var(--text-light); }
 .trust-item i { color: var(--verde); }
 
-/* ── TÉRMINOS ── */
+/* ── FORM CHECK ── */
 .form-check-wrap { padding: 1.25rem 1.75rem; }
-
-.check-row {
-    display: flex;
-    align-items: flex-start;
-    gap: .6rem;
-    margin-bottom: .6rem;
-}
-
-.check-row input[type="checkbox"] {
-    margin-top: .15rem;
-    accent-color: var(--cafe);
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-    cursor: pointer;
-}
-
+.check-row { display: flex; align-items: flex-start; gap: .6rem; margin-bottom: .6rem; }
+.check-row input[type="checkbox"] { margin-top: .15rem; accent-color: var(--cafe); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
 .check-row label { font-size: .85rem; color: var(--text-mid); cursor: pointer; line-height: 1.5; }
-.check-row a     { color: var(--cafe); text-decoration: underline; }
+.check-row a { color: var(--cafe); text-decoration: underline; }
 
-/* ── MODAL DE ÉXITO ── */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.55);
-    backdrop-filter: blur(4px);
-    z-index: 9998;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
+/* ── ALERT ── */
+.alert-info-custom {
+    background: rgba(42,122,91,.08); border: 1px solid rgba(42,122,91,.25);
+    border-radius: var(--r-md); padding: .75rem 1rem; font-size: .82rem;
+    color: var(--verde); display: flex; align-items: center; gap: .5rem; margin-top: 1rem;
 }
 
+/* ── MODAL ÉXITO ── */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    backdrop-filter: blur(4px); z-index: 9998; display: none;
+    align-items: center; justify-content: center; padding: 1rem;
+}
 .modal-overlay.active { display: flex; }
-
 .modal-box {
-    background: #fff;
-    border-radius: var(--r-xl);
-    padding: 2.5rem 2rem;
-    max-width: 480px;
-    width: 100%;
-    text-align: center;
-    box-shadow: var(--shadow-lg);
+    background: #fff; border-radius: var(--r-xl); padding: 2.5rem 2rem;
+    max-width: 480px; width: 100%; text-align: center; box-shadow: var(--shadow-lg);
     animation: popIn .4s cubic-bezier(.16,1,.3,1);
 }
-
-@keyframes popIn {
-    from { opacity: 0; transform: scale(.92) translateY(20px); }
-    to   { opacity: 1; transform: scale(1)  translateY(0); }
-}
-
-.modal-icon-wrap {
-    width: 80px; height: 80px;
-    background: #F0FFF6;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-    font-size: 2.2rem;
-    color: var(--verde);
-}
-
+@keyframes popIn { from { opacity: 0; transform: scale(.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-icon-wrap { width: 80px; height: 80px; background: #F0FFF6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2.2rem; color: var(--verde); }
 .modal-box h3 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--text-dark); margin-bottom: .5rem; }
 .modal-box p  { color: var(--text-light); font-size: .92rem; margin-bottom: 1rem; }
-
-.order-num-box {
-    background: var(--crema);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    padding: .9rem 1.25rem;
-    margin-bottom: 1.5rem;
-}
-
+.order-num-box { background: var(--crema); border: 1px solid var(--border); border-radius: var(--r-md); padding: .9rem 1.25rem; margin-bottom: 1.5rem; }
 .order-num-label { font-size: .72rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
 .order-num-value { font-size: 1.4rem; font-weight: 800; color: var(--cafe); font-family: monospace; margin-top: .25rem; }
-
-.modal-btn {
-    width: 100%;
-    background: linear-gradient(135deg, var(--cafe), var(--cafe-dark));
-    color: #fff;
-    border: none;
-    border-radius: var(--r-md);
-    padding: .9rem 1.5rem;
-    font-weight: 700;
-    font-size: .95rem;
-    cursor: pointer;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
-    transition: all .25s;
-    margin-bottom: .6rem;
-}
-
+.modal-btn { width: 100%; background: linear-gradient(135deg, var(--cafe), var(--cafe-dark)); color: #fff; border: none; border-radius: var(--r-md); padding: .9rem 1.5rem; font-weight: 700; font-size: .95rem; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: .5rem; transition: all .25s; margin-bottom: .6rem; }
 .modal-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(139,94,60,.35); color: #fff; }
-
-.modal-btn-outline {
-    width: 100%;
-    background: transparent;
-    border: 1.5px solid var(--border);
-    color: var(--text-mid);
-    border-radius: var(--r-md);
-    padding: .75rem 1.5rem;
-    font-weight: 600;
-    font-size: .88rem;
-    cursor: pointer;
-    transition: all .2s;
-}
-
+.modal-btn-outline { width: 100%; background: transparent; border: 1.5px solid var(--border); color: var(--text-mid); border-radius: var(--r-md); padding: .75rem 1.5rem; font-weight: 600; font-size: .88rem; cursor: pointer; transition: all .2s; }
 .modal-btn-outline:hover { border-color: var(--cafe); color: var(--cafe); }
 
-/* ── ALERTA INFO ── */
-.alert-info-custom {
-    background: rgba(42,122,91,.08);
-    border: 1px solid rgba(42,122,91,.25);
-    border-radius: var(--r-md);
-    padding: .75rem 1rem;
-    font-size: .82rem;
-    color: var(--verde);
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    margin-top: 1rem;
-}
-
 /* ── TOAST ── */
-.toast-stack {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: .6rem;
-    pointer-events: none;
-}
-
-.toast-item {
-    background: var(--text-dark);
-    color: #fff;
-    border-radius: var(--r-md);
-    padding: .85rem 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    min-width: 260px;
-    max-width: 340px;
-    box-shadow: var(--shadow-lg);
-    pointer-events: auto;
-    animation: toastIn .35s cubic-bezier(.16,1,.3,1);
-}
-
+.toast-stack { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: .6rem; pointer-events: none; }
+.toast-item { background: var(--text-dark); color: #fff; border-radius: var(--r-md); padding: .85rem 1.2rem; display: flex; align-items: center; gap: .75rem; min-width: 260px; max-width: 340px; box-shadow: var(--shadow-lg); pointer-events: auto; animation: toastIn .35s cubic-bezier(.16,1,.3,1); }
 .toast-item.success { border-left: 4px solid var(--verde); }
 .toast-item.error   { border-left: 4px solid var(--rojo); }
-.toast-item.warning { border-left: 4px solid var(--gold); }
-.toast-item.info    { border-left: 4px solid #60a5fa; }
-
-@keyframes toastIn {
-    from { opacity: 0; transform: translateY(16px) scale(.95); }
-    to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-
+.toast-item.warning { border-left: 4px solid #D4AF6F; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(16px) scale(.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .toast-msg { flex: 1; font-size: .86rem; font-weight: 500; line-height: 1.4; }
 
-/* ── Responsive ── */
-@media (max-width: 900px) {
-    .checkout-wrapper { grid-template-columns: 1fr; }
-    .order-summary    { position: static; }
-}
-
-@media (max-width: 600px) {
-    .form-row, .card-row     { grid-template-columns: 1fr; }
-    .checkout-wrapper        { padding: 0 1rem 4rem; }
-}
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) { .checkout-wrapper { grid-template-columns: 1fr; } .order-summary { position: static; } }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } .checkout-wrapper { padding: 0 1rem 4rem; } }
 </style>
 </head>
 
 <body>
 {% csrf_token %}
-
 {% include 'partials/header.html' %}
 
 <!-- ── BARRA DE PROGRESO ── -->
@@ -678,11 +284,12 @@ select.form-control    { cursor: pointer; }
     </div>
 </div>
 
-<!-- ── CONTENIDO PRINCIPAL ── -->
+<!-- ── CONTENIDO ── -->
 <div class="checkout-wrapper">
 
     <!-- ══ Columna izquierda ══ -->
     <div class="checkout-forms">
+
         <!-- SECCIÓN 1: Datos de contacto -->
         <div class="checkout-section">
             <div class="section-header">
@@ -693,14 +300,12 @@ select.form-control    { cursor: pointer; }
                     <div class="form-group">
                         <label class="form-label">Nombre completo <span class="required">*</span></label>
                         <input type="text" class="form-control" id="co-nombre"
-                               value="{{ user.get_full_name|default:'' }}"
-                               placeholder="Ej: María González" autocomplete="name">
+                               value="{{ user.get_full_name|default:'' }}" placeholder="Ej: María González" autocomplete="name">
                         <div class="invalid-feedback">Ingresa tu nombre completo</div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">N.º de documento <span class="required">*</span></label>
-                        <input type="text" class="form-control" id="co-documento"
-                               placeholder="CC / NIT / TI" autocomplete="off">
+                        <input type="text" class="form-control" id="co-documento" placeholder="CC / NIT / TI" autocomplete="off">
                         <div class="invalid-feedback">Ingresa tu número de documento</div>
                     </div>
                 </div>
@@ -708,14 +313,12 @@ select.form-control    { cursor: pointer; }
                     <div class="form-group">
                         <label class="form-label">Correo electrónico <span class="required">*</span></label>
                         <input type="email" class="form-control" id="co-email"
-                               value="{{ user.email|default:'' }}"
-                               placeholder="tu@correo.com" autocomplete="email">
+                               value="{{ user.email|default:'' }}" placeholder="tu@correo.com" autocomplete="email">
                         <div class="invalid-feedback">Ingresa un correo válido</div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Teléfono / WhatsApp <span class="required">*</span></label>
-                        <input type="tel" class="form-control" id="co-telefono"
-                               placeholder="+57 300 000 0000" autocomplete="tel">
+                        <input type="tel" class="form-control" id="co-telefono" placeholder="+57 300 000 0000" autocomplete="tel">
                         <div class="form-text">Te contactaremos para coordinar la entrega</div>
                         <div class="invalid-feedback">Ingresa un teléfono válido</div>
                     </div>
@@ -723,7 +326,7 @@ select.form-control    { cursor: pointer; }
             </div>
         </div>
 
-        <!-- SECCIÓN 2: Dirección de envío -->
+        <!-- SECCIÓN 2: Envío -->
         <div class="checkout-section">
             <div class="section-header">
                 <h3 class="section-title"><i class="fas fa-truck"></i> Dirección de envío</h3>
@@ -743,14 +346,11 @@ select.form-control    { cursor: pointer; }
                     </select>
                     <div class="invalid-feedback">Selecciona tu ciudad</div>
                 </div>
-
                 <div class="form-group" style="margin-bottom:1rem;">
                     <label class="form-label">Dirección completa <span class="required">*</span></label>
-                    <input type="text" class="form-control" id="co-direccion"
-                           placeholder="Carrera/Calle # XX - XX, Barrio" autocomplete="street-address">
+                    <input type="text" class="form-control" id="co-direccion" placeholder="Carrera/Calle # XX - XX, Barrio" autocomplete="street-address">
                     <div class="invalid-feedback">Ingresa tu dirección completa</div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Apartamento / Oficina</label>
@@ -761,13 +361,10 @@ select.form-control    { cursor: pointer; }
                         <input type="text" class="form-control" id="co-codigopostal" placeholder="110111" maxlength="6">
                     </div>
                 </div>
-
                 <div class="form-group" style="margin-top:1rem;">
                     <label class="form-label">Instrucciones de entrega</label>
-                    <textarea class="form-control" id="co-notas" rows="2"
-                              placeholder="Portero automático #1234, dejar en recepción…"></textarea>
+                    <textarea class="form-control" id="co-notas" rows="2" placeholder="Portero automático #1234, dejar en recepción…"></textarea>
                 </div>
-
                 <div class="alert-info-custom" id="delivery-estimate-box">
                     <i class="fas fa-calendar-check"></i>
                     <span>Entrega estimada: <strong id="delivery-estimate-text">3–5 días hábiles</strong></span>
@@ -783,43 +380,36 @@ select.form-control    { cursor: pointer; }
             <div class="section-body">
                 <div class="payment-list">
 
+                    <!-- STRIPE — Tarjeta (integración real) -->
                     <div class="payment-option" id="pay-card" onclick="selectPayment('card')">
                         <div class="payment-icon pay-icon-card"><i class="far fa-credit-card"></i></div>
                         <div class="payment-info">
                             <div class="payment-name">Tarjeta crédito / débito</div>
-                            <div class="payment-desc">Visa, Mastercard, Amex</div>
+                            <div class="payment-desc">Visa, Mastercard, Amex — Procesado por Stripe 🔒</div>
                         </div>
                         <div class="payment-check"><i class="fas fa-check" style="display:none;"></i></div>
                     </div>
 
-                    <div class="card-form" id="card-form">
-                        <div class="form-group" style="margin-bottom:.8rem;">
-                            <label class="form-label">Número de tarjeta <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="card-number"
-                                   placeholder="1234 5678 9012 3456" maxlength="19" autocomplete="cc-number">
-                            <div class="invalid-feedback">Número de tarjeta inválido</div>
+                    <!-- Panel de Stripe Elements -->
+                    <div id="stripe-card-panel">
+                        <label class="form-label mb-2">Datos de tu tarjeta <span class="required">*</span></label>
+                        <div id="stripe-card-element"></div>
+                        <div class="stripe-error" id="stripe-error">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span id="stripe-error-msg"></span>
                         </div>
-                        <div class="form-group" style="margin-bottom:.8rem;">
-                            <label class="form-label">Nombre en la tarjeta <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="card-name"
-                                   placeholder="NOMBRE APELLIDO" style="text-transform:uppercase;" autocomplete="cc-name">
+                        <div class="stripe-badge mt-2">
+                            <i class="fas fa-lock" style="color:var(--verde);"></i>
+                            Pagos seguros con cifrado SSL de 256 bits — powered by
+                            <strong style="color:#635BFF;">Stripe</strong>
                         </div>
-                        <div class="card-row">
-                            <div class="form-group">
-                                <label class="form-label">Expiración <span class="required">*</span></label>
-                                <input type="text" class="form-control" id="card-expiry"
-                                       placeholder="MM/AA" maxlength="5" autocomplete="cc-exp">
-                                <div class="invalid-feedback">Fecha inválida</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">CVV <span class="required">*</span></label>
-                                <input type="text" class="form-control" id="card-cvv"
-                                       placeholder="123" maxlength="4" autocomplete="cc-csc">
-                                <div class="invalid-feedback">CVV inválido</div>
-                            </div>
+                        <div class="mt-3 p-3" style="background:#FFF8E7;border:1px solid #F5D78C;border-radius:12px;font-size:.8rem;color:#7a5a00;">
+                            <strong>🧪 Modo pruebas activo</strong><br>
+                            Tarjeta de prueba: <code>4242 4242 4242 4242</code> · Exp: cualquier fecha futura · CVC: cualquier 3 dígitos
                         </div>
                     </div>
 
+                    <!-- PSE -->
                     <div class="payment-option" id="pay-pse" onclick="selectPayment('pse')">
                         <div class="payment-icon pay-icon-pse"><i class="fas fa-university"></i></div>
                         <div class="payment-info">
@@ -829,6 +419,7 @@ select.form-control    { cursor: pointer; }
                         <div class="payment-check"><i class="fas fa-check" style="display:none;"></i></div>
                     </div>
 
+                    <!-- Contra entrega -->
                     <div class="payment-option" id="pay-cash" onclick="selectPayment('cash')">
                         <div class="payment-icon pay-icon-cash"><i class="fas fa-money-bill-wave"></i></div>
                         <div class="payment-info">
@@ -838,6 +429,7 @@ select.form-control    { cursor: pointer; }
                         <div class="payment-check"><i class="fas fa-check" style="display:none;"></i></div>
                     </div>
 
+                    <!-- WhatsApp -->
                     <div class="payment-option" id="pay-whatsapp" onclick="selectPayment('whatsapp')">
                         <div class="payment-icon pay-icon-wa"><i class="fab fa-whatsapp"></i></div>
                         <div class="payment-info">
@@ -880,32 +472,25 @@ select.form-control    { cursor: pointer; }
                 Procesando…
             </span>
         </button>
-
         <div class="trust-row">
             <div class="trust-item"><i class="fas fa-shield-alt"></i> Pago seguro SSL</div>
             <div class="trust-item"><i class="fas fa-undo"></i> 30 días devolución</div>
             <div class="trust-item"><i class="fas fa-headset"></i> Soporte 24/7</div>
         </div>
-
     </div>
 
     <!-- ══ Columna derecha: Resumen ══ -->
     <aside class="order-summary">
         <div class="summary-head">
             <h4>Resumen de orden</h4>
-            <small style="opacity:.75;font-size:.8rem;">
-                {{ carrito_cantidad|default:0 }} producto{{ carrito_cantidad|pluralize:'s' }}
-            </small>
+            <small style="opacity:.75;font-size:.8rem;">{{ carrito_cantidad|default:0 }} producto{{ carrito_cantidad|pluralize:'s' }}</small>
         </div>
-
         <div class="summary-content">
             <div id="summary-items">
                 {% for item in carrito_items %}
                 <div class="summary-item">
                     {% if item.imagen_url and item.imagen_url != '/static/img/placeholder.jpg' %}
-                        <img src="{{ item.imagen_url }}"
-                             alt="{{ item.nombre }}"
-                             class="summary-item-img"
+                        <img src="{{ item.imagen_url }}" alt="{{ item.nombre }}" class="summary-item-img"
                              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                         <div class="summary-item-img" style="display:none;align-items:center;justify-content:center;background:var(--crema-dark);">
                             <i class="fas fa-couch" style="color:var(--cafe-light);font-size:1.4rem;"></i>
@@ -919,20 +504,13 @@ select.form-control    { cursor: pointer; }
                         <div class="summary-item-name" title="{{ item.nombre }}">{{ item.nombre }}</div>
                         <div class="summary-item-qty">Cantidad: {{ item.cantidad }}</div>
                     </div>
-                    {# subtotal_con_iva = (precio_base + iva_unitario) × cantidad #}
-                    <div class="summary-item-price">
-                        ${{ item.subtotal_con_iva|cop_format }}
-                    </div>
+                    <div class="summary-item-price">${{ item.subtotal_con_iva|cop_format }}</div>
                 </div>
                 {% empty %}
-                <p style="color:var(--text-light);font-size:.88rem;text-align:center;padding:1rem 0;">
-                    No hay productos en el carrito.
-                </p>
+                <p style="color:var(--text-light);font-size:.88rem;text-align:center;padding:1rem 0;">No hay productos en el carrito.</p>
                 {% endfor %}
             </div>
-
             <hr class="summary-divider">
-
             <div class="summary-row">
                 <span class="summary-label">Subtotal (sin IVA)</span>
                 <span class="summary-value" id="sum-subtotal">${{ total_carrito|cop_format }}</span>
@@ -950,82 +528,67 @@ select.form-control    { cursor: pointer; }
             {% if descuento_aplicado %}
             <div class="summary-row">
                 <span class="summary-label">Descuento</span>
-                <span class="summary-value discount" id="sum-descuento">−${{ descuento|cop_format }}</span>
+                <span class="summary-value discount">−${{ descuento|cop_format }}</span>
             </div>
             {% endif %}
-
             {% if cupon_activo %}
-            <div style="background:#F0FFF6;border:1px solid #2A7A5B33;border-radius:var(--r-md);
-                        padding:.6rem .9rem;font-size:.8rem;color:var(--verde);
-                        margin:.5rem 0;display:flex;align-items:center;gap:.5rem;">
+            <div style="background:#F0FFF6;border:1px solid #2A7A5B33;border-radius:12px;padding:.6rem .9rem;font-size:.8rem;color:var(--verde);margin:.5rem 0;display:flex;align-items:center;gap:.5rem;">
                 <i class="fas fa-tag"></i>
-                Cupón <strong>{{ cupon_activo.codigo }}</strong> aplicado: {{ cupon_activo.descuento }}
+                Cupón <strong>{{ cupon_activo.codigo }}</strong> aplicado
             </div>
             {% endif %}
         </div>
-
-        <!-- TOTAL — usa total_final que ya incluye IVA y descuento -->
         <div class="summary-total">
             <span class="total-label">Total</span>
             <span class="total-amount" id="sum-total">${{ total_final|cop_format }}</span>
         </div>
-
         <div style="padding:1rem 1.75rem;">
             <ul style="list-style:none;padding:0;margin:0;">
                 <li style="font-size:.78rem;color:var(--text-light);margin-bottom:.4rem;">
-                    <i class="fas fa-shield-alt" style="color:var(--verde);margin-right:.4rem;"></i>
-                    Encriptación SSL de 256 bits
+                    <i class="fas fa-shield-alt" style="color:var(--verde);margin-right:.4rem;"></i>Encriptación SSL de 256 bits
                 </li>
                 <li style="font-size:.78rem;color:var(--text-light);margin-bottom:.4rem;">
-                    <i class="fas fa-undo" style="color:var(--verde);margin-right:.4rem;"></i>
-                    Devolución gratuita en 30 días
+                    <i class="fas fa-undo" style="color:var(--verde);margin-right:.4rem;"></i>Devolución gratuita en 30 días
                 </li>
                 <li style="font-size:.78rem;color:var(--text-light);">
-                    <i class="fas fa-truck" style="color:var(--verde);margin-right:.4rem;"></i>
-                    Seguimiento en tiempo real
+                    <i class="fas fa-truck" style="color:var(--verde);margin-right:.4rem;"></i>Seguimiento en tiempo real
                 </li>
             </ul>
         </div>
     </aside>
 
-</div>
+</div><!-- /checkout-wrapper -->
 
 <!-- ── MODAL ÉXITO ── -->
 <div class="modal-overlay" id="modal-exito">
     <div class="modal-box">
-        <div class="modal-icon-wrap">
-            <i class="fas fa-check-circle"></i>
-        </div>
+        <div class="modal-icon-wrap"><i class="fas fa-check-circle"></i></div>
         <h3>¡Pedido confirmado!</h3>
-        <p>Gracias por tu compra. Te enviamos la confirmación a<br><strong id="confirm-email-shown"></strong></p>
+        <p>Gracias por tu compra. Recibirás la confirmación en<br><strong id="confirm-email-shown"></strong></p>
         <div class="order-num-box">
-            <div class="order-num-label">Número de pedido</div>
+            <div class="order-num-label">Número de factura</div>
             <div class="order-num-value" id="order-number-shown">—</div>
+            <div class="order-num-label mt-2">Número de pedido</div>
+            <div class="order-num-value" id="pedido-number-shown" style="font-size:1.1rem;">—</div>
         </div>
         <p style="font-size:.8rem;color:var(--text-light);margin-bottom:1.5rem;">
             <i class="fas fa-truck me-1"></i> Tu pedido será despachado en 24–48 horas hábiles
         </p>
-        <a href="{% url 'pagina:home' %}" class="modal-btn">
-            <i class="fas fa-home"></i> Volver al inicio
-        </a>
-        <button class="modal-btn-outline" onclick="window.print()">
-            <i class="fas fa-print me-1"></i> Imprimir comprobante
-        </button>
+        <a href="{% url 'pagina:home' %}" class="modal-btn"><i class="fas fa-home"></i> Volver al inicio</a>
+        <button class="modal-btn-outline" onclick="window.print()"><i class="fas fa-print me-1"></i> Imprimir comprobante</button>
     </div>
 </div>
 
-<!-- ── TOAST STACK ── -->
+<!-- ── TOAST ── -->
 <div class="toast-stack" id="toast-stack"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{% static 'js/header.js' %}"></script>
-
-<!-- Datos Django → JS (solo para JS, no para mostrar en pantalla) -->
+<!-- ── Datos Django → JS ── -->
 <script id="checkout-data" type="application/json">
 {
     "total_carrito": {{ total_carrito|default:0 }},
     "total_iva":     {{ total_iva|default:0 }},
     "total_final":   {{ total_final|default:0 }},
+    "stripe_pk":     "{{ STRIPE_PUBLIC_KEY|escapejs }}",
     "user": {
         "nombre":   "{{ user.get_full_name|default:''|escapejs }}",
         "email":    "{{ user.email|default:''|escapejs }}",
@@ -1034,21 +597,26 @@ select.form-control    { cursor: pointer; }
 }
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/header.js' %}"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    ESTADO
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 const state = {
-    step:          2,
-    paymentMethod: null,
-    processing:    false,
+    step:            2,
+    paymentMethod:   null,
+    processing:      false,
+    stripeReady:     false,
+    paymentIntentId: null,
 };
 
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    UTILIDADES
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function csrf() {
     return document.querySelector('[name=csrfmiddlewaretoken]')?.value
         || document.cookie.split(';').reduce((v, c) => {
@@ -1057,44 +625,80 @@ function csrf() {
         }, '');
 }
 
-/** Formato peso colombiano: 1234567 → "$1.234.567" */
-function cop(n) {
-    return '$' + Math.round(Number(n) || 0)
-        .toLocaleString('es-CO', { minimumFractionDigits: 0 });
-}
-
 function getDjangoData() {
     try { return JSON.parse(document.getElementById('checkout-data')?.textContent || '{}'); }
     catch { return {}; }
 }
 
-/* ═══════════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════════ */
-(function init() {
-    const data = getDjangoData();
-    if (data.user?.nombre)   setIfEmpty('co-nombre',   data.user.nombre);
-    if (data.user?.email)    setIfEmpty('co-email',    data.user.email);
-    if (data.user?.telefono) setIfEmpty('co-telefono', data.user.telefono);
+function cop(n) {
+    return '$' + Math.round(Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 0 });
+}
 
-    /* Mostrar total correcto en el botón */
-    const btnTotal = document.getElementById('btn-total');
-    if (btnTotal && data.total_final) {
-        btnTotal.textContent = cop(data.total_final);
+/* ══════════════════════════════════════════════════════
+   INIT — Stripe Elements
+══════════════════════════════════════════════════════ */
+const djangoData = getDjangoData();
+const stripePk   = djangoData.stripe_pk || '';
+
+let stripe_obj   = null;
+let elements_obj = null;
+let cardElement  = null;
+
+if (stripePk) {
+    try {
+        stripe_obj   = Stripe(stripePk);
+        elements_obj = stripe_obj.elements();
+        cardElement  = elements_obj.create('card', {
+            style: {
+                base: {
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize:   '16px',
+                    color:      '#1C1510',
+                    '::placeholder': { color: '#9B8878' },
+                },
+                invalid: { color: '#C94040', iconColor: '#C94040' },
+            },
+            hidePostalCode: true,
+        });
+        cardElement.mount('#stripe-card-element');
+        cardElement.on('ready', ()  => { state.stripeReady = true; });
+        cardElement.on('change', e  => {
+            const errDiv = document.getElementById('stripe-error');
+            const errMsg = document.getElementById('stripe-error-msg');
+            if (e.error) {
+                errMsg.textContent = e.error.message;
+                errDiv.classList.add('visible');
+            } else {
+                errDiv.classList.remove('visible');
+            }
+        });
+    } catch (err) {
+        console.error('Error inicializando Stripe:', err);
+        showToast('Error al cargar el formulario de pago', 'error');
     }
+}
 
-    setupCardFormatting();
+/* ══════════════════════════════════════════════════════
+   PRELLENAR DATOS DE USUARIO
+══════════════════════════════════════════════════════ */
+(function prefill() {
+    const u = djangoData.user || {};
+    const setIfEmpty = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && !el.value.trim()) el.value = val;
+    };
+    setIfEmpty('co-nombre',   u.nombre   || '');
+    setIfEmpty('co-email',    u.email    || '');
+    setIfEmpty('co-telefono', u.telefono || '');
+    // Botón con total correcto
+    const btnTotal = document.getElementById('btn-total');
+    if (btnTotal && djangoData.total_final) btnTotal.textContent = cop(djangoData.total_final);
     setupLiveValidation();
 })();
 
-function setIfEmpty(id, val) {
-    const el = document.getElementById(id);
-    if (el && !el.value.trim()) el.value = val;
-}
-
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    PROGRESO
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function setStep(n) {
     state.step = n;
     [1,2,3,4].forEach(i => {
@@ -1102,10 +706,8 @@ function setStep(n) {
         if (!step) return;
         const circle = step.querySelector('.step-circle');
         const label  = step.querySelector('.step-label');
-
         circle.classList.remove('active','completed');
         label.classList.remove('active','completed');
-
         if (i < n) {
             circle.classList.add('completed');
             circle.innerHTML = '<i class="fas fa-check"></i>';
@@ -1121,53 +723,29 @@ function setStep(n) {
     });
 }
 
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    MÉTODO DE PAGO
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 window.selectPayment = function(method) {
     document.querySelectorAll('.payment-option').forEach(opt => {
         opt.classList.remove('selected');
         const chk = opt.querySelector('.payment-check i');
         if (chk) chk.style.display = 'none';
     });
-
     const selected = document.getElementById(`pay-${method}`);
     if (selected) {
         selected.classList.add('selected');
         const chk = selected.querySelector('.payment-check i');
         if (chk) chk.style.display = '';
     }
-
     state.paymentMethod = method;
-
-    const cardForm = document.getElementById('card-form');
-    if (cardForm) cardForm.classList.toggle('active', method === 'card');
+    // Mostrar/ocultar panel Stripe
+    document.getElementById('stripe-card-panel').classList.toggle('active', method === 'card');
 };
 
-/* ═══════════════════════════════════════════════════
-   FORMATO TARJETA
-═══════════════════════════════════════════════════ */
-function setupCardFormatting() {
-    document.getElementById('card-number')?.addEventListener('input', e => {
-        let v = e.target.value.replace(/\D/g,'').slice(0,16);
-        e.target.value = v.replace(/(\d{4})(?=\d)/g, '$1 ');
-    });
-    document.getElementById('card-expiry')?.addEventListener('input', e => {
-        let v = e.target.value.replace(/\D/g,'').slice(0,4);
-        if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
-        e.target.value = v;
-    });
-    document.getElementById('card-cvv')?.addEventListener('input', e => {
-        e.target.value = e.target.value.replace(/\D/g,'').slice(0,4);
-    });
-    document.getElementById('card-name')?.addEventListener('input', e => {
-        e.target.value = e.target.value.toUpperCase();
-    });
-}
-
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    VALIDACIÓN
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function setupLiveValidation() {
     ['co-nombre','co-documento','co-email','co-telefono','co-ciudad','co-direccion'].forEach(id => {
         const el = document.getElementById(id);
@@ -1197,77 +775,180 @@ function validateGroup(ids) {
     return allOk;
 }
 
-/* ═══════════════════════════════════════════════════
-   ESTIMADO DE ENTREGA
-═══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   ENTREGA ESTIMADA
+══════════════════════════════════════════════════════ */
 window.actualizarEntregaEstimada = function(ciudad) {
     const estimados = {
         bogota: '1–2 días hábiles', medellin: '2–3 días hábiles',
         cali: '2–3 días hábiles', barranquilla: '3–4 días hábiles',
-        cartagena: '3–4 días hábiles', bucaramanga: '3–4 días hábiles',
-        otra: '5–7 días hábiles',
+        cartagena: '3–4 días hábiles', bucaramanga: '3–4 días hábiles', otra: '5–7 días hábiles',
     };
     const txt = document.getElementById('delivery-estimate-text');
     if (txt) txt.textContent = estimados[ciudad] || '3–5 días hábiles';
 };
 
-/* ═══════════════════════════════════════════════════
-   PROCESAR PAGO
-═══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   PROCESAR PAGO — flujo principal
+══════════════════════════════════════════════════════ */
 window.procesarPago = async function() {
     if (state.processing) return;
 
+    // Validaciones de formulario
     if (!validateGroup(['co-nombre','co-documento','co-email','co-telefono'])) {
         showToast('Completa todos los datos de contacto', 'warning');
         document.getElementById('co-nombre')?.scrollIntoView({ behavior:'smooth', block:'center' });
         return;
     }
-
     if (!validateGroup(['co-ciudad','co-direccion'])) {
         showToast('Completa los datos de envío', 'warning');
         document.getElementById('co-ciudad')?.scrollIntoView({ behavior:'smooth', block:'center' });
         return;
     }
-
     if (!state.paymentMethod) {
         showToast('Selecciona un método de pago', 'warning');
-        document.getElementById('pay-card')?.scrollIntoView({ behavior:'smooth', block:'center' });
         return;
     }
-
-    if (state.paymentMethod === 'card') {
-        if (!validateGroup(['card-number','card-name','card-expiry','card-cvv'])) {
-            showToast('Completa los datos de tu tarjeta', 'warning');
-            return;
-        }
-        const cardNum = (document.getElementById('card-number')?.value || '').replace(/\s/g,'');
-        if (!/^\d{16}$/.test(cardNum)) {
-            document.getElementById('card-number')?.classList.add('is-invalid');
-            showToast('Número de tarjeta inválido', 'error');
-            return;
-        }
-        const [mm, aa] = (document.getElementById('card-expiry')?.value || '').split('/');
-        const expDate  = new Date(2000 + parseInt(aa||0), parseInt(mm||0) - 1);
-        if (isNaN(expDate.getTime()) || expDate <= new Date()) {
-            document.getElementById('card-expiry')?.classList.add('is-invalid');
-            showToast('Tarjeta expirada o fecha inválida', 'error');
-            return;
-        }
-    }
-
     if (!document.getElementById('terms')?.checked) {
         showToast('Debes aceptar los términos y condiciones', 'warning');
-        document.getElementById('terms')?.scrollIntoView({ behavior:'smooth', block:'center' });
         return;
     }
 
-    /* ── Arrancar ── */
+    // Si el método NO es tarjeta, usar flujo sin Stripe
+    if (state.paymentMethod !== 'card') {
+        await procesarPagoSinStripe();
+        return;
+    }
+
+    // ── Flujo con Stripe ────────────────────────────────────────────
+    if (!stripe_obj || !cardElement) {
+        showToast('El formulario de pago no está disponible. Recarga la página.', 'error');
+        return;
+    }
+
     state.processing = true;
     const btn = document.getElementById('btn-pagar');
     btn.classList.add('processing');
     setStep(3);
 
-    const payload = {
+    try {
+        // 1. Crear PaymentIntent en el backend
+        showToast('Preparando pago seguro…', 'info');
+        const piRes  = await fetch('{% url "pagos:crear_payment_intent" %}', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body:    JSON.stringify({ cupon: null }),
+        });
+        const piData = await piRes.json();
+
+        if (!piRes.ok || !piData.client_secret) {
+            throw new Error(piData.error || 'No se pudo iniciar el pago');
+        }
+
+        state.paymentIntentId = piData.payment_intent_id;
+
+        // 2. Confirmar el pago con Stripe.js (abre 3D Secure si es necesario)
+        showToast('Confirmando con tu banco…', 'info');
+        const { paymentIntent, error } = await stripe_obj.confirmCardPayment(
+            piData.client_secret,
+            {
+                payment_method: {
+                    card:            cardElement,
+                    billing_details: {
+                        name:  (document.getElementById('co-nombre')?.value || '').trim(),
+                        email: (document.getElementById('co-email')?.value  || '').trim(),
+                        phone: (document.getElementById('co-telefono')?.value || '').trim(),
+                    },
+                },
+            }
+        );
+
+        if (error) {
+            // Stripe rechazó el pago
+            const errMsg = document.getElementById('stripe-error-msg');
+            const errDiv = document.getElementById('stripe-error');
+            if (errMsg) errMsg.textContent = error.message;
+            if (errDiv) errDiv.classList.add('visible');
+            throw new Error(error.message);
+        }
+
+        if (paymentIntent.status !== 'succeeded') {
+            throw new Error(`Estado de pago inesperado: ${paymentIntent.status}`);
+        }
+
+        // 3. Notificar al backend para crear Pedido + Venta
+        showToast('Registrando tu pedido…', 'info');
+        const payload = buildPayload(state.paymentIntentId, 'card');
+        const cfRes   = await fetch('{% url "pagos:confirmar_pago" %}', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body:    JSON.stringify(payload),
+        });
+        const cfData = await cfRes.json();
+
+        if (!cfRes.ok || !cfData.success) {
+            throw new Error(cfData.error || 'Error al registrar el pedido');
+        }
+
+        setStep(4);
+        mostrarExito(cfData, document.getElementById('co-email')?.value || '');
+
+    } catch (err) {
+        console.error('Error en procesarPago:', err);
+        showToast(err.message || 'Error al procesar el pago. Intenta de nuevo.', 'error');
+        setStep(2);
+    } finally {
+        state.processing = false;
+        btn.classList.remove('processing');
+    }
+};
+
+/* ══════════════════════════════════════════════════════
+   FLUJO SIN STRIPE (PSE / Contraentrega / WhatsApp)
+══════════════════════════════════════════════════════ */
+async function procesarPagoSinStripe() {
+    state.processing = true;
+    const btn = document.getElementById('btn-pagar');
+    btn.classList.add('processing');
+    setStep(3);
+
+    try {
+        const payload = buildPayload(null, state.paymentMethod);
+        // Reutiliza el endpoint original de pagina/views.py
+        const res  = await fetch('{% url "pagina:api_checkout_procesar" %}', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+            body:    JSON.stringify(payload),
+        });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch { throw new Error(`Respuesta inesperada del servidor (${res.status})`); }
+
+        if (res.ok && data.success) {
+            setStep(4);
+            mostrarExito(data, document.getElementById('co-email')?.value || '');
+        } else if (res.status === 401) {
+            showToast('Sesión expirada. Redirigiendo al login…', 'warning');
+            setTimeout(() => { window.location.href = '/login/?next=/pagina/checkout/'; }, 2000);
+        } else {
+            throw new Error(data.error || 'Error al procesar la compra');
+        }
+    } catch (err) {
+        console.error('procesarPagoSinStripe:', err);
+        showToast(err.message || 'Error de conexión', 'error');
+        setStep(2);
+    } finally {
+        state.processing = false;
+        btn.classList.remove('processing');
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   CONSTRUIR PAYLOAD
+══════════════════════════════════════════════════════ */
+function buildPayload(paymentIntentId, metodo) {
+    return {
+        payment_intent_id: paymentIntentId,
         contacto: {
             nombre:    (document.getElementById('co-nombre')?.value    || '').trim(),
             documento: (document.getElementById('co-documento')?.value || '').trim(),
@@ -1281,75 +962,30 @@ window.procesarPago = async function() {
             codigo_postal: (document.getElementById('co-codigopostal')?.value || '').trim(),
             instrucciones: (document.getElementById('co-notas')?.value        || '').trim(),
         },
-        pago: {
-            metodo: state.paymentMethod,
-            ...(state.paymentMethod === 'card' && {
-                card_last4: (document.getElementById('card-number')?.value || '').replace(/\s/g,'').slice(-4),
-            }),
-        },
+        pago: { metodo },
         newsletter: document.getElementById('newsletter')?.checked || false,
     };
+}
 
-    try {
-        const res = await fetch(URL_CHECKOUT_PROCESAR, {
-            method:  'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken':  csrf(),
-            },
-            body: JSON.stringify(payload),
-        });
-
-        /* Siempre intentar parsear JSON; si falla, lanzar error con el texto */
-        const text = await res.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch {
-            console.error('Respuesta no-JSON del servidor:', text);
-            throw new Error(`El servidor devolvió una respuesta inesperada (${res.status}). Revisa la consola.`);
-        }
-
-        if (res.ok && data.success) {
-            setStep(4);
-            mostrarExito(data, payload.contacto.email);
-
-        } else if (res.status === 401) {
-            showToast('Sesión expirada. Redirigiendo al login…', 'warning');
-            setTimeout(() => { window.location.href = '/login/?next=/pagina/checkout/'; }, 2000);
-
-        } else {
-            showToast(data.error || 'Error al procesar el pago. Intenta de nuevo.', 'error');
-            setStep(2);
-        }
-
-    } catch (err) {
-        console.error('Checkout error:', err);
-        showToast(err.message || 'Error de conexión. Intenta de nuevo.', 'error');
-        setStep(2);
-
-    } finally {
-        state.processing = false;
-        btn.classList.remove('processing');
-    }
-};
-
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    MODAL ÉXITO
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function mostrarExito(data, email) {
-    const orderNum = data.order_number || `ORD-${Date.now()}`;
-    const numEl   = document.getElementById('order-number-shown');
-    if (numEl) numEl.textContent = orderNum;
-    const emailEl = document.getElementById('confirm-email-shown');
-    if (emailEl) emailEl.textContent = email || '';
+    const orderNum  = data.order_number  || `FAC-${Date.now()}`;
+    const pedidoNum = data.pedido_number || '';
+    const numEl     = document.getElementById('order-number-shown');
+    const pedidoEl  = document.getElementById('pedido-number-shown');
+    const emailEl   = document.getElementById('confirm-email-shown');
+    if (numEl)    numEl.textContent    = orderNum;
+    if (pedidoEl) pedidoEl.textContent = pedidoNum;
+    if (emailEl)  emailEl.textContent  = email;
     document.getElementById('modal-exito').classList.add('active');
     showToast('¡Pedido confirmado! Revisa tu correo', 'success');
 }
 
-/* ═══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    TOAST
-═══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 window.showToast = function(msg, type = 'success') {
     const icons = { success:'fa-check-circle', error:'fa-exclamation-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle' };
     const stack = document.getElementById('toast-stack');
