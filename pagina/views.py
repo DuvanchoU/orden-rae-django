@@ -1139,9 +1139,8 @@ def login_view(request):
             else:
                 request.session.set_expiry(0)
 
-            cliente.last_login = timezone.now()
             cliente.ultimo_login = timezone.now()
-            cliente.save(update_fields=['last_login', 'ultimo_login'])
+            cliente.save(update_fields=['ultimo_login'])
 
             messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
             return redirect(request.GET.get('next', 'pagina:home'))

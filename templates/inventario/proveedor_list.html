@@ -131,12 +131,17 @@
                                title="Editar">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
-                            <a href="{% url 'inventario:proveedor_delete' proveedor.pk %}" 
-                               class="btn-action btn-action-delete" 
-                               title="Eliminar"
-                               onclick="return confirm('¿Estás seguro de eliminar este proveedor?');">
-                                <i class="bi bi-trash-fill"></i>
-                            </a>
+                            <form method="post"
+                                action="{% url 'inventario:proveedor_delete' proveedor.pk %}"
+                                style="display:inline;">
+                                {% csrf_token %}
+                                
+                                <button type="submit"
+                                        class="btn-action btn-action-delete"
+                                        onclick="return confirm('¿Eliminar proveedor?');">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>
