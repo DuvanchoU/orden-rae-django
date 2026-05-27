@@ -5,14 +5,26 @@ import logging
 
 logger = logging.getLogger('auth.debug')
 
-
 class ClientesAuthMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+        
+        # ✅ Solo rutas estrictamente públicas (NO incluir /login/)
+        self.public_paths = [
+            '/recuperar-password/',
+            '/reset-password/',
+            '/verificar-email/',
+            '/reenviar-verificacion/',
+            '/static/',
+            '/media/',
+        ]
 
     def __call__(self, request):
+        # Excluir rutas públicas
+        if any(request.path.startswith(path) for path in self.public_paths):
+            return self.get_response(request)
         
-        # === Verificar sesión de cliente PRIMERO (antes de cualquier otra cosa) ===
+        # Verificar sesión de cliente
         cliente_id = request.session.get('cliente_id')
         cliente_auth = request.session.get('cliente_auth', False)
         
@@ -24,21 +36,16 @@ class ClientesAuthMiddleware:
                     deleted_at__isnull=True
                 )
                 request.cliente = cliente
-                request.user = cliente  # Sobreescribe lo que puso AuthenticationMiddleware
-                logger.debug(f" [ClientesMW] Cliente autenticado: {cliente.email}")
+                request.user = cliente
                 
             except Clientes.DoesNotExist:
-                logger.warning(f" [ClientesMW] Cliente ID {cliente_id} no encontrado")
                 for key in ['cliente_id', 'cliente_auth', 'cliente_nombre', 'cliente_email']:
                     request.session.pop(key, None)
                 request.cliente = None
+                from django.contrib.auth.models import AnonymousUser
                 request.user = AnonymousUser()
         else:
             request.cliente = None
-            # Solo poner AnonymousUser si no hay staff autenticado
-            if not hasattr(request, 'user') or not request.user.is_authenticated:
-                request.user = AnonymousUser()
-            # Si hay staff autenticado (id_usuario), no tocar
         
         response = self.get_response(request)
         return response

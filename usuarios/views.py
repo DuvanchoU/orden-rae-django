@@ -28,7 +28,7 @@ from .utils import (
 
 @never_cache
 def login_view(request):
-    return redirect('/pagina/login/')
+    return redirect('/login/')
 
 
 @never_cache  # Previene caché en logout
@@ -38,7 +38,7 @@ def logout_view(request):
     """
     # Limpiar TODA la sesión
     request.session.flush()
-    return redirect('/pagina/login/?logged_out=1')
+    return redirect('/login/?logged_out=1')
 
 # =============================================================================
 # === VISTAS DE ROLES ===

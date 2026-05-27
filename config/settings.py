@@ -337,3 +337,25 @@ CACHES = {
     }
 }
 
+# =============================================================================
+# CONFIGURACIÓN DE EMAIL - PARA VERIFICACIÓN Y RECUPERACIÓN
+# =============================================================================
+
+# Configuración para desarrollo (consola)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Para producción, descomentar y configurar:
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'  # o tu proveedor
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'tu_email@gmail.com'
+# EMAIL_HOST_PASSWORD = 'tu_app_password'  # Usa App Password, no tu contraseña real
+# DEFAULT_FROM_EMAIL = 'La Super Bodega del Mueble <noreply@lasuperbodega.com>'
+
+# Configuración de tokens
+PASSWORD_RESET_TIMEOUT = 3600  # 1 hora en segundos
+EMAIL_VERIFICATION_TIMEOUT = 86400  # 24 horas para verificar email
+
+# URLs base para generar enlaces en emails
+SITE_URL = 'http://127.0.0.1:8000'  # Cambiar a tu dominio en producción
