@@ -11,15 +11,19 @@ from .models import Usuarios
 # CONSTANTES CENTRALIZADAS
 # ─────────────────────────────────────────────────────────────
 ROLES_SIN_ACCESO_DASHBOARD = ['CLIENTE']
-
 DASHBOARD_PREFIXES = ('/dashboard/',)
-
 PUBLIC_PATHS = (
     '/pagina/',
     '/static/',
     '/media/',
     '/admin/',
     '/accounts/',
+    '/login/',
+    '/registro/',
+    '/recuperar-password/',
+    '/reset-password/',
+    '/verificar-email/',
+    '/',
 )
 
 
@@ -36,12 +40,11 @@ class CustomAuthMiddleware:
         path = request.path
 
         # ── Rutas excluidas del middleware ────────────────────
-        if path.startswith('/admin/') or path.startswith('/accounts/'):
+        if path.startswith(PUBLIC_PATHS):
             return self.get_response(request)
 
         # ── Si ya hay un cliente autenticado, no interferir ───
         if request.session.get('cliente_auth'):
-            # Pero si intenta entrar al dashboard, bloquearlo
             if any(path.startswith(p) for p in DASHBOARD_PREFIXES):
                 return redirect('/pagina/')
             return self.get_response(request)
@@ -61,7 +64,6 @@ class CustomAuthMiddleware:
                 request.session['last_activity_timestamp'] = time.time()
 
             except Usuarios.DoesNotExist:
-                # Sesión inválida → limpiar y tratar como anónimo
                 request.session.pop('usuario_id', None)
                 request.user = AnonymousUser()
                 if hasattr(request, 'usuario'):
@@ -75,11 +77,9 @@ class CustomAuthMiddleware:
         if any(path.startswith(p) for p in DASHBOARD_PREFIXES):
             user = request.user
 
-            # Sin sesión → login con ?next=
             if not hasattr(user, 'is_authenticated') or not user.is_authenticated:
-                return redirect(f'/pagina/login/?next={path}')
+                return redirect(f'/login/?next={path}')
 
-            # CLIENTE autenticado → home público
             if hasattr(user, 'id_rol') and user.id_rol:
                 if user.id_rol.nombre_rol in ROLES_SIN_ACCESO_DASHBOARD:
                     return redirect('/pagina/')
@@ -88,10 +88,7 @@ class CustomAuthMiddleware:
 
 
 class NoCacheMiddleware:
-    """
-    Previene caché del navegador en páginas autenticadas y en el dashboard.
-    Impide ver páginas protegidas con el botón Atrás tras hacer logout.
-    """
+    """Previene caché del navegador en páginas autenticadas y dashboard."""
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -108,11 +105,10 @@ class NoCacheMiddleware:
 
         is_auth_page = request.path in [
             '/usuarios/login/', '/usuarios/logout/',
-            '/pagina/login/', '/pagina/logout/',
+            '/login/', '/logout/',
             '/admin/login/', '/admin/logout/',
         ]
 
-        # Aplicar no-cache en dashboard siempre, y en páginas auth/autenticadas
         if is_dashboard or is_authenticated or is_auth_page:
             response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
             response['Pragma'] = 'no-cache'
@@ -123,17 +119,13 @@ class NoCacheMiddleware:
 
 
 class SessionIdleTimeoutMiddleware:
-    """
-    Cierra sesión después de 10 minutos de inactividad.
-    Redirige siempre al home público, nunca al dashboard.
-    """
+    """Cierra sesión después de 10 minutos de inactividad."""
     IDLE_TIMEOUT = 600  # 10 minutos
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Excluir admin nativo de Django
         if request.path.startswith('/admin/'):
             return self.get_response(request)
 
@@ -145,10 +137,7 @@ class SessionIdleTimeoutMiddleware:
             last_activity = request.session.get('last_activity_timestamp')
 
             if last_activity and (now - last_activity) > self.IDLE_TIMEOUT:
-                is_cliente = bool(cliente_auth)
                 request.session.flush()
-
-                # Siempre redirige a login público, nunca al dashboard
                 login_url = reverse('pagina:login')
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

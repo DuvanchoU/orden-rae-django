@@ -48,6 +48,15 @@ class Clientes(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted_at = models.DateTimeField(blank=True, null=True)
+
+    # NUEVOS CAMPOS PARA EMAIL Y SEGURIDAD
+    email_verificado = models.BooleanField(default=False)
+    token_verificacion = models.CharField(max_length=255, blank=True, null=True)
+    token_verificacion_expira = models.DateTimeField(blank=True, null=True)
+    
+    token_reset_password = models.CharField(max_length=255, blank=True, null=True)
+    token_reset_password_expira = models.DateTimeField(blank=True, null=True)
+    
     
     class Meta:
         managed = True

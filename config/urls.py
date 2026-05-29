@@ -8,14 +8,14 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # APLICACIONES PRINCIPALES
-    path('', include('pagina.urls')),                
-    path('dashboard/', include('dashboard.urls')),
+    path('', include('pagina.urls', namespace='pagina')),                
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('pagos/', include('pagos.urls', namespace='pagos')),
 
     # OTRAS APLICACIONES
     path('produccion/', include('produccion.urls')),
     path('inventario/', include('inventario.urls', namespace='inventario')),
-    path('ventas/', include('ventas.urls')),
+    path('ventas/', include('ventas.urls', namespace='ventas')),
     path('compras/', include('compras.urls', namespace='compras')),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')), # staff → /usuarios/login/
 ]

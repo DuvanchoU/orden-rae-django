@@ -40,9 +40,9 @@
         <div class="sidebar-header">
             <a href="{% url 'dashboard:dashboard_home' %}">
                 <img src="{% static 'img/logo-orden-rae.png' %}"
-                     alt="ORDEN R.A.E"
-                     class="logo-img"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        alt="ORDEN R.A.E"
+                        class="logo-img"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
             </a>
         </div>
         
@@ -292,6 +292,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Theme Toggle Script - CORREGIDO -->
+<!-- Theme Toggle Script - CORREGIDO -->
+<!-- Theme Toggle Script - CORREGIDO -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const themeToggle = document.getElementById('checkbox-theme');
@@ -321,9 +323,33 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('theme', newTheme);
     });
 });
+
+// ✅ VERIFICACIÓN DE SESIÓN - MEJORADO
 (function() {
-    // Al cargar la página (incluso desde caché del navegador),
-    // verifica con el servidor si la sesión sigue viva.
+    const currentPath = window.location.pathname;
+    
+    // Rutas que NUNCA deben verificar sesión (públicas)
+    const publicPaths = [
+        '/recuperar-password/',
+        '/reset-password/',
+        '/verificar-email/',
+        '/reenviar-verificacion/',
+    ];
+    
+    // Si estamos en ruta pública estricta, NO verificar
+    if (publicPaths.some(path => currentPath.startsWith(path))) {
+        console.log('[SessionCheck] Skipping check on public path:', currentPath);
+        return;
+    }
+    
+    // Para /login/ y /registro/, solo verificar si YA hay sesión activa
+    // (para redirigir al home si ya está logueado)
+    if (currentPath === '/login/' || currentPath === '/registro/') {
+        // No hacer fetch, dejar que el usuario interactúe
+        return;
+    }
+    
+    // Para TODAS las demás rutas, verificar sesión
     fetch('/dashboard/session-check/', {
         method: 'GET',
         credentials: 'same-origin',
@@ -331,16 +357,14 @@ document.addEventListener('DOMContentLoaded', function() {
     })
     .then(function(res) {
         if (res.status === 401 || res.redirected) {
-            // Sesión expirada o no autenticado → limpiar historial y redirigir
-            window.location.replace('/pagina/login/');
+            console.log('[SessionCheck] Session expired, redirecting to login');
+            window.location.replace('/login/');
         }
     })
-    .catch(function() {
-        // Si falla la petición, no hacer nada (puede ser offline)
+    .catch(function(err) {
+        console.log('[SessionCheck] Fetch error (ignored):', err);
     });
 })();
 </script>
 
 {% block extra_js %}{% endblock %}
-</body>
-</html>

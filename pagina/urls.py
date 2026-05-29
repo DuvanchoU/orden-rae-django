@@ -62,4 +62,10 @@ urlpatterns = [
     path('api/cupon/aplicar/', views.api_cupon_aplicar, name='api_cupon_aplicar'),
     path('api/cupon/remover/', views.api_cupon_remover, name='api_cupon_remover'),
 
+    # NUEVAS: Verificación y recuperación de contraseña
+    path('verificar-email/<str:token>/', views.verificar_email_view, name='verificar_email'),
+    path('recuperar-password/', views.recuperar_password_view, name='recuperar_password'),
+    path('reset-password/<str:token>/', views.reset_password_confirm_view, name='reset_password_confirm'),
+    path('reenviar-verificacion/', views.enviar_verificacion_email_view, name='reenviar_verificacion'),
+    
 ]

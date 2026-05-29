@@ -1050,7 +1050,11 @@ def login_view(request):
             messages.error(request, 'Ingresa correo y contraseña')
             return render(request, 'pagina/login.html')
 
-        # Buscar primero en Usuarios (staff)
+
+        # ========================================
+        # 1. Buscar primero en Usuarios (staff)
+        # ========================================
+        from usuarios.models import Usuarios
         try:
             usuario = Usuarios.objects.select_related('id_rol').get(
                 correo_usuario=correo,
@@ -1097,28 +1101,63 @@ def login_view(request):
 
         except Usuarios.DoesNotExist:
             pass  # No es staff, buscar en clientes
+        # ========================================
+        # 2. Buscar en Clientes (TIENDA WEB)
+        # ========================================
+        from ventas.models import Clientes
+        from django.contrib.auth.hashers import check_password as django_check
 
-        # Buscar en Clientes
-        cliente = authenticate(request, correo=correo, contrasena=contrasena)
+        try:
+            cliente = Clientes.objects.get(
+                email=correo,
+                deleted_at__isnull=True
+            )
 
-        if cliente is None:
-            # Fallback: buscar directamente con hash SHA256
-            try:
-                cliente_obj = Clientes.objects.get(
-                    email=correo,
-                    deleted_at__isnull=True
+            # Verificar contraseña
+            contrasena_valida = False
+
+            # Contraseña Django
+            if (
+                cliente.contrasena_cliente and
+                cliente.contrasena_cliente.startswith('pbkdf2_')
+            ):
+                contrasena_valida = django_check(
+                    contrasena,
+                    cliente.contrasena_cliente
                 )
-                sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
-                if sha_hash == cliente_obj.contrasena_cliente and cliente_obj.estado == 'ACTIVO':
-                    cliente = cliente_obj
-            except Exception:
-                logger.debug(f'Cliente no existe: {correo}')
 
-        if cliente is not None:
+            # Contraseña SHA256 antigua
+            else:
+                sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
+                contrasena_valida = (
+                    sha_hash == cliente.contrasena_cliente
+                )
+
+            # Validar contraseña y estado
+            if (
+                contrasena_valida and
+                cliente.estado == 'ACTIVO'
+            ):
+
+                # Login cliente
+                request.session['cliente_auth'] = True
+                request.session['cliente_id'] = cliente.id_cliente
+                request.session['cliente_nombre'] = cliente.nombre_cliente
+
+                return redirect('/')
+
+            else:
+                messages.error(
+                    request,
+                    'Correo o contraseña incorrectos'
+                )
+
+        except Clientes.DoesNotExist:
+            logger.debug(f'Cliente no existe: {correo}')
             login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
 
             request.session['cliente_id'] = cliente.id_cliente
-            request.session['cliente_nombre'] = cliente.get_nombre_completo()
+            request.session['cliente_nombre'] = f"{cliente.nombre} {cliente.apellido}"
             request.session['cliente_email'] = cliente.email
             request.session['cliente_auth'] = True
 
@@ -1131,10 +1170,19 @@ def login_view(request):
             cliente.save(update_fields=['ultimo_login'])
 
             messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
+
+            # Redirigir a la página anterior o al home
             return redirect(request.GET.get('next', '/'))
 
-        messages.error(request, 'Correo o contraseña incorrectos')
+        except Clientes.DoesNotExist:
+            # No existe ni en Usuarios ni en Clientes
+            messages.error(request, 'Correo o contraseña incorrectos')
+            return render(request, 'pagina/login.html')
 
+
+    # ========================================
+    # GET: Mostrar formulario de login
+    # ========================================
     if request.GET.get('timeout') == '1':
         messages.warning(request, 'Tu sesión expiró. Inicia sesión nuevamente.')
     if request.GET.get('logged_out') == '1':
@@ -1144,39 +1192,46 @@ def login_view(request):
 
 
 def registro_view(request):
-    """Registro de clientes"""
+    """Vista de registro de clientes - SIN verificación de email"""
     
-    if request.session.get('cliente_auth'):
+    # Si ya está autenticado, redirigir
+    if request.session.get('cliente_id') or hasattr(request.user, 'id_usuario'):
         return redirect('pagina:home')
     
     if request.method == 'POST':
-        nombre    = request.POST.get('nombre', '').strip()
-        apellido  = request.POST.get('apellidos', '').strip()   # era 'apellido'
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellidos', '').strip()
         documento = request.POST.get('documento', '').strip()
-        email     = request.POST.get('correo', '').strip().lower()  # era 'email'
-        telefono  = request.POST.get('telefono', '').strip()
-        genero    = request.POST.get('genero', '')
-        password  = request.POST.get('password', '')
+        email = request.POST.get('correo', '').strip().lower()
+        telefono = request.POST.get('telefono', '').strip()
+        genero = request.POST.get('genero', '')
+        password = request.POST.get('password', '')
         password2 = request.POST.get('password2', '')
         
-        # Validaciones
         errores = []
-        # Validar campos obligatorios
+# Validaciones básicas
         if not all([nombre, apellido, documento, email, password, password2]):
             errores.append('Todos los campos obligatorios son requeridos')
+
         # Validar formato de email
-        if email and not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        if email and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             errores.append('El correo electrónico no es válido')
 
+        # Validar contraseñas
         if password != password2:
             errores.append('Las contraseñas no coinciden')
-        # Validar formato de documento (solo números, mínimo 6 dígitos)
-        if len(password) < 8:
+
+        if password and len(password) < 8:
             errores.append('La contraseña debe tener mínimo 8 caracteres')
-        # Validar género
+
+        # Validar documento
+        if documento and len(documento) < 5:
+            errores.append('El documento debe tener al menos 5 dígitos')
+
+        # Verificar duplicados
         if email and Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
             errores.append('El email ya está registrado')
-        # Validar documento único
+
         if documento and Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
             errores.append('El documento ya está registrado')
         if errores:
@@ -1186,49 +1241,69 @@ def registro_view(request):
             })
         
         try:
-            from django.contrib.auth.hashers import make_password
-
-            #  Mapa de género corregido para los valores del HTML
-            genero_map = {
-                'masculino': 'M',
-                'femenino':  'F',
-                'otro':      'O',
-            }
-            genero_abrev = genero_map.get(genero.lower(), 'O') if genero else 'O'
+            # Convertir género
+            genero_abreviado = None
+            if genero:
+                if genero.lower() in ['masculino', 'm', 'hombre']:
+                    genero_abreviado = 'M'
+                elif genero.lower() in ['femenino', 'f', 'mujer']:
+                    genero_abreviado = 'F'
+                else:
+                    genero_abreviado = 'O'
             
-            #  Guardar directo en tabla clientes
+            # Hash con SHA256
+            import hashlib
+            contrasena_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            # Crear cliente CON email_verificado=True (sin necesidad de confirmar)
             nuevo_cliente = Clientes.objects.create(
                 nombre=nombre,
                 apellido=apellido,
                 documento=documento,
                 email=email,
-                contrasena_cliente=hashlib.sha256(password.encode()).hexdigest(),
-                telefono=telefono or None,
+                contrasena_cliente=contrasena_hash,
+                telefono=telefono if telefono else None,
                 estado='ACTIVO',
                 fecha_registro=timezone.now(),
-                genero=genero_abrev,
+                genero=genero_abreviado,
+                created_at=timezone.now(),
                 email_verificado=True,
-            )
-            
-            # Auto-login con el backend de clientes
+                )
+
+            # Auto-login con backend de clientes
             from django.contrib.auth import login
-            login(request, nuevo_cliente, backend='ventas.backends.ClientesAuthBackend')
-            
-            request.session['cliente_id']     = nuevo_cliente.id_cliente
+
+            login(
+                request,
+                nuevo_cliente,
+                backend='ventas.backends.ClientesAuthBackend'
+            )
+
+            request.session['cliente_id'] = nuevo_cliente.id_cliente
             request.session['cliente_nombre'] = f"{nombre} {apellido}"
-            request.session['cliente_email']  = email
-            request.session['cliente_auth']   = True
-            
-            messages.success(request, f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.')
+            request.session['cliente_email'] = email
+            request.session['cliente_auth'] = True
+
+            messages.success(
+                request,
+                f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.'
+            )
             return redirect('pagina:login')
             
+        except IntegrityError as e:
+            print(f"❌ ERROR de integridad: {e}")
+            messages.error(request, 'Ocurrió un error. Intenta nuevamente.')
         except Exception as e:
-            logger.error(f" [registro_view] ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
-            messages.error(request, f'Error al crear la cuenta: {str(e)}')
-            return render(request, 'pagina/registro.html', {'form_data': request.POST})
+            print(f"❌ ERROR: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'Error: {str(e)}')
+        
+        return render(request, 'pagina/registro.html', {
+            'form_data': request.POST
+        })
     
     return render(request, 'pagina/registro.html')
-
 
 def logout_view(request):
     """Cerrar sesión de cliente"""
@@ -2073,3 +2148,150 @@ def info_ayuda(request, slug):
     }
     
     return render(request, 'partials/info_ayuda.html', context)
+
+# Vistas para Email y recuperación de contraseña 
+
+import hashlib
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.conf import settings
+from ventas.models import Clientes
+from ventas.utils import (
+    generar_token_seguro,
+    enviar_email_verificacion,
+    enviar_email_reset_password,
+    validar_token_verificacion,
+    validar_token_reset_password
+)
+
+
+def enviar_verificacion_email_view(request):
+    """Reenviar email de verificación"""
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        
+        try:
+            cliente = Clientes.objects.get(
+                email=email, 
+                email_verificado=False,
+                deleted_at__isnull=True
+            )
+            
+            if enviar_email_verificacion(cliente):
+                messages.success(request, f'Hemos enviado un nuevo email de verificación a {email}')
+            else:
+                messages.error(request, 'Error al enviar el email. Intenta nuevamente.')
+                
+        except Clientes.DoesNotExist:
+            messages.error(request, 'No encontramos una cuenta pendiente de verificación con ese email.')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('pagina:login')
+
+
+def verificar_email_view(request, token):
+    """Validar token y activar cuenta del cliente"""
+    
+    cliente = validar_token_verificacion(token)
+    
+    if cliente:
+        # Activar cuenta
+        cliente.email_verificado = True
+        cliente.token_verificacion = None
+        cliente.token_verificacion_expira = None
+        cliente.save(update_fields=['email_verificado', 'token_verificacion', 'token_verificacion_expira'])
+        
+        messages.success(request, f'✅ ¡Email verificado! Ahora puedes iniciar sesión, {cliente.nombre}.')
+        return redirect('pagina:login')
+    else:
+        # Token inválido o expirado
+        messages.error(request, '❌ El enlace de verificación ha expirado o no es válido. Solicita uno nuevo.')
+        return redirect('pagina:login')
+
+def recuperar_password_view(request):
+    """Vista para solicitar recuperación de contraseña (PÚBLICA)"""
+    
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        
+        if not email:
+            messages.error(request, 'Por favor ingresa tu correo electrónico')
+            return render(request, 'pagina/recuperar_password.html')
+        
+        try:
+            cliente = Clientes.objects.get(
+                email=email,
+                email_verificado=True,
+                estado='ACTIVO',
+                deleted_at__isnull=True
+            )
+            
+            if enviar_email_reset_password(cliente):
+                messages.success(request, f'Hemos enviado instrucciones de recuperación a {email}')
+            else:
+                messages.error(request, 'Error al enviar el email.')
+                
+        except Clientes.DoesNotExist:
+            # No revelar si el email existe (seguridad)
+            messages.success(request, f'Si existe una cuenta con {email}, recibirás instrucciones.')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+        
+        return redirect('pagina:login')
+    
+    return render(request, 'pagina/recuperar_password.html')
+
+
+def reset_password_confirm_view(request, token):
+    """Vista para establecer nueva contraseña con token válido (PÚBLICA)"""
+    
+    cliente = validar_token_reset_password(token)
+    
+    if not cliente:
+        messages.error(request, 'El enlace de recuperación ha expirado o no es válido.')
+        return redirect('pagina:recuperar_password')
+    
+    if request.method == 'POST':
+        password = request.POST.get('password', '')
+        password2 = request.POST.get('password2', '')
+        
+        errores = []
+        
+        if len(password) < 8:
+            errores.append('La contraseña debe tener al menos 8 caracteres')
+        
+        if password != password2:
+            errores.append('Las contraseñas no coinciden')
+        
+        if errores:
+            for error in errores:
+                messages.error(request, error)
+            return render(request, 'pagina/reset_password_confirm.html', {'token': token})
+        
+        try:
+            # Actualizar contraseña con SHA256
+            cliente.contrasena_cliente = hashlib.sha256(password.encode()).hexdigest()
+            
+            # Invalidar token
+            cliente.token_reset_password = None
+            cliente.token_reset_password_expira = None
+            cliente.last_login = timezone.now()
+            cliente.ultimo_login = timezone.now()
+            
+            cliente.save(update_fields=[
+                'contrasena_cliente', 
+                'token_reset_password', 
+                'token_reset_password_expira',
+                'last_login',
+                'ultimo_login'
+            ])
+            
+            messages.success(request, ' ¡Contraseña actualizada exitosamente!')
+            return redirect('pagina:login')
+            
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+    
+    return render(request, 'pagina/reset_password_confirm.html', {'token': token, 'cliente': cliente})
