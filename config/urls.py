@@ -13,7 +13,7 @@ urlpatterns = [
     path('pagos/', include('pagos.urls', namespace='pagos')),
 
     # OTRAS APLICACIONES
-    path('produccion/', include('produccion.urls', namespace='produccion')),
+    path('produccion/', include('produccion.urls')),
     path('inventario/', include('inventario.urls', namespace='inventario')),
     path('ventas/', include('ventas.urls')),
     path('compras/', include('compras.urls', namespace='compras')),

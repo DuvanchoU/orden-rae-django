@@ -358,9 +358,10 @@ def api_carrito_agregar(request):
             'precio':         float(prod.precio_actual),
         })
 
-    except Producto.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
     except Exception as e:
+        from django.http import Http404
+        if isinstance(e, Http404):
+            return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
         import traceback
         print(f"ERROR api_carrito_agregar: {traceback.format_exc()}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)

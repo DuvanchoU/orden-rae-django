@@ -27,15 +27,16 @@ from django.contrib.auth.hashers import make_password
 # ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
-
+# Estos helpers simplifican la creación de objetos para los tests, evitando repetición
 def crear_rol(nombre="GERENTE"):
     RolesOld.objects.filter(nombre_rol=nombre).delete()
     r = RolesOld(nombre_rol=nombre, descripcion="Rol prueba")
     r.save()
     return r
 
-
+# El helper para crear usuario se adapta a los campos del modelo Usuarios, con valores por defecto para simplificar su uso en los tests.
 def crear_usuario(rol, correo="admin@test.com", doc="00000001"):
+    from django.db.models import Model as DjangoModel
     Usuarios.objects.filter(correo_usuario=correo).delete()
     Usuarios.objects.filter(documento=doc).delete()
     u = Usuarios(
@@ -46,20 +47,21 @@ def crear_usuario(rol, correo="admin@test.com", doc="00000001"):
         created_at=timezone.now(), updated_at=timezone.now(),
         fecha_registro=timezone.now(),
     )
-    Model.save(u)
+    DjangoModel.save(u)
     return u
 
-
+# El helper para autenticar sesión simula el proceso de login estableciendo las variables de sesión 
+# necesarias para que las vistas reconozcan al usuario como autenticado.
 def autenticar_sesion(client, usuario):
     s = client.session
     s["usuario_id"] = usuario.pk
-    s["usuario_nombre"] = usuario.get_full_name()
-    s["usuario_rol"] = usuario.id_rol.nombre_rol
+    s["usuario_nombre"] = f"{usuario.nombres} {usuario.apellidos}"
+    s["usuario_rol"] = usuario.id_rol.nombre_rol if usuario.id_rol else "GERENTE"
     s.save()
 
-
+# El helper para crear cliente se adapta a los campos del modelo Clientes, con valores por defecto para simplificar su uso en los tests.
 def crear_cliente(nombre="Carlos", apellido="Ruiz",
-                  email="carlos@test.com", doc="11111111", estado="ACTIVO"):
+                    email="carlos@test.com", doc="11111111", estado="ACTIVO"):
     Clientes.objects.filter(email=email).delete()
     Clientes.objects.filter(documento=doc).delete()
     c = Clientes(
@@ -70,10 +72,11 @@ def crear_cliente(nombre="Carlos", apellido="Ruiz",
         created_at=timezone.now(), updated_at=timezone.now(),
         fecha_registro=timezone.now(),
     )
-    Model.save(c)
+    c.save()
     return c
 
-
+# Los helpers para crear Pedido, Ventas y Cotizaciones se mantienen simples, con valores por defecto para los campos necesarios. 
+# Se pueden extender según sea necesario para cubrir más casos de prueba.
 def crear_pedido(cliente, usuario, estado="PENDIENTE"):
     p = Pedido(
         cliente=cliente, usuario=usuario,
@@ -85,7 +88,7 @@ def crear_pedido(cliente, usuario, estado="PENDIENTE"):
     Model.save(p)
     return p
 
-
+# El helper para crear venta se adapta a los campos del modelo Ventas, pero se mantiene con valores por defecto para simplificar su uso en los tests
 def crear_venta(usuario, cliente, estado="PENDIENTE"):
     v = Ventas(
         usuario=usuario, cliente=cliente,
@@ -101,7 +104,8 @@ def crear_venta(usuario, cliente, estado="PENDIENTE"):
     Model.save(v)
     return v
 
-
+# El helper para crear cotización se adapta a los campos del modelo Cotizaciones, con valores por defecto para simplificar su uso en los tests. 
+# Se puede extender según sea necesario para cubrir más casos de prueba.
 def crear_cotizacion(cliente, usuario, estado="borrador"):
     fecha_venc = timezone.now().date() + timedelta(days=30)
     c = Cotizaciones(
@@ -118,7 +122,7 @@ def crear_cotizacion(cliente, usuario, estado="borrador"):
     Model.save(c)
     return c
 
-
+# Helpers para crear categorías y productos, necesarios para algunos tests de ventas. Se mantienen simples con valores por defecto.
 def crear_categoria(nombre="CAT V"):
     Categorias.objects.filter(nombre_categoria=nombre).delete()
     cat = Categorias(
@@ -128,7 +132,7 @@ def crear_categoria(nombre="CAT V"):
     cat.save()
     return cat
 
-
+# El helper para crear producto se adapta a los campos del modelo Producto, con valores por defecto para simplificar su uso en los tests.
 def crear_producto(categoria, codigo="VP-001", precio=100000):
     Producto.objects.filter(codigo_producto=codigo).delete()
     p = Producto(
@@ -406,14 +410,32 @@ class CotizacionesModelTests(TestCase):
         fmt = c.get_total_formateado()
         self.assertIn("2.500.000", fmt)
 
+    # El test para número de cotización único se omite por simplicidad, pero sería similar a los demás
     def test_numero_cotizacion_unico(self):
-        c1 = crear_cotizacion(self.cliente, self.usuario)
-        c2 = crear_cotizacion(
-            self.cliente, self.usuario,
+        fecha_venc = timezone.now().date() + timedelta(days=30)
+        c1 = Cotizaciones(
+            cliente=self.cliente, usuario=self.usuario,
+            fecha_cotizacion=timezone.now().date(),
+            fecha_vencimiento=fecha_venc,
+            estado='borrador',
+            subtotal=Decimal('100000'),
+            impuesto=Decimal('19000'),
+            descuento=Decimal('0'),
+            total=Decimal('119000'),
         )
-        # Si se usan helpers bypass el save() del modelo real
-        # solo verificamos que los pk sean distintos
-        self.assertNotEqual(c1.pk, c2.pk)
+        c1.save()
+        c2 = Cotizaciones(
+            cliente=self.cliente, usuario=self.usuario,
+            fecha_cotizacion=timezone.now().date(),
+            fecha_vencimiento=fecha_venc,
+            estado='borrador',
+            subtotal=Decimal('100000'),
+            impuesto=Decimal('19000'),
+            descuento=Decimal('0'),
+            total=Decimal('119000'),
+        )
+        c2.save()
+        self.assertNotEqual(c1.numero_cotizacion, c2.numero_cotizacion)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -745,19 +767,25 @@ class PedidoListViewTests(TestCase):
 
 class PedidoCreateViewTests(TestCase):
 
+    # El setUp se encarga de crear un usuario con rol adecuado, autenticar la sesión y crear un cliente para usar en los tests de creación de pedidos.
     def setUp(self):
         self.client = Client()
         self.rol = crear_rol("GERENTE_VPC")
         self.admin = crear_usuario(self.rol, "admin_vpc@test.com", "10010001")
+        self.assertIsNotNone(self.admin.pk, "El usuario no se guardó en BD")
         autenticar_sesion(self.client, self.admin)
         self.cliente = crear_cliente(
             nombre="PedCreate", email="pedcreate@test.com", doc="20020001"
         )
 
+    # El test_get_form_200 verifica que la vista de creación de pedidos responde con un status 200, lo que indica que el formulario se muestra correctamente.
     def test_get_form_200(self):
         response = self.client.get(reverse("ventas:pedido_create"))
         self.assertEqual(response.status_code, 200)
 
+    # El test_crear_pedido_valido_redirige simula el envío de un formulario con datos válidos para crear un pedido. 
+    # Verifica que la respuesta sea una redirección (status 302), lo que indica que el pedido se creó exitosamente y 
+    # se redirigió al usuario a otra página (probablemente la lista de pedidos o el detalle del nuevo pedido).
     def test_crear_pedido_valido_redirige(self):
         response = self.client.post(
             reverse("ventas:pedido_create"),
@@ -771,8 +799,13 @@ class PedidoCreateViewTests(TestCase):
                 "direccion_entrega": "Calle 50 # 30-10",
             }
         )
+        if response.status_code == 200 and hasattr(response, 'context') and response.context:
+            form = response.context.get('form')
+            if form:
+                print("Errores form pedido:", form.errors)
         self.assertEqual(response.status_code, 302)
 
+    # El test_crear_pedido_sin_cliente_invalido simula el envío de un formulario de creación de pedido sin seleccionar un cliente, lo que es un caso inválido.
     def test_crear_pedido_sin_cliente_invalido(self):
         response = self.client.post(
             reverse("ventas:pedido_create"),

@@ -429,7 +429,7 @@ class Cotizaciones(models.Model):
             if not self.numero_cotizacion:
                 # Generar número consecutivo
                 ultimo = Cotizaciones.objects.filter(deleted_at__isnull=True).order_by('-consecutivo').first()
-                self.consecutivo = (ultimo.consecutivo or 0) + 1
+                self.consecutivo = ((ultimo.consecutivo if ultimo else 0) or 0) + 1
                 self.numero_cotizacion = f"COT-{self.consecutivo:06d}"
         
         self.updated_at = timezone.now()

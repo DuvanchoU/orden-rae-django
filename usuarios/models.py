@@ -25,6 +25,7 @@ class RolesOld(models.Model):
         db_table = 'roles_old'
         ordering = ['nombre_rol']
 
+    # MÉTODOS DE VALIDACIÓN Y GESTIÓN DE ROLES
     def clean(self):
         """Validaciones del rol"""
         if self.nombre_rol and len(self.nombre_rol.strip()) < 3:
@@ -34,6 +35,7 @@ class RolesOld(models.Model):
         if self.pk and self.nombre_rol in dict(self.ROLES_SISTEMA):
             raise ValidationError(f"No se puede eliminar o modificar el rol del sistema '{self.nombre_rol}'")
 
+    # GESTIÓN DE TIMESTAMPS Y ELIMINACIÓN LÓGICA
     def save(self, *args, **kwargs):
         if not self.pk and not self.created_at:
             self.created_at = timezone.now()
@@ -41,33 +43,31 @@ class RolesOld(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    # Eliminar solo si no es un rol del sistema y no tiene usuarios asignados 
     def delete(self, using=None, keep_parents=False):
-        """Soft delete"""
         if self.nombre_rol in dict(self.ROLES_SISTEMA):
             raise ValidationError(f"No se puede eliminar el rol del sistema '{self.nombre_rol}'")
         
-        # Verificar si hay usuarios con este rol
-        if self.usuarios_set.filter(deleted_at__isnull=True).exists():
+        if self.usuarios.filter(deleted_at__isnull=True).exists():  # ← usuarios_set → usuarios
             raise ValidationError("No se puede eliminar un rol que tiene usuarios asignados")
         
         self.deleted_at = timezone.now()
         self.save()
         return self
 
+    # Restaurar rol eliminado si no es del sistema y no tiene usuarios activos asignados 
     def puede_eliminarse(self):
-        """Verifica si el rol puede eliminarse"""
         if self.nombre_rol in dict(self.ROLES_SISTEMA):
             return False
-        return not self.usuarios_set.filter(deleted_at__isnull=True).exists()
+        return not self.usuarios.filter(deleted_at__isnull=True).exists()  # ← usuarios_set → usuarios
 
+    # Obtener el número de usuarios activos asignados a este rol 
     def get_total_usuarios(self):
-        """Obtiene la cantidad de usuarios con este rol"""
-        return self.usuarios_set.filter(
-            deleted_at__isnull=True
-        ).count()
+        return self.usuarios.filter(deleted_at__isnull=True).count()
 
+    # Obtener una representación legible del rol 
     def __str__(self):
-        return self.nombre_rol
+            return self.nombre_rol
     
 class Usuarios(models.Model):
     GENERO_CHOICES = [
@@ -170,10 +170,14 @@ class Usuarios(models.Model):
         else:
             self._validar_fortaleza_contrasena()
 
+    # Validar fortaleza de contraseña (mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número)
     def _validar_fortaleza_contrasena(self):
-        """Valida que la contraseña cumpla con los requisitos de seguridad"""
         if not self.contrasena_usuario:
             raise ValidationError("La contraseña es obligatoria")
+        
+        # Si ya está hasheada, no validar fortaleza
+        if self.contrasena_usuario.startswith('pbkdf2_'):
+            return
         
         if len(self.contrasena_usuario) < 8:
             raise ValidationError("La contraseña debe tener al menos 8 caracteres")
@@ -187,6 +191,7 @@ class Usuarios(models.Model):
         if not re.search(r'\d', self.contrasena_usuario):
             raise ValidationError("La contraseña debe contener al menos un número")
 
+    # GESTIÓN DE TIMESTAMPS Y ELIMINACIÓN LÓGICA 
     def save(self, *args, **kwargs):
         """Auto-gestión de timestamps y hash de contraseña"""
         if not self.pk and not self.created_at:
@@ -205,6 +210,7 @@ class Usuarios(models.Model):
         
         super().save(*args, **kwargs)
 
+    # Eliminación lógica: marcar como inactivo y registrar fecha de eliminación 
     def delete(self, using=None, keep_parents=False):
         """Soft delete"""
         self.deleted_at = timezone.now()
@@ -212,6 +218,7 @@ class Usuarios(models.Model):
         self.save()
         return self
 
+    # Eliminación física solo si no es último administrador
     def hard_delete(self):
         """Eliminación física solo si no es último administrador"""
         if self.id_rol and self.id_rol.nombre_rol == 'GERENTE':
@@ -222,6 +229,7 @@ class Usuarios(models.Model):
                 raise ValidationError("No se puede eliminar el último usuario con rol de Gerente")
         super().delete()
 
+    # Restaurar usuario eliminado si no es un rol del sistema y no es el último administrador
     def restore(self):
         """Restaurar usuario eliminado"""
         self.deleted_at = None
@@ -231,17 +239,20 @@ class Usuarios(models.Model):
     # =====================================================================
     # MÉTODOS DE AUTENTICACIÓN SEGUROS
     # =====================================================================
-    
+
+    # Verificar contraseña utilizando el hash almacenado y el método de Django para mayor seguridad    
     def check_password(self, raw_password):
         """Verifica si la contraseña proporcionada es correcta"""
         return check_password(raw_password, self.contrasena_usuario)
 
+    # Establecer una nueva contraseña con hash y actualizar campos relacionados 
     def set_password(self, raw_password):
         """Establece una nueva contraseña con hash"""
         self.contrasena_usuario = make_password(raw_password)
         self.ultimo_cambio_contrasena = timezone.now()
         self.debe_cambiar_contrasena = False
 
+    # Cambiar contraseña validando la anterior y la fortaleza de la nueva 
     def cambiar_contrasena(self, old_password, new_password):
         """Cambia la contraseña validando la anterior"""
         if not self.check_password(old_password):
@@ -253,6 +264,7 @@ class Usuarios(models.Model):
         self.set_password(new_password)
         self.save()
 
+    # Registrar el último inicio de sesión para auditoría y seguridad
     def registrar_ultimo_login(self):
         """Registra el último inicio de sesión"""
         self.ultimo_login = timezone.now()
@@ -261,11 +273,14 @@ class Usuarios(models.Model):
     # =====================================================================
     # PROPIEDADES PARA COMPATIBILIDAD CON DJANGO
     # =====================================================================
-    
+
+    # Estas propiedades permiten que el modelo funcione con el sistema de autenticación de Django sin necesidad de heredar de AbstractBaseUser o PermissionsMixin, 
+    # manteniendo la estructura actual de la base de datos.   
     @property
     def username(self):
         return self.correo_usuario
     
+    # Aunque no se utiliza directamente, estas propiedades son necesarias para que Django reconozca el campo de correo electrónico como identificador único del usuario.
     @property
     def email(self):
         return self.correo_usuario
@@ -298,6 +313,9 @@ class Usuarios(models.Model):
     # MÉTODOS DE PERMISOS
     # =====================================================================
     
+    # Aunque no se implementa un sistema de permisos detallado, estos métodos permiten que Django reconozca 
+    # al usuario como activo y con permisos basados en su rol, lo que facilita la integración con el sistema 
+    # de autenticación y autorización de Django.
     def has_perm(self, perm, obj=None):
         if not self.is_active:
             return False
@@ -305,6 +323,8 @@ class Usuarios(models.Model):
             return True
         return True
     
+    # Aunque no se implementa un sistema de permisos detallado, este método permite que Django reconozca 
+    # al usuario como activo y con permisos basados en su rol, lo que facilita la integración con el sistema de autenticación y autorización de Django.
     def has_module_perms(self, app_label):
         if not self.is_active:
             return False

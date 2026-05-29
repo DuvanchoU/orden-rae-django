@@ -119,7 +119,7 @@ class ProduccionUpdateView(UpdateView):
                     self.request,
                     f"No se puede modificar una producción en estado {produccion.estado_produccion}"
                 )
-                return self.form_invalid(form)
+                return redirect(self.success_url)
             
             # Validar que la nueva cantidad no sea menor a la asignada
             nueva_cantidad = form.cleaned_data.get('cantidad_producida')

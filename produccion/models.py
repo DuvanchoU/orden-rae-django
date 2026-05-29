@@ -41,28 +41,32 @@ class Produccion(models.Model):
     
     def clean(self):
         """Validaciones del modelo"""
-        if self.cantidad_producida and self.cantidad_producida <= 0:
-            raise ValidationError("La cantidad producida debe ser mayor a 0")
-        
+        # 1. Verificar producto_id ANTES de acceder a self.producto
+        if not self.producto_id:
+            raise ValidationError({'producto': 'El producto es requerido.'})
+
+        # 2. Usar 'is not None' para capturar el 0 (antes 'if self.cantidad_producida' ignoraba el 0)
+        if self.cantidad_producida is not None and self.cantidad_producida <= 0:
+            raise ValidationError({'cantidad_producida': 'La cantidad producida debe ser mayor a 0'})
+
         # Fecha fin no puede ser menor que fecha inicio
         if self.fecha_inicio and self.fecha_fin:
             if self.fecha_fin < self.fecha_inicio:
                 raise ValidationError("La fecha de fin no puede ser anterior a la fecha de inicio")
-        
-         # Validar duplicados (creación y edición)
+
+        # 3. Validar duplicados — .exclude(pk=self.pk) siempre (pk=None no excluye nada)
         if self.fecha_inicio:
             duplicados = Produccion.objects.filter(
                 producto=self.producto,
                 fecha_inicio=self.fecha_inicio,
                 estado_produccion__in=['PENDIENTE', 'EN PROCESO'],
                 deleted_at__isnull=True
-            )
-            if self.pk:
-                duplicados = duplicados.exclude(pk=self.pk)
-                
+            ).exclude(pk=self.pk)
+
             if duplicados.exists():
                 raise ValidationError("Ya existe una producción activa para este producto en esta fecha")
 
+    # Override de save para manejar timestamps y validaciones
     def save(self, *args, **kwargs):
         """Auto-gestión de timestamps"""
         if not self.pk and not self.created_at:
@@ -71,24 +75,33 @@ class Produccion(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    # Eliminación suave (soft delete) — no se elimina físicamente, solo se marca como eliminado
     def delete(self, using=None, keep_parents=False):
         """Soft delete"""
         self.deleted_at = timezone.now()
-        self.save()
+        self.updated_at = timezone.now()
+        Produccion.objects.filter(pk=self.pk).update(
+            deleted_at=self.deleted_at,
+            updated_at=self.updated_at,
+        )
         return self
 
+    # Eliminación física real — solo para casos excepcionales, no se recomienda usar en vistas normales
     def hard_delete(self):
         """Eliminación física real"""
         super().delete()
 
+    # Métodos de negocio relacionados con el estado y asignaciones de producción 
     def puede_modificarse(self):
         """Verifica si la producción puede ser modificada"""
         return self.estado_produccion not in ['TERMINADA', 'CANCELADA']
 
+    # Validación para eliminar: solo si está pendiente y no tiene asignaciones a pedidos
     def puede_eliminarse(self):
         """Verifica si puede eliminarse"""
         return self.estado_produccion == 'PENDIENTE' and not self.detalleproduccionpedido_set.exists()
 
+    # Métodos para obtener cantidades asignadas y disponibles
     def get_cantidad_asignada(self):
         """Obtiene la cantidad total asignada a pedidos"""
         total = self.detalleproduccionpedido_set.filter(
@@ -98,14 +111,17 @@ class Produccion(models.Model):
         )['total'] or 0
         return float(total)
 
+    # Método para obtener la cantidad disponible (producida menos asignada)
     def get_cantidad_disponible(self):
         """Cantidad producida menos la asignada"""
         return self.cantidad_producida - self.get_cantidad_asignada()
 
+    # Método para verificar si toda la producción está asignada
     def esta_completamente_asignada(self):
         """Verifica si toda la producción está asignada"""
         return self.get_cantidad_asignada() >= self.cantidad_producida
 
+    # Método para cambiar estado con validaciones
     def cambiar_estado(self, nuevo_estado):
         """Cambia el estado con validaciones"""
         if not self.puede_modificarse():
@@ -128,10 +144,11 @@ class Produccion(models.Model):
             self.fecha_fin = timezone.now().date()
         self.save()
 
+    # Método para representar el objeto como string
     def __str__(self):
         return f"{self.producto.codigo_producto} - {self.cantidad_producida} und ({self.estado_produccion})"
 
-
+# Modelo para relacionar producción con pedidos y productos asignados
 class DetalleProduccionPedido(models.Model):
     id = models.BigAutoField(primary_key=True)
     produccion = models.ForeignKey('Produccion', models.DO_NOTHING)
@@ -148,7 +165,7 @@ class DetalleProduccionPedido(models.Model):
         unique_together = (('produccion', 'pedido', 'producto'),)
 
     def clean(self):
-        if self.cantidad_asignada and self.cantidad_asignada <= 0:
+        if self.cantidad_asignada is not None and self.cantidad_asignada <= 0:
             raise ValidationError("La cantidad asignada debe ser mayor a 0")
         
         # Validar que no exceda la cantidad disponible de producción
@@ -167,6 +184,7 @@ class DetalleProduccionPedido(models.Model):
                     f"La cantidad asignada ({self.cantidad_asignada}) excede la disponible ({disponible})"
                 )
 
+    # Override de save para manejar timestamps y validaciones
     def save(self, *args, **kwargs):
         if not self.pk and not self.created_at:
             self.created_at = timezone.now()
@@ -174,11 +192,17 @@ class DetalleProduccionPedido(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    # Soft delete — no se elimina físicamente, solo se marca como eliminado
     def delete(self, using=None, keep_parents=False):
         """Soft delete"""
         self.deleted_at = timezone.now()
-        self.save()
+        self.updated_at = timezone.now()
+        Produccion.objects.filter(pk=self.pk).update(
+            deleted_at=self.deleted_at,
+            updated_at=self.updated_at,
+        )
         return self
 
+    # Método para representar el objeto como string
     def __str__(self):
         return f"{self.produccion} -> Pedido {self.pedido.id} ({self.cantidad_asignada})"

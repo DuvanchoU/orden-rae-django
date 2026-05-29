@@ -27,6 +27,9 @@ import os
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 from django.db import transaction
+from ventas.models import Carritos, ItemsCarrito
+from django.contrib.auth import logout
+from django.contrib.auth import authenticate, login, logout
 
 # Vistas para páginas principales (home, productos, promociones, contacto, etc.)
 # Vistas para autenticación (login, registro, perfil)
@@ -1034,9 +1037,9 @@ def login_view(request):
     
     # Si ya está autenticado redirigir según tipo
     if request.session.get('cliente_auth'):
-        return redirect('pagina:home')
+        return redirect('home')
     if request.session.get('usuario_id'):
-        return redirect('dashboard:dashboard_home')
+        return redirect('dashboard:dashboard_home') 
     
     if request.method == 'POST':
         correo = request.POST.get('correo', '').strip().lower()
@@ -1048,7 +1051,6 @@ def login_view(request):
             return render(request, 'pagina/login.html')
 
         # Buscar primero en Usuarios (staff)
-        from usuarios.models import Usuarios
         try:
             usuario = Usuarios.objects.select_related('id_rol').get(
                 correo_usuario=correo,
@@ -1076,7 +1078,6 @@ def login_view(request):
                     return render(request, 'pagina/login.html')
                 
                 # Autenticación exitosa, iniciar sesión
-                from django.contrib.auth import login
                 login(request, usuario, backend='usuarios.backends.UsuariosAuthBackend')
 
                 import time
@@ -1098,8 +1099,20 @@ def login_view(request):
             pass  # No es staff, buscar en clientes
 
         # Buscar en Clientes
-        from django.contrib.auth import authenticate, login
         cliente = authenticate(request, correo=correo, contrasena=contrasena)
+
+        if cliente is None:
+            # Fallback: buscar directamente con hash SHA256
+            try:
+                cliente_obj = Clientes.objects.get(
+                    email=correo,
+                    deleted_at__isnull=True
+                )
+                sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
+                if sha_hash == cliente_obj.contrasena_cliente and cliente_obj.estado == 'ACTIVO':
+                    cliente = cliente_obj
+            except Exception:
+                logger.debug(f'Cliente no existe: {correo}')
 
         if cliente is not None:
             login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
@@ -1118,7 +1131,7 @@ def login_view(request):
             cliente.save(update_fields=['ultimo_login'])
 
             messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
-            return redirect(request.GET.get('next', 'pagina:home'))
+            return redirect(request.GET.get('next', '/'))
 
         messages.error(request, 'Correo o contraseña incorrectos')
 
@@ -1148,18 +1161,24 @@ def registro_view(request):
         
         # Validaciones
         errores = []
+        # Validar campos obligatorios
         if not all([nombre, apellido, documento, email, password, password2]):
             errores.append('Todos los campos obligatorios son requeridos')
+        # Validar formato de email
+        if email and not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            errores.append('El correo electrónico no es válido')
+
         if password != password2:
             errores.append('Las contraseñas no coinciden')
+        # Validar formato de documento (solo números, mínimo 6 dígitos)
         if len(password) < 8:
             errores.append('La contraseña debe tener mínimo 8 caracteres')
-        
+        # Validar género
         if email and Clientes.objects.filter(email=email, deleted_at__isnull=True).exists():
             errores.append('El email ya está registrado')
+        # Validar documento único
         if documento and Clientes.objects.filter(documento=documento, deleted_at__isnull=True).exists():
             errores.append('El documento ya está registrado')
-        
         if errores:
             return render(request, 'pagina/registro.html', {
                 'error': ' | '.join(errores),
@@ -1183,11 +1202,12 @@ def registro_view(request):
                 apellido=apellido,
                 documento=documento,
                 email=email,
-                contrasena_cliente=make_password(password),
+                contrasena_cliente=hashlib.sha256(password.encode()).hexdigest(),
                 telefono=telefono or None,
                 estado='ACTIVO',
                 fecha_registro=timezone.now(),
                 genero=genero_abrev,
+                email_verificado=True,
             )
             
             # Auto-login con el backend de clientes
@@ -1200,7 +1220,7 @@ def registro_view(request):
             request.session['cliente_auth']   = True
             
             messages.success(request, f'¡Bienvenido, {nombre}! Tu cuenta ha sido creada.')
-            return redirect('pagina:home')
+            return redirect('pagina:login')
             
         except Exception as e:
             logger.error(f" [registro_view] ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
@@ -1212,7 +1232,6 @@ def registro_view(request):
 
 def logout_view(request):
     """Cerrar sesión de cliente"""
-    from django.contrib.auth import logout
     logout(request)  # Cierra sesión de Django
     
     # Limpiar variables de sesión personalizadas
