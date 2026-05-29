@@ -1142,7 +1142,7 @@ def login_view(request):
                 # Login cliente
                 request.session['cliente_auth'] = True
                 request.session['cliente_id'] = cliente.id_cliente
-                request.session['cliente_nombre'] = cliente.nombre_cliente
+                request.session['cliente_nombre'] = f"{cliente.nombre} {cliente.apellido}"
 
                 return redirect('/')
 
