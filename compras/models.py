@@ -174,11 +174,11 @@ class DetalleCompra(models.Model):
     
     def clean(self):
         """Validaciones del detalle"""
-        if self.cantidad <= 0:
+        if self.cantidad is not None and self.cantidad <= 0:
             raise ValidationError("La cantidad debe ser mayor a 0")
-        if self.precio_unitario < 0:
+        if self.precio_unitario is not None and self.precio_unitario < 0:
             raise ValidationError("El precio unitario no puede ser negativo")
-        if self.subtotal < 0:
+        if self.subtotal is not None and self.subtotal < 0:
             raise ValidationError("El subtotal no puede ser negativo")
 
     def save(self, *args, **kwargs):

@@ -1037,7 +1037,7 @@ def login_view(request):
     
     # Si ya está autenticado redirigir según tipo
     if request.session.get('cliente_auth'):
-        return redirect('home')
+        return redirect('/')
     if request.session.get('usuario_id'):
         return redirect('dashboard:dashboard_home') 
     
@@ -1116,7 +1116,6 @@ def login_view(request):
             # Verificar contraseña
             contrasena_valida = False
 
-            # Contraseña Django
             if (
                 cliente.contrasena_cliente and
                 cliente.contrasena_cliente.startswith('pbkdf2_')
@@ -1125,57 +1124,35 @@ def login_view(request):
                     contrasena,
                     cliente.contrasena_cliente
                 )
-
-            # Contraseña SHA256 antigua
             else:
                 sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
-                contrasena_valida = (
-                    sha_hash == cliente.contrasena_cliente
-                )
+                contrasena_valida = (sha_hash == cliente.contrasena_cliente)
 
-            # Validar contraseña y estado
-            if (
-                contrasena_valida and
-                cliente.estado == 'ACTIVO'
-            ):
+            if contrasena_valida and cliente.estado == 'ACTIVO':
+                login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
 
-                # Login cliente
                 request.session['cliente_auth'] = True
                 request.session['cliente_id'] = cliente.id_cliente
                 request.session['cliente_nombre'] = f"{cliente.nombre} {cliente.apellido}"
+                request.session['cliente_email'] = cliente.email
 
-                return redirect('/')
+                if remember:
+                    request.session.set_expiry(1209600)
+                else:
+                    request.session.set_expiry(0)
+
+                cliente.ultimo_login = timezone.now()
+                cliente.save(update_fields=['ultimo_login'])
+
+                messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
+                return redirect(request.GET.get('next', '/'))
 
             else:
-                messages.error(
-                    request,
-                    'Correo o contraseña incorrectos'
-                )
+                messages.error(request, 'Correo o contraseña incorrectos')
+                return render(request, 'pagina/login.html')
 
         except Clientes.DoesNotExist:
             logger.debug(f'Cliente no existe: {correo}')
-            login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
-
-            request.session['cliente_id'] = cliente.id_cliente
-            request.session['cliente_nombre'] = f"{cliente.nombre} {cliente.apellido}"
-            request.session['cliente_email'] = cliente.email
-            request.session['cliente_auth'] = True
-
-            if remember:
-                request.session.set_expiry(1209600)
-            else:
-                request.session.set_expiry(0)
-
-            cliente.ultimo_login = timezone.now()
-            cliente.save(update_fields=['ultimo_login'])
-
-            messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
-
-            # Redirigir a la página anterior o al home
-            return redirect(request.GET.get('next', '/'))
-
-        except Clientes.DoesNotExist:
-            # No existe ni en Usuarios ni en Clientes
             messages.error(request, 'Correo o contraseña incorrectos')
             return render(request, 'pagina/login.html')
 

@@ -270,36 +270,51 @@ class LoginViewTests(TestCase):
         response = self._post('noexiste@test.com', 'cualquiera')
         self.assertNotEqual(response.status_code, 302)
 
-    @patch('pagina.views.login')
-    @patch('pagina.views.Usuarios')
-    def test_login_staff_exitoso_redirige_a_dashboard(self, MockUsr, mock_login):
-        usuario = MagicMock()
-        usuario.contrasena_usuario = hashlib.sha256(b'pass1234').hexdigest()
-        usuario.estado = 'ACTIVO'
-        usuario.nombres = 'Admin'
-        usuario.apellidos = 'Test'
-        usuario.id_rol = MagicMock(nombre_rol='GERENTE')
-        usuario.id_usuario = 1
-        MockUsr.objects.select_related.return_value.get.return_value = usuario
-        MockUsr.DoesNotExist = Exception
+@patch('pagina.views.login')
+@patch('pagina.views.Usuarios')
+def test_login_staff_exitoso_redirige_a_dashboard(self, MockUsr, mock_login):
+    usuario = MagicMock()
+    usuario.contrasena_usuario = hashlib.sha256(b'pass1234').hexdigest()
+    usuario.estado = 'ACTIVO'
+    usuario.nombres = 'Admin'
+    usuario.apellidos = 'Test'
+    usuario.id_rol = MagicMock(nombre_rol='GERENTE')
+    usuario.id_usuario = 1
 
-        response = self._post('admin@test.com', 'pass1234')
-        self.assertEqual(response.status_code, 302)
-        self.assertIn('dashboard', response['Location'])
+    # Configurar correctamente la cadena select_related().get()
+    MockUsr.objects.select_related.return_value.get.return_value = usuario
 
-    @patch('pagina.views.login')
-    @patch('pagina.views.Clientes')
-    @patch('pagina.views.Usuarios')
-    def test_login_cliente_exitoso_redirige_a_home(self, MockUsr, MockCli, mock_login):
-        MockUsr.objects.select_related.return_value.get.side_effect = Exception
-        MockUsr.DoesNotExist = Exception
+    # DoesNotExist debe ser una subclase de Exception única,
+    # NO Exception genérica, para que el except no la capture accidentalmente
+    class UsuariosDoesNotExist(Exception):
+        pass
+    MockUsr.DoesNotExist = UsuariosDoesNotExist
 
-        cliente = _mock_cliente()
-        MockCli.objects.get.return_value = cliente
-        MockCli.DoesNotExist = Exception
+    response = self._post('admin@test.com', 'pass1234')
+    self.assertEqual(response.status_code, 302)
+    self.assertIn('dashboard', response['Location'])
 
-        response = self._post('cliente@test.com', 'password123')
-        self.assertEqual(response.status_code, 302)
+
+@patch('pagina.views.login')
+@patch('pagina.views.Clientes')
+@patch('pagina.views.Usuarios')
+def test_login_cliente_exitoso_redirige_a_home(self, MockUsr, MockCli, mock_login):
+    # Staff: no existe → lanza DoesNotExist correctamente
+    class UsuariosDoesNotExist(Exception):
+        pass
+    MockUsr.DoesNotExist = UsuariosDoesNotExist
+    MockUsr.objects.select_related.return_value.get.side_effect = UsuariosDoesNotExist
+
+    # Cliente: existe con contraseña correcta
+    class ClientesDoesNotExist(Exception):
+        pass
+    MockCli.DoesNotExist = ClientesDoesNotExist
+
+    cliente = _mock_cliente()  # contrasena = sha256('password123')
+    MockCli.objects.get.return_value = cliente
+
+    response = self._post('cliente@test.com', 'password123')
+    self.assertEqual(response.status_code, 302)
 
     @patch('pagina.views.Clientes')
     @patch('pagina.views.Usuarios')
@@ -325,7 +340,7 @@ class LoginViewTests(TestCase):
         _add_messages(request)
         response = login_view(request)
         self.assertEqual(response.status_code, 302)
-        self.assertIn('home', response['Location'])
+        self.assertEqual(response['Location'], '/')
 
 # ══════════════════════════════════════════════════════════════
 # 5. REGISTRO

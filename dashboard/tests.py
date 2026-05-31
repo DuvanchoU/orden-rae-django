@@ -44,12 +44,13 @@ class DashboardRedirectTests(TestCase):
 
     def _get_redirect(self, rol_nombre):
         from dashboard.views import dashboard_redirect
+        from django.contrib.messages.storage.cookie import CookieStorage
         request = self.factory.get('/dashboard/')
         request.user = _make_usuario(rol_nombre)
-        # Añadir soporte de sesión y mensajes al request
         session = SessionStore()
         session.create()
         request.session = session
+        setattr(request, '_messages', CookieStorage(request))
         response = dashboard_redirect(request)
         return response
 
@@ -81,7 +82,13 @@ class DashboardRedirectTests(TestCase):
     def test_cliente_va_al_home(self):
         response = self._get_redirect('CLIENTE')
         self.assertEqual(response.status_code, 302)
-        self.assertIn('home', response['Location'])
+        # pagina:home puede resolver a '/' o '/home/' según las URLs
+        self.assertIn(response.status_code, [302])
+        location = response['Location']
+        self.assertTrue(
+            'home' in location or location == '/',
+            f"Se esperaba redirección a home, se obtuvo: {location}"
+        )
 
     @patch('dashboard.views.login_required_custom', lambda f: f)
     def test_rol_desconocido_va_a_gerente_por_defecto(self):
@@ -350,7 +357,8 @@ class LogoutViewTests(TestCase):
 
 def _add_messages(request):
     """Adjunta soporte de mensajes a un request de RequestFactory."""
-    setattr(request, '_messages', FallbackStorage(request))
+    from django.contrib.messages.storage.cookie import CookieStorage
+    setattr(request, '_messages', CookieStorage(request))
 
 class PerfilViewTests(TestCase):
 
@@ -364,7 +372,7 @@ class PerfilViewTests(TestCase):
         request.user = _make_usuario('GERENTE')
         _add_messages(request)
 
-        with patch('django.shortcuts.render') as mock_render:
+        with patch('dashboard.views.render') as mock_render:
             mock_render.return_value = MagicMock(status_code=200)
             perfil_view(request)
             _, _, context = mock_render.call_args[0]
@@ -379,7 +387,7 @@ class PerfilViewTests(TestCase):
         request.user = _make_usuario('AUXILIAR DE BODEGA')
         _add_messages(request)
 
-        with patch('django.shortcuts.render') as mock_render:
+        with patch('dashboard.views.render') as mock_render:
             mock_render.return_value = MagicMock(status_code=200)
             perfil_view(request)
             _, _, context = mock_render.call_args[0]
@@ -395,7 +403,7 @@ class PerfilViewTests(TestCase):
         request.user = usuario
         _add_messages(request)
 
-        with patch('django.shortcuts.render') as mock_render:
+        with patch('dashboard.views.render') as mock_render:
             mock_render.return_value = MagicMock(status_code=200)
             perfil_view(request)
             _, _, context = mock_render.call_args[0]

@@ -98,7 +98,8 @@ class CompraCreateView(CreateView):
                 return self.form_invalid(form)
             
             compra = form.save(commit=False)
-            compra.usuario_id = self.request.user.id if hasattr(self.request, 'user') and self.request.user.is_authenticated else 1
+            usuario_id = self.request.session.get('usuario_id', 1)
+            compra.usuario_id = usuario_id
             compra.fecha_compra = timezone.now().date()
             compra.estado = 'PENDIENTE'
             compra.total_compra = 0 
@@ -153,7 +154,7 @@ class CompraUpdateView(UpdateView):
                     self.request,
                     f"No se puede modificar una compra {compra.estado}"
                 )
-                return self.form_invalid(form)
+                return redirect(self.success_url)
             
             compra = form.save(commit=False)
             compra.updated_at = timezone.now()

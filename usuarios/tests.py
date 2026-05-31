@@ -319,17 +319,32 @@ class UsuarioUpdateFormTests(TestCase):
     def setUp(self):
         self.rol = crear_rol("ROL_UPD")
 
+    # En esta prueba se verifica que al actualizar un usuario existente sin cambiar la contraseña, 
+    # el formulario sea válido y no requiera ingresar una nueva contraseña, lo que permite editar 
+    # otros campos sin afectar la contraseña actual del usuario.
     def test_update_valido_sin_contrasena(self):
-        form = UsuarioUpdateForm(data={
-            "nombres": "Actualizado",
-            "apellidos": "Test",
-            "documento": "11112201",
-            "correo_usuario": "upd@test.com",
-            "id_rol": self.rol.pk,
-            "estado": "ACTIVO",
-        })
+        # Crear usuario existente primero
+        usuario_existente = crear_usuario(
+            self.rol,
+            correo="upd@test.com",
+            documento="11112201"
+        )
+        form = UsuarioUpdateForm(
+            data={
+                "nombres": "Actualizado",
+                "apellidos": "Test",
+                "documento": "11112201",
+                "correo_usuario": "upd@test.com",
+                "id_rol": self.rol.pk,
+                "estado": "ACTIVO",
+            },
+            instance=usuario_existente  # ← clave: le da pk al modelo
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
+    # En esta prueba se verifica que al intentar actualizar un usuario con un correo electrónico malformado,
+    # el formulario no sea válido y muestre un error específico en el campo "correo_usuario", lo que garantiza que el 
+    # formulario esté validando correctamente el formato del correo electrónico durante la actualización de un usuario.
     def test_correo_invalido_falla(self):
         form = UsuarioUpdateForm(data={
             "nombres": "Ok",
@@ -341,6 +356,9 @@ class UsuarioUpdateFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("correo_usuario", form.errors)
 
+    # En esta prueba se verifica que al intentar actualizar un usuario con un número de documento que contiene letras,
+    # el formulario no sea válido y muestre un error específico en el campo "documento", lo que garantiza que el formulario 
+    # esté validando correctamente que el documento solo contenga caracteres numéricos durante la actualización de un usuario.
     def test_documento_muy_corto_falla(self):
         form = UsuarioUpdateForm(data={
             "nombres": "Ok",
@@ -362,11 +380,13 @@ class LoginLogoutViewTests(TestCase):
     def setUp(self):
         self.client = Client()
 
+    #  Login 
     def test_login_redirige_a_pagina(self):
         response = self.client.get(reverse("usuarios:login"))
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/pagina/login", response["Location"])
+        self.assertIn("/login/", response["Location"])
 
+    # Logout
     def test_logout_limpia_sesion(self):
         session = self.client.session
         session["usuario_id"] = 99
@@ -374,6 +394,7 @@ class LoginLogoutViewTests(TestCase):
         self.client.get(reverse("usuarios:logout"))
         self.assertNotIn("usuario_id", self.client.session)
 
+    # Logout redirige a login
     def test_logout_redirige(self):
         response = self.client.get(reverse("usuarios:logout"))
         self.assertEqual(response.status_code, 302)
@@ -385,6 +406,7 @@ class LoginLogoutViewTests(TestCase):
 
 class RolViewTests(TestCase):
 
+    # Configuración común para todas las pruebas de vistas de roles
     def setUp(self):
         self.client = Client()
         self.rol = crear_rol("GERENTE_V")
@@ -393,20 +415,26 @@ class RolViewTests(TestCase):
         autenticar_sesion(self.client, self.admin)
 
     # ── Lista ─────────────────────────────────────────────────────────────────
+    # Para cada prueba de lista, se asume que el rol "GERENTE_V" creado en setUp() siempre estará presente
     def test_lista_status_200(self):
         response = self.client.get(reverse("usuarios:rol_list"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "usuarios/rol_list.html")
 
+    # En esta prueba se verifica que el rol creado en setUp() esté presente en la lista, lo que garantiza que la vista esté mostrando los roles correctamente
     def test_lista_contiene_rol(self):
         response = self.client.get(reverse("usuarios:rol_list"))
         self.assertContains(response, "GERENTE_V")
 
+    # En esta prueba se verifica que la funcionalidad de búsqueda en la lista de roles esté 
+    # funcionando correctamente, buscando por el nombre del rol creado en setUp()
     def test_lista_busqueda(self):
         response = self.client.get(reverse("usuarios:rol_list") + "?busqueda=GERENTE_V")
         self.assertContains(response, "GERENTE_V")
 
     # ── Detalle ───────────────────────────────────────────────────────────────
+    # En esta prueba se verifica que la vista de detalle de un rol específico funcione correctamente, 
+    # utilizando el rol creado en setUp() para acceder a su detalle
     def test_detalle_status_200(self):
         response = self.client.get(
             reverse("usuarios:rol_detail", kwargs={"pk": self.rol.pk})
@@ -415,11 +443,16 @@ class RolViewTests(TestCase):
         self.assertTemplateUsed(response, "usuarios/rol_detail.html")
 
     # ── Crear ─────────────────────────────────────────────────────────────────
+    # En esta prueba se verifica que la vista de creación de roles responda correctamente a una solicitud GET, 
+    # mostrando el formulario para crear un nuevo rol
     def test_crear_get_status_200(self):
         response = self.client.get(reverse("usuarios:rol_create"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "usuarios/rol_form.html")
 
+    # En esta prueba se verifica que al enviar un formulario válido para crear un nuevo rol, 
+    # la vista responda con una redirección (status code 302), lo que indica que el rol se creó correctamente y 
+    # se redirigió a otra página (generalmente la lista o el detalle del nuevo rol)
     def test_crear_post_valido_redirige(self):
         RolesOld.objects.filter(nombre_rol="ROL NUEVO").delete()
         response = self.client.post(reverse("usuarios:rol_create"), {
@@ -428,6 +461,8 @@ class RolViewTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
 
+    # En esta prueba se verifica que al enviar un formulario con datos inválidos (nombre de rol muy corto), 
+    # la vista no redirija sino que responda con status code 200, lo que indica que
     def test_crear_post_invalido_muestra_errores(self):
         response = self.client.post(reverse("usuarios:rol_create"), {
             "nombre_rol": "AB",

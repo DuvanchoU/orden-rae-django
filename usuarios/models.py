@@ -163,8 +163,11 @@ class Usuarios(models.Model):
         if self.pk:
             try:
                 original = Usuarios.objects.get(pk=self.pk)
-                if original.contrasena_usuario != self.contrasena_usuario:
+                if (self.contrasena_usuario and
+                        original.contrasena_usuario != self.contrasena_usuario):
                     self._validar_fortaleza_contrasena()
+                elif not self.contrasena_usuario:
+                    self.contrasena_usuario = original.contrasena_usuario
             except Usuarios.DoesNotExist:
                 self._validar_fortaleza_contrasena()
         else:

@@ -131,7 +131,6 @@ class DetalleCompraForm(forms.ModelForm):
             existe = DetalleCompra.objects.filter(
                 compra=compra,
                 producto=producto,
-                deleted_at__isnull=True
             )
             if self.instance.pk:
                 existe = existe.exclude(pk=self.instance.pk)

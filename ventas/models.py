@@ -711,7 +711,7 @@ class Pedido(models.Model):
             if not self.numero_pedido:
                 # Generar número de pedido
                 ultimo = Pedido.objects.filter(deleted_at__isnull=True).order_by('-id_pedido').first()
-                consecutivo = (ultimo.id_pedido or 0) + 1
+                consecutivo = (ultimo.id_pedido if ultimo else 0) + 1
                 self.numero_pedido = f"PED-{consecutivo:06d}"
         
         self.updated_at = timezone.now()
@@ -869,6 +869,7 @@ class Ventas(models.Model):
             models.Index(fields=['fecha_venta']),
         ]
 
+    # Métodos para formatear montos sin decimales y con separador de miles para mejor legibilidad en interfaces de usuario y reportes 
     def precio_formateado(self):
         """
         Retorna el precio formateado sin decimales y con separador de miles
@@ -876,10 +877,14 @@ class Ventas(models.Model):
         """
         return f"{int(self.total):,}".replace(",", ".")
     
+    # Solo se muestra el número de factura si existe, de lo contrario se muestra el ID de la venta para referencia 
+    # y el nombre del cliente si está asociado, o "Sin cliente" si no lo está para facilitar la identificación de la venta 
+    # en listados y reportes, especialmente durante el proceso de creación antes de que se genere el número de factura definitivo.
     def __str__(self):
         cliente_name = self.cliente.nombre if self.cliente else "Sin cliente"
         return f"Venta #{self.id_venta} - {cliente_name}"
     
+    # Validaciones para montos y consistencia de totales y fechas 
     def clean(self):
         if self.subtotal < 0:
             raise ValidationError("El subtotal no puede ser negativo")
@@ -895,6 +900,7 @@ class Ventas(models.Model):
         if abs(float(self.total) - float(total_calculado)) > 0.01:
             raise ValidationError(f"El total debe ser subtotal + impuesto - descuento ({total_calculado})")
 
+    # Auto-gestión de timestamps y número de factura con prefijo y consecutivo único por prefijo y soft delete 
     def save(self, *args, **kwargs):
         if not self.pk and not self.created_at:
             self.created_at = timezone.now()
@@ -905,13 +911,14 @@ class Ventas(models.Model):
                     prefijo=self.prefijo,
                     deleted_at__isnull=True
                 ).order_by('-id_venta').first()
-                consecutivo = (ultimo.id_venta or 0) + 1
+                consecutivo = (ultimo.id_venta if ultimo else 0) + 1
                 self.numero_factura = f"{self.prefijo}-{consecutivo:06d}"
         
         self.updated_at = timezone.now()
         self.full_clean()
         super().save(*args, **kwargs)
 
+    # Soft delete solo si está pendiente y no tiene pedido asociado o el pedido está pendiente o cancelado (para evitar inconsistencias con pedidos completados) 
     def delete(self, using=None, keep_parents=False):
         """Soft delete - solo si está pendiente"""
         if self.estado_venta != 'PENDIENTE':
@@ -920,12 +927,15 @@ class Ventas(models.Model):
         self.save()
         return self
 
+    # Validaciones para modificaciones y eliminaciones según estado de la venta y relación con pedidos 
     def puede_modificarse(self):
         return self.estado_venta == 'PENDIENTE'
 
+    # Solo se puede eliminar si está pendiente y no tiene pedido asociado o el pedido está pendiente o cancelado (para evitar inconsistencias con pedidos completados) 
     def puede_eliminarse(self):
         return self.estado_venta == 'PENDIENTE'
 
+    # Solo se puede completar si está pendiente y tiene detalles asociados (para evitar ventas vacías) 
     def calcular_totales(self):
         """Calcula totales desde los detalles"""
         detalles = self.detalleventa_set.filter(deleted_at__isnull=True)
@@ -940,6 +950,7 @@ class Ventas(models.Model):
         self.total = total
         self.save()
 
+    # Solo se puede completar si está pendiente y tiene detalles asociados (para evitar ventas vacías) 
     def completar_venta(self):
         """Marca la venta como completada"""
         if self.estado_venta != 'PENDIENTE':
@@ -956,9 +967,11 @@ class Ventas(models.Model):
             self.pedido.usuario_facturo = self.usuario
             self.pedido.save()
 
+    # Solo se puede cancelar si está pendiente (para evitar inconsistencias con ventas completadas) 
     def get_total_formateado(self):
         return f"${int(self.total):,}".replace(",", ".")
 
+    # Solo se puede cancelar si está pendiente (para evitar inconsistencias con ventas completadas) 
     def __str__(self):
         cliente_name = self.cliente.nombre if self.cliente else "Sin cliente"
         return f"{self.numero_factura} - {cliente_name}"

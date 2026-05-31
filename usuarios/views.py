@@ -25,12 +25,13 @@ from .utils import (
 )
 
 # Vistas de Autenticación Personalizada con Rate Limiting y Protección de Caché
-
 @never_cache
 def login_view(request):
     return redirect('/login/')
 
-
+# Agregar vista para logout que limpie toda la sesión y redirija al login con un mensaje de éxito indicando que se ha cerrado 
+# sesión correctamente, y prevenir caché en esta vista para garantizar que no se almacene información sensible en el 
+# navegador después de cerrar sesión.
 @never_cache  # Previene caché en logout
 def logout_view(request):
     """
@@ -44,6 +45,7 @@ def logout_view(request):
 # === VISTAS DE ROLES ===
 # =============================================================================
 
+# Agregar vista para listar roles, con paginación, búsqueda y ordenamiento, y mostrar un mensaje de éxito al eliminar un rol.
 @method_decorator(never_cache, name='dispatch')
 class RolListView(ListView):
     model = RolesOld
@@ -51,6 +53,8 @@ class RolListView(ListView):
     context_object_name = 'roles'
     paginate_by = 10
 
+    # Permitir filtrar por búsqueda general en la lista de roles utilizando el parámetro GET "busqueda", aplicando el filtro 
+    # de manera que se busque el término en los campos "nombre_rol" y "descripcion"
     def get_queryset(self):
         queryset = super().get_queryset()
         busqueda = self.request.GET.get('busqueda')
@@ -61,12 +65,14 @@ class RolListView(ListView):
             )
         return queryset.order_by('nombre_rol')
 
+    # En el contexto de la lista de roles, también incluir el título "Lista de Roles" para proporcionar 
+    # contexto claro al usuario sobre la información que se está mostrando.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Lista de Roles'
         return context
 
-
+# Agregar vista para crear un nuevo rol, con un formulario que incluya validación de datos y manejo de errores, y mostrar un mensaje de éxito al crear un nuevo rol.
 @method_decorator(never_cache, name='dispatch')
 class RolCreateView(CreateView):
     model = RolesOld
@@ -74,17 +80,20 @@ class RolCreateView(CreateView):
     form_class = RolForm
     success_url = reverse_lazy('usuarios:rol_list')
 
+    # En el formulario de creación de un nuevo rol, mostrar el título "Nuevo Rol" para proporcionar contexto 
+    # claro al usuario sobre la acción que está realizando.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Rol'
         return context
 
+    # Al crear un nuevo rol, mostrar un mensaje de éxito para informar al usuario que el rol ha sido creado correctamente.
     def form_valid(self, form):
         response = super().form_valid(form)
         messages.success(self.request, 'Rol creado exitosamente')
         return response
 
-
+# Agregar vista para editar un rol existente, con un formulario que incluya validación de datos y manejo de errores, y mostrar un mensaje de éxito al actualizar un rol.
 @method_decorator(never_cache, name='dispatch')
 class RolUpdateView(UpdateView):
     model = RolesOld
@@ -92,11 +101,13 @@ class RolUpdateView(UpdateView):
     form_class = RolForm
     success_url = reverse_lazy('usuarios:rol_list')
 
+    # En el formulario de edición de un rol, mostrar el nombre del rol como título para proporcionar contexto claro al usuario sobre qué rol se está editando.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Rol'
         return context
 
+    # Al actualizar un rol, mostrar un mensaje de éxito para informar al usuario que el rol ha sido actualizado correctamente.
     def form_valid(self, form):
         response = super().form_valid(form)
         messages.success(self.request, 'Rol actualizado exitosamente')
@@ -109,10 +120,10 @@ class RolDeleteView(DeleteView):
     template_name = 'usuarios/rol_confirm_delete.html'
     success_url = reverse_lazy('usuarios:rol_list')
 
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        messages.success(request, 'Rol eliminado exitosamente')
-        return response
+    # Al eliminar un rol, mostrar un mensaje de éxito
+    def form_valid(self, form):
+        messages.success(self.request, 'Rol eliminado exitosamente')
+        return super().form_valid(form)
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -121,6 +132,8 @@ class RolDetailView(DetailView):
     template_name = 'usuarios/rol_detail.html'
     context_object_name = 'rol'
     
+    # En el detalle de un rol, también mostrar una lista de los usuarios que tienen asignado ese rol, limitando a los 5 más recientes 
+    # y mostrando el total de usuarios con ese rol
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         rol = self.get_object()
@@ -141,6 +154,9 @@ class UsuarioListView(ListView):
     context_object_name = 'usuarios'
     paginate_by = 10
 
+    # Permitir filtrar por rol, estado y búsqueda general en la lista de usuarios utilizando los parámetros GET "rol", "estado" y "busqueda" 
+    # respectivamente, aplicando los filtros de manera combinada si se proporcionan varios parámetros y ordenando los resultados por fecha 
+    # de registro de manera descendente para mostrar primero los usuarios más recientes en la parte superior de la lista.
     def get_queryset(self):
         queryset = super().get_queryset()
         rol = self.request.GET.get('rol')
@@ -160,7 +176,8 @@ class UsuarioListView(ListView):
             )
         return queryset.order_by('-fecha_registro')
 
-    # Agregar datos adicionales al contexto para filtros y títulos
+    # En el contexto de la lista de usuarios, también incluir una lista de todos los roles disponibles para permitir el filtrado por rol en la interfaz, 
+    # así como una lista de los posibles estados de usuario (por ejemplo, "ACTIVO", "INACTIVO", "SUSPENDIDO") para permitir el filtrado por estado en la interfaz.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Lista de Usuarios'
@@ -176,12 +193,17 @@ class UsuarioCreateView(CreateView):
     form_class = UsuarioForm
     success_url = reverse_lazy('usuarios:usuario_list')
 
+    # En el formulario de creación de un nuevo usuario, mostrar el título "Nuevo Usuario" y una 
+    # lista desplegable de roles disponibles para asignar al usuario, filtrando solo los roles que no han sido eliminados 
+    # (deleted_at es null) para garantizar que solo se puedan asignar roles activos a los usuarios.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Usuario'
         context['roles'] = RolesOld.objects.filter(deleted_at__isnull=True)
         return context
 
+    # Al crear un nuevo usuario, mostrar un mensaje de éxito con el nombre completo del usuario creado, y manejar 
+    # errores en caso de que ocurra algún problema durante la creación.
     def form_valid(self, form):
         try:
             usuario = form.save(commit=False)
@@ -197,7 +219,8 @@ class UsuarioCreateView(CreateView):
             messages.error(self.request, f'Error al crear: {str(e)}')
             return self.form_invalid(form)
 
-
+# Agregar vista para editar un usuario existente, con un formulario que incluya validación de datos y manejo de errores, 
+# y mostrar un mensaje de éxito al actualizar un usuario.
 @method_decorator(never_cache, name='dispatch')
 class UsuarioUpdateView(UpdateView):
     model = Usuarios
@@ -205,12 +228,17 @@ class UsuarioUpdateView(UpdateView):
     form_class = UsuarioUpdateForm
     success_url = reverse_lazy('usuarios:usuario_list')
 
+    # En el formulario de edición de un usuario, mostrar el nombre completo del usuario como título, así como una 
+    # lista desplegable de roles disponibles para asignar al usuario, filtrando solo los roles que no han sido eliminados 
+    # (deleted_at es null) para garantizar que solo se puedan asignar roles activos a los usuarios.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Usuario'
         context['roles'] = RolesOld.objects.filter(deleted_at__isnull=True)
         return context
 
+    # Al actualizar un usuario, mostrar un mensaje de éxito con el nombre completo del usuario actualizado, y manejar 
+    # errores en caso de que ocurra algún problema durante la actualización.
     def form_valid(self, form):
         try:
             usuario = form.save(commit=False)
@@ -229,7 +257,10 @@ class UsuarioUpdateView(UpdateView):
 # Agregar vista para cambio de contraseña
 class UsuarioChangePasswordView(View):
     """Vista para que el usuario cambie su propia contraseña"""
-    
+
+    # En esta vista se implementa la lógica para que un usuario pueda cambiar su propia contraseña,
+    # verificando que la contraseña actual sea correcta, que las nuevas contraseñas coincidan y cumplan con los requisitos 
+    # de fortaleza, y mostrando mensajes de éxito o error según corresponda.  
     def post(self, request, pk):
         try:
             usuario = get_object_or_404(Usuarios, pk=pk, deleted_at__isnull=True)
@@ -257,25 +288,29 @@ class UsuarioChangePasswordView(View):
             messages.error(request, f"Error: {str(e)}")
             return redirect('usuarios:usuario_detail', pk=pk)
         
-
+# Agregar vista para eliminar usuario con confirmación y mensaje de éxito al eliminar un usuario, y manejo de errores en 
+# caso de que ocurra algún problema durante la eliminación.
 @method_decorator(never_cache, name='dispatch')
 class UsuarioDeleteView(DeleteView):
     model = Usuarios
     template_name = 'usuarios/usuario_confirm_delete.html'
     success_url = reverse_lazy('usuarios:usuario_list')
 
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        messages.success(request, 'Usuario eliminado exitosamente')
-        return response
+    # Al eliminar un usuario, mostrar un mensaje de éxito y manejar errores en caso de que ocurra algún problema durante la eliminación.
+    def form_valid(self, form):
+        messages.success(self.request, 'Usuario eliminado exitosamente')
+        return super().form_valid(form)
 
-
+# Agregar vista para mostrar el detalle de un usuario, incluyendo su información personal y el rol asignado, y mostrar 
+# un mensaje de éxito al cargar el detalle del usuario.
 @method_decorator(never_cache, name='dispatch')
 class UsuarioDetailView(DetailView):
     model = Usuarios
     template_name = 'usuarios/usuario_detail.html'
     context_object_name = 'usuario'
     
+    # En el detalle de un usuario, mostrar el nombre completo del usuario como título, así como el nombre del rol asignado al usuario 
+    # (o "Sin rol" si no tiene un rol asignado) para proporcionar información clara sobre el usuario que se está visualizando.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         usuario = self.get_object()

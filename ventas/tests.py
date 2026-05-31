@@ -36,28 +36,29 @@ def crear_rol(nombre="GERENTE"):
 
 # El helper para crear usuario se adapta a los campos del modelo Usuarios, con valores por defecto para simplificar su uso en los tests.
 def crear_usuario(rol, correo="admin@test.com", doc="00000001"):
-    from django.db.models import Model as DjangoModel
     Usuarios.objects.filter(correo_usuario=correo).delete()
     Usuarios.objects.filter(documento=doc).delete()
     u = Usuarios(
         nombres="Admin", apellidos="Test",
         documento=doc, correo_usuario=correo,
-        contrasena_usuario=make_password("Admin123"),
+        contrasena_usuario="Admin1234",  # el modelo lo hashea en save()
         id_rol=rol, estado="ACTIVO",
-        created_at=timezone.now(), updated_at=timezone.now(),
         fecha_registro=timezone.now(),
     )
-    DjangoModel.save(u)
+    u.save() 
     return u
 
-# El helper para autenticar sesión simula el proceso de login estableciendo las variables de sesión 
-# necesarias para que las vistas reconozcan al usuario como autenticado.
+# El helper para autenticar sesión se adapta a los campos del modelo Usuarios, estableciendo la información del usuario 
+# en la sesión del cliente de pruebas para simular un usuario autenticado en las vistas que requieren login.
 def autenticar_sesion(client, usuario):
-    s = client.session
-    s["usuario_id"] = usuario.pk
-    s["usuario_nombre"] = f"{usuario.nombres} {usuario.apellidos}"
-    s["usuario_rol"] = usuario.id_rol.nombre_rol if usuario.id_rol else "GERENTE"
-    s.save()
+    # Hacer login vía sesión forzando persistencia
+    session = client.session
+    session["usuario_id"] = usuario.pk
+    session["usuario_nombre"] = f"{usuario.nombres} {usuario.apellidos}"
+    session["usuario_rol"] = usuario.id_rol.nombre_rol if usuario.id_rol else "GERENTE"
+    session.save()
+    # Forzar que el client use esa sesión
+    client.cookies['sessionid'] = session.session_key
 
 # El helper para crear cliente se adapta a los campos del modelo Clientes, con valores por defecto para simplificar su uso en los tests.
 def crear_cliente(nombre="Carlos", apellido="Ruiz",
@@ -770,12 +771,12 @@ class PedidoCreateViewTests(TestCase):
     # El setUp se encarga de crear un usuario con rol adecuado, autenticar la sesión y crear un cliente para usar en los tests de creación de pedidos.
     def setUp(self):
         self.client = Client()
-        self.rol = crear_rol("GERENTE_VPC")
-        self.admin = crear_usuario(self.rol, "admin_vpc@test.com", "10010001")
+        self.rol = crear_rol("GERENTE_VVC")
+        self.admin = crear_usuario(self.rol, "admin_vvc@test.com", "60060001")
         self.assertIsNotNone(self.admin.pk, "El usuario no se guardó en BD")
         autenticar_sesion(self.client, self.admin)
         self.cliente = crear_cliente(
-            nombre="PedCreate", email="pedcreate@test.com", doc="20020001"
+            nombre="VentaCr", email="ventacr@test.com", doc="70070001"
         )
 
     # El test_get_form_200 verifica que la vista de creación de pedidos responde con un status 200, lo que indica que el formulario se muestra correctamente.
@@ -799,10 +800,14 @@ class PedidoCreateViewTests(TestCase):
                 "direccion_entrega": "Calle 50 # 30-10",
             }
         )
-        if response.status_code == 200 and hasattr(response, 'context') and response.context:
+        if hasattr(response, 'context') and response.context:
             form = response.context.get('form')
             if form:
-                print("Errores form pedido:", form.errors)
+                print("FORM ERRORS:", form.errors)
+        if hasattr(response, 'content'):
+            content = response.content.decode()
+            if 'login' in content.lower() or 'sesión' in content.lower():
+                print("CONTIENE 'login' en respuesta")
         self.assertEqual(response.status_code, 302)
 
     # El test_crear_pedido_sin_cliente_invalido simula el envío de un formulario de creación de pedido sin seleccionar un cliente, lo que es un caso inválido.

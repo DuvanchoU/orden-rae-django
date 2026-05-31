@@ -199,8 +199,6 @@ def carrito_actualizar(request, item_id):
 
         stock_disponible = stock_disponible or 99
 
-        print(f"DEBUG actualizar: item={item_id}, cantidad={cantidad}, stock={stock_disponible}")
-
         if cantidad > stock_disponible:
             return JsonResponse({
                 'success': False,
@@ -315,8 +313,6 @@ def api_carrito_agregar(request):
             producto_id = str(request.POST.get('producto_id'))
             cantidad    = int(request.POST.get('cantidad', 1))
 
-        print(f"DEBUG agregar carrito: producto_id={producto_id}, cantidad={cantidad}")  # ← agrega
-
         prod = get_object_or_404(
             Producto,
             id_producto=producto_id,
@@ -324,11 +320,7 @@ def api_carrito_agregar(request):
             deleted_at__isnull=True
         )
 
-        print(f"DEBUG producto encontrado: {prod}, precio: {prod.precio_actual}")  # ← agrega
-
         carrito_bd = get_or_create_carrito(request)
-
-        print(f"DEBUG carrito_bd: {carrito_bd}")  # ← agrega
 
         item, created = ItemsCarrito.objects.get_or_create(
             carrito=carrito_bd,
@@ -795,12 +787,16 @@ class PedidoCreateView(CreateView):
     form_class    = PedidoForm
     success_url   = reverse_lazy('ventas:pedido_list')
 
+    # Solo se muestran clientes activos para asociar al pedido y se valida que el cliente seleccionado esté activo al guardar el pedido 
+    # (para evitar que se desactive un cliente con pedidos pendientes) y así evitar errores de integridad referencial.
     def get_context_data(self, **kwargs):
         context          = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Pedido'
         context['clientes'] = Clientes.objects.filter(estado='ACTIVO', deleted_at__isnull=True)
         return context
 
+    # Al guardar el pedido, se asigna el usuario actual, se establece la fecha de pedido y el estado inicial. 
+    # También se valida que el cliente seleccionado esté activo.
     def form_valid(self, form):
         try:
             cliente = form.cleaned_data['cliente']
