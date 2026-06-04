@@ -69,7 +69,6 @@ class ProductoCreateView(CreateView):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Producto'
         context['modo_edicion'] = False
-        context['MEDIA_URL'] = settings.MEDIA_URL # Para mostrar imágenes en el template
         return context
 
     def form_valid(self, form):
@@ -83,15 +82,18 @@ class ProductoCreateView(CreateView):
                 imagen_principal_index = int(self.request.POST.get('imagen_principal_index', 0))
                 
                 for i, imagen in enumerate(imagenes):
-                    # Guardar archivo
-                    ruta_relativa = self._guardar_imagen(imagen, producto)
-                    
-                    # Crear registro en BD
-                    ImagenesProducto.objects.create(
+                    # Crear objeto ImagenesProducto - Django guarda automáticamente en Cloudinary
+                    img_obj = ImagenesProducto.objects.create(
                         producto=producto,
-                        ruta_imagen=ruta_relativa,
                         descripcion=f"Imagen {i+1} de {producto.codigo_producto}",
                         es_principal=1 if i == imagen_principal_index else 0
+                    )
+                    
+                    # Asignar el archivo al campo ImageField
+                    img_obj.ruta_imagen.save(
+                        imagen.name,
+                        imagen,
+                        save=True
                     )
                 
             messages.success(self.request, f'Producto "{producto.codigo_producto}" creado exitosamente.')
@@ -99,24 +101,6 @@ class ProductoCreateView(CreateView):
         except Exception as e:
             messages.error(self.request, f'Error al crear: {str(e)}')
             return super().form_invalid(form)
-    
-    def _guardar_imagen(self, imagen, producto):
-        """Guarda la imagen y retorna la ruta relativa"""
-        # Crear ruta: productos/[codigo_producto]/[nombre_archivo]
-        carpeta = os.path.join(settings.MEDIA_ROOT, 'productos', producto.codigo_producto)
-        os.makedirs(carpeta, exist_ok=True)
-        
-        extension = os.path.splitext(imagen.name)[1]
-        nombre_archivo = f"{producto.codigo_producto}_{uuid.uuid4().hex}{extension}"
-        ruta_completa = os.path.join(carpeta, nombre_archivo)
-        
-        # Guardar archivo
-        with open(ruta_completa, 'wb+') as destination:
-            for chunk in imagen.chunks():
-                destination.write(chunk)
-        
-        # Retornar ruta relativa para BD
-        return os.path.join('productos', producto.codigo_producto, nombre_archivo)
     
 
 class ProductoUpdateView(UpdateView):
@@ -133,7 +117,6 @@ class ProductoUpdateView(UpdateView):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Producto'
         context['modo_edicion'] = True
-        context['MEDIA_URL'] = settings.MEDIA_URL # Para mostrar imágenes en el template
         
         # Obtener imágenes existentes
         context['imagenes_existentes'] = ImagenesProducto.objects.filter(
@@ -157,9 +140,9 @@ class ProductoUpdateView(UpdateView):
                 for id_imagen in imagenes_a_eliminar:
                     try:
                         img = ImagenesProducto.objects.get(id_imagen=id_imagen, producto=producto)
-                        # Eliminar archivo físico
-                        if img.ruta_imagen and os.path.exists(os.path.join(settings.MEDIA_ROOT, img.ruta_imagen)):
-                            os.remove(os.path.join(settings.MEDIA_ROOT, img.ruta_imagen))
+                        # Eliminar archivo de Cloudinary
+                        if img.ruta_imagen:
+                            img.ruta_imagen.delete(save=False)
                         img.delete()
                     except ImagenesProducto.DoesNotExist:
                         pass
@@ -168,19 +151,24 @@ class ProductoUpdateView(UpdateView):
                 nuevas_imagenes = self.request.FILES.getlist('nuevas_imagenes')
                 
                 for i, imagen in enumerate(nuevas_imagenes):
-                    ruta_relativa = self._guardar_imagen(imagen, producto)
-                    
-                    # Determinar si es principal (si no hay imágenes principales existentes)
+                    # Verificar si ya hay imagen principal
                     hay_principal = ImagenesProducto.objects.filter(
                         producto=producto, 
                         es_principal=1
                     ).exists()
                     
-                    ImagenesProducto.objects.create(
+                    # Crear nueva imagen
+                    img_obj = ImagenesProducto.objects.create(
                         producto=producto,
-                        ruta_imagen=ruta_relativa,
                         descripcion=f"Imagen {i+1} de {producto.codigo_producto}",
                         es_principal=0 if hay_principal else 1
+                    )
+                    
+                    # Guardar archivo en Cloudinary
+                    img_obj.ruta_imagen.save(
+                        imagen.name,
+                        imagen,
+                        save=True
                     )
                 
             messages.success(self.request, f'Producto "{producto.codigo_producto}" actualizado correctamente.')
@@ -188,20 +176,6 @@ class ProductoUpdateView(UpdateView):
         except Exception as e:
             messages.error(self.request, f'Error al actualizar: {str(e)}')
             return super().form_invalid(form)
-    
-    def _guardar_imagen(self, imagen, producto):
-        """Guarda la imagen y retorna la ruta relativa"""
-        carpeta = os.path.join(settings.MEDIA_ROOT, 'productos', producto.codigo_producto)
-        os.makedirs(carpeta, exist_ok=True)
-        
-        nombre_archivo = f"{producto.codigo_producto}_{imagen.name}"
-        ruta_completa = os.path.join(carpeta, nombre_archivo)
-        
-        with open(ruta_completa, 'wb+') as destination:
-            for chunk in imagen.chunks():
-                destination.write(chunk)
-        
-        return os.path.join('productos', producto.codigo_producto, nombre_archivo)
 
 # ------------------------------------------------------------------
 # ELIMINAR PRODUCTO (SOFT DELETE) 
@@ -235,7 +209,6 @@ class ProductoDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['MEDIA_URL'] = settings.MEDIA_URL # Para mostrar imágenes en el template
         
         # Obtener todas las imágenes del producto
         from .models import ImagenesProducto
