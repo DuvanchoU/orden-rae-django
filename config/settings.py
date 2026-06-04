@@ -407,3 +407,6 @@ if os.getenv('CLOUDINARY_CLOUD_NAME'):
         'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
         'FOLDER': 'orden-rae',  # Carpeta en Cloudinary
     }
+
+    # Forzar uso de Cloudinary incluso si DEBUG=False
+    MEDIA_URL = '/media/'
