@@ -65,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware', # Middleware de seguridad para HTTPS, HSTS, etc.
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Middleware para servir archivos estáticos en producción
     'django.contrib.sessions.middleware.SessionMiddleware', # Middleware para manejo de sesiones
     'usuarios.middleware.NoCacheMiddleware', # Middleware para evitar cache en páginas sensibles
     'django.middleware.common.CommonMiddleware',  # Middleware para manejo de URLs, redirecciones, etc.
@@ -358,3 +359,26 @@ EMAIL_VERIFICATION_TIMEOUT = 86400  # 24 horas para verificar email
 
 # URLs base para generar enlaces en emails
 SITE_URL = 'http://127.0.0.1:8000'  # Cambiar a tu dominio en producción
+
+# ==========================================
+# CONFIGURACIÓN PARA RENDER (PRODUCCIÓN)
+# ==========================================
+
+# Detectar si estamos en Render
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Configuración de base de datos para Render
+if 'DATABASE_URL' in os.environ:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+
+# Archivos estáticos en producción
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
