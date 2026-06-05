@@ -129,9 +129,9 @@
     <!-- Columna Derecha: Imágenes -->
     <div class="col-lg-5">
         <div class="producto-imagen-container">
-            {% if imagen_principal and imagen_principal.ruta_imagen %}
+            {% if imagen_principal and imagen_principal.ruta_imagen and imagen_principal.ruta_imagen.name %}
                 <div class="imagen-principal-wrapper">
-                    <img src="{{ MEDIA_URL }}{{ imagen_principal.ruta_imagen }}" 
+                    <img src="{{ imagen_principal.ruta_imagen.url }}"
                          alt="{{ imagen_principal.descripcion|default:producto.codigo_producto }}"
                          class="img-fluid rounded-3"
                          id="imagen-principal-display"
@@ -149,11 +149,11 @@
                 <div class="galeria-miniaturas mt-2">
                     <div class="row g-2">
                         {% for imagen in imagenes %}
-                        {% if imagen.ruta_imagen %}
+                        {% if imagen.ruta_imagen and imagen.ruta_imagen.name %}
                         <div class="col-3">
                             <div class="miniatura-wrapper {% if imagen.id_imagen == imagen_principal.id_imagen %}activo{% endif %}"
-                                 onclick="cambiarImagenPrincipal('{{ MEDIA_URL }}{{ imagen.ruta_imagen }}', this)">
-                                <img src="{{ MEDIA_URL }}{{ imagen.ruta_imagen }}" 
+                                 onclick="cambiarImagenPrincipal('{{ imagen.ruta_imagen.url }}', this)">
+                                <img src="{{ imagen.ruta_imagen.url }}"
                                      alt="Imagen {{ forloop.counter }}"
                                      class="img-fluid rounded-2"
                                      onerror="this.parentElement.style.display='none'">

@@ -90,9 +90,10 @@
             <label class="form-label-compact">Imágenes Actuales</label>
             <div class="row g-2" id="imagenesExistentesContainer">
                 {% for imagen in imagenes_existentes %}
+                {% if imagen.ruta_imagen and imagen.ruta_imagen.name %}
                 <div class="col-4 posicion-imagen" data-id="{{ imagen.id_imagen }}">
                     <div class="imagen-existente-wrapper {% if imagen.es_principal %}principal{% endif %}">
-                        <img src="{{ MEDIA_URL }}{{ imagen.ruta_imagen }}" 
+                        <img src="{{ imagen.ruta_imagen.url }}"
                              alt="Imagen {{ forloop.counter }}"
                              class="img-thumbnail-imagen"
                              onclick="setImagenPrincipal({{ forloop.counter0 }}, 'existente', {{ imagen.id_imagen }})">
@@ -120,6 +121,7 @@
                                value="">
                     </div>
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
         </div>

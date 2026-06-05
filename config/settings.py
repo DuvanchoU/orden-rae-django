@@ -49,21 +49,24 @@ INSTALLED_APPS = [
     'pagina',
     'reports',
     'pagos',
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 # ==========================================
-# MIDDLEWARE
+# MIDDLEWARE (Combinado: OAuth + Producción)
 # ==========================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Producción: servir estáticos
     'django.contrib.sessions.middleware.SessionMiddleware',
     'usuarios.middleware.NoCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'allauth.account.middleware.AccountMiddleware',  # ← IMPORTANTE: después de AuthenticationMiddleware
-    'ventas.middleware.ClientesAuthMiddleware',
-    'usuarios.middleware.CustomAuthMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # ← Requerido por OAuth
+    'ventas.middleware.ClientesAuthMiddleware',  # Clientes primero
+    'usuarios.middleware.CustomAuthMiddleware',   # Staff después
     'usuarios.middleware.SessionIdleTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -97,22 +100,34 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ==========================================
-# BASE DE DATOS
+# BASE DE DATOS (MySQL local + PostgreSQL producción)
 # ==========================================
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-        },
+
+# Detectar si estamos en producción (Render)
+if 'DATABASE_URL' in os.environ:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    # Desarrollo local con MySQL (XAMPP)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
+            'USER': os.getenv('DB_USER', 'root'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            },
+        }
+    }
 
 # ==========================================
 # VALIDACIÓN DE CONTRASEÑAS
@@ -148,15 +163,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Backend por defecto
-    'allauth.account.auth_backends.AuthenticationBackend',  # Allauth
-    'usuarios.backends.UsuariosAuthBackend',  # Backend staff
-    'ventas.backends.ClientesAuthBackend',  # Backend clientes
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+    'usuarios.backends.UsuariosAuthBackend',
+    'ventas.backends.ClientesAuthBackend',
 ]
 
-# Redirecciones
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'  # Cambia a la URL de tu home
+LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 # ==========================================
@@ -169,13 +183,11 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_UNIQUE_EMAIL = True
 
-# Social Account
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_LOGIN_ON_GET = False
 
-# Google OAuth
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],
@@ -185,14 +197,13 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# Adapter personalizado (si existe)
 SOCIALACCOUNT_ADAPTER = 'pagina.adapters.CustomSocialAccountAdapter'
 
 # ==========================================
 # SESIONES
 # ==========================================
-SESSION_COOKIE_AGE = 86400  # 24 horas
-ADMIN_SESSION_TIMEOUT = 300  # 5 minutos
+SESSION_COOKIE_AGE = 86400
+ADMIN_SESSION_TIMEOUT = 300
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
@@ -222,7 +233,7 @@ SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 # ==========================================
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 
-if 'smtp' in EMAIL_BACKEND:
+if 'smtp' in EMAIL_BACKEND.lower():
     EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
     EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
     EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
@@ -231,14 +242,15 @@ if 'smtp' in EMAIL_BACKEND:
     DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@ordenrae.com')
 
 PASSWORD_RESET_TIMEOUT = 3600
-SITE_URL = 'http://127.0.0.1:8000'
+EMAIL_VERIFICATION_TIMEOUT = 86400
+SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
 
 # ==========================================
 # STRIPE
 # ==========================================
-STRIPE_PUBLIC_KEY = 'pk_test_51TYVv0CGUP1IqyPzfEb75sDRQnUvbvbIDI9l7YoQv7Wd4xjziycCWgBBwCPeAvRycDLdedk8D1SmKMdXRhh6IXR800PUiOUGls'
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = 'whsec_TU_SECRETO_WEBHOOK_AQUI'
+STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', 'pk_test_51TYVv0CGUP1IqyPzfEb75sDRQnUvbvbIDI9l7YoQv7Wd4xjziycCWgBBwCPeAvRycDLdedk8D1SmKMdXRhh6IXR800PUiOUGls')
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default='')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 # ==========================================
 # LÍMITES DE ARCHIVOS
@@ -317,3 +329,40 @@ LOGGING = {
 # ==========================================
 APP_VERSION = os.getenv('APP_VERSION', '1.0.0')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==========================================
+# CONFIGURACIÓN PARA RENDER (PRODUCCIÓN)
+# ==========================================
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# ==========================================
+# CLOUDINARY - Almacenamiento de Imágenes
+# ==========================================
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    api_key=os.getenv('CLOUDINARY_API_KEY', ''),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET', ''),
+    secure=True
+)
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+    'FOLDER': 'orden-rae',
+}
+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}

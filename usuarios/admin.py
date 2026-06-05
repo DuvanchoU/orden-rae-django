@@ -1,12 +1,11 @@
 from django.contrib import admin
-# Register your models here.
-
-from django.contrib import admin
-from django.contrib.auth.hashers import make_password
 from .models import Usuarios, RolesOld
+from .forms import UsuarioAdminForm, RolForm
 
 @admin.register(RolesOld)
 class RolesOldAdmin(admin.ModelAdmin):
+    form = RolForm  # Usar el formulario de Rol
+
     list_display = ['id_rol', 'nombre_rol', 'descripcion', 'created_at']
     search_fields = ['nombre_rol', 'descripcion']
     list_filter = ['created_at']
@@ -15,6 +14,8 @@ class RolesOldAdmin(admin.ModelAdmin):
 
 @admin.register(Usuarios)
 class UsuariosAdmin(admin.ModelAdmin):
+    form = UsuarioAdminForm  # Usar el formulario de Usuario
+    
     list_display = [
         'id_usuario', 'nombres', 'apellidos', 'correo_usuario', 
         'documento', 'id_rol', 'estado', 'fecha_registro'
@@ -29,7 +30,7 @@ class UsuariosAdmin(admin.ModelAdmin):
             'fields': ('nombres', 'apellidos', 'documento', 'correo_usuario', 'telefono', 'genero')
         }),
         ('Credenciales', {
-            'fields': ('contrasena_usuario', 'estado')
+            'fields': ('contrasena_usuario', 'confirmar_contrasena', 'estado')
         }),
         ('Rol y Fechas', {
             'fields': ('id_rol', 'fecha_registro', 'created_at', 'updated_at'),
@@ -37,17 +38,4 @@ class UsuariosAdmin(admin.ModelAdmin):
         }),
     )
     
-    def save_model(self, request, obj, form, change):
-        """
-        Encripta la contraseña si se está creando un nuevo usuario
-        Ajusta según tu método de hash (SHA256, bcrypt, etc.)
-        """
-        if not change and obj.contrasena_usuario:
-            # Opción A: Si usas SHA256 (como en el login_view)
-            import hashlib
-            obj.contrasena_usuario = hashlib.sha256(obj.contrasena_usuario.encode()).hexdigest()
-            
-            # Opción B: Si usas Django Password Hasher (descomentar si aplica)
-            # obj.contrasena_usuario = make_password(obj.contrasena_usuario)
-            
-        super().save_model(request, obj, form, change)
+    readonly_fields = ['fecha_registro', 'created_at', 'updated_at']

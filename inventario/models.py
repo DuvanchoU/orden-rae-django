@@ -360,9 +360,8 @@ class ImagenesProducto(models.Model):
         db_column='producto_id',
         to_field='id_producto'
     )
-    ruta_imagen = models.CharField(max_length=255)
+    ruta_imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
     descripcion = models.CharField(max_length=255, blank=True, null=True)
-
     es_principal = models.IntegerField(default=0) 
     
     created_at = models.DateTimeField(blank=True, null=True)

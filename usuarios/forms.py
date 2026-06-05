@@ -335,3 +335,120 @@ class RolForm(forms.ModelForm):
             raise forms.ValidationError("La descripción debe tener al menos 10 caracteres")
         
         return descripcion
+
+class UsuarioAdminForm(forms.ModelForm):
+    """Formulario específico para el Admin de Django (sin Bootstrap)"""
+    
+    confirmar_contrasena = forms.CharField(
+        widget=forms.PasswordInput(),
+        label="Confirmar Contraseña",
+        required=False  # Opcional al editar
+    )
+    
+    class Meta:
+        model = Usuarios
+        fields = ['nombres', 'apellidos', 'documento', 'correo_usuario', 
+                  'contrasena_usuario', 'telefono', 'genero', 'id_rol', 'estado']
+        widgets = {
+            'contrasena_usuario': forms.PasswordInput(),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['id_rol'].queryset = RolesOld.objects.filter(
+            deleted_at__isnull=True
+        ).order_by('nombre_rol')
+        self.fields['id_rol'].empty_label = "Seleccione un rol"
+        
+        # Si estamos editando, la contraseña no es obligatoria
+        if self.instance.pk:
+            self.fields['contrasena_usuario'].required = False
+            self.fields['confirmar_contrasena'].required = False
+    
+    def clean_documento(self):
+        documento = self.cleaned_data.get('documento', '').strip()
+        
+        if not documento:
+            raise forms.ValidationError("El documento es obligatorio")
+        
+        if len(documento) < 5:
+            raise forms.ValidationError("El documento debe tener al menos 5 caracteres")
+        
+        documento_limpio = documento.replace('-', '').replace('.', '')
+        if not documento_limpio.isdigit():
+            raise forms.ValidationError("El documento solo debe contener números")
+        
+        # Verificar unicidad
+        queryset = Usuarios.objects.filter(documento=documento, deleted_at__isnull=True)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise forms.ValidationError("El documento ya está registrado")
+        
+        return documento
+    
+    def clean_correo_usuario(self):
+        correo = self.cleaned_data.get('correo_usuario', '').lower().strip()
+        
+        if not correo:
+            raise forms.ValidationError("El correo electrónico es obligatorio")
+        
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_regex, correo):
+            raise forms.ValidationError("El correo electrónico no es válido")
+        
+        # Verificar unicidad
+        queryset = Usuarios.objects.filter(correo_usuario=correo, deleted_at__isnull=True)
+        if self.instance.pk:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise forms.ValidationError("El correo electrónico ya está registrado")
+        
+        return correo
+    
+    def clean_contrasena_usuario(self):
+        contrasena = self.cleaned_data.get('contrasena_usuario')
+        
+        # Solo validar si es nuevo usuario o si cambió la contraseña
+        if not self.instance.pk or contrasena:
+            if not contrasena:
+                raise forms.ValidationError("La contraseña es obligatoria")
+            
+            if len(contrasena) < 8:
+                raise forms.ValidationError("La contraseña debe tener al menos 8 caracteres")
+            
+            if not re.search(r'[A-Z]', contrasena):
+                raise forms.ValidationError("La contraseña debe contener al menos una letra mayúscula")
+            
+            if not re.search(r'[a-z]', contrasena):
+                raise forms.ValidationError("La contraseña debe contener al menos una letra minúscula")
+            
+            if not re.search(r'\d', contrasena):
+                raise forms.ValidationError("La contraseña debe contener al menos un número")
+        
+        return contrasena
+    
+    def clean_confirmar_contrasena(self):
+        confirmar = self.cleaned_data.get('confirmar_contrasena')
+        contrasena = self.cleaned_data.get('contrasena_usuario')
+        
+        # Solo validar si hay contraseña nueva
+        if contrasena and confirmar and confirmar != contrasena:
+            raise forms.ValidationError("Las contraseñas no coinciden")
+        
+        return confirmar
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Hashear contraseña solo si se proporcionó una nueva
+        contrasena = self.cleaned_data.get('contrasena_usuario')
+        if contrasena:
+            instance.contrasena_usuario = make_password(contrasena)
+        
+        if commit:
+            instance.save()
+        
+        return instance

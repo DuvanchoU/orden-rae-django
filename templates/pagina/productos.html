@@ -1,6 +1,7 @@
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
+{% load productos_extras %}
 
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -1433,7 +1434,7 @@
                 <div class="hero-preview" id="hero-preview">
                     {% for prod in productos_destacados|slice:":4" %}
                     <div class="hero-preview-card" onclick="openProductModal({{ prod.id }})">
-                        <img src="{{ MEDIA_URL }}{{ prod.imagen_url }}" alt="{{ prod.nombre }}"
+                        <img src="{% if prod.imagen_url|slice:':4' == 'http' %}{{ prod.imagen_url }}{% else %}{{ MEDIA_URL }}{{ prod.imagen_url }}{% endif %}" alt="{{ prod.nombre }}"
                             onerror="this.src='https://via.placeholder.com/150x150?text=Producto'">
                         <div class="pname">{{ prod.nombre|truncatechars:22 }}</div>
                         <div class="pprice" data-raw-price="{{ prod.precio|floatformat:0 }}">
@@ -1586,13 +1587,13 @@
                     data-es-oferta="{{ prod.es_oferta|yesno:'true,false' }}"
                     data-price="{{ prod.precio_numeric }}"
                     data-cat="{{ prod.categoria_slug }}"
-                    data-img="{{ MEDIA_URL }}{{ prod.imagen_url }}"
+                    data-img="{% if prod.imagen_url|slice:':4' == 'http' %}{{ prod.imagen_url }}{% else %}{{ MEDIA_URL }}{{ prod.imagen_url }}{% endif %}"
                     data-date="{{ prod.created_at }}"
                     data-codigo="{{ prod.codigo_producto }}">
 
                     <!-- Imagen -->
                     <div class="card-img-wrap">
-                        <img src="{{ MEDIA_URL }}{{ prod.imagen_url }}"
+                        <img src="{% if prod.imagen_url|slice:':4' == 'http' %}{{ prod.imagen_url }}{% else %}{{ MEDIA_URL }}{{ prod.imagen_url }}{% endif %}"
                             alt="{{ prod.nombre }}"
                             loading="lazy"
                             onerror="this.src='https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}'">
