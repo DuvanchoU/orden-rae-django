@@ -383,7 +383,6 @@ if 'DATABASE_URL' in os.environ:
 
 # Archivos estáticos en producción
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ==========================================
 # CLOUDINARY - Almacenamiento de Imágenes
@@ -392,7 +391,6 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
-# Configuración de Cloudinary
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', ''),
     api_key=os.getenv('CLOUDINARY_API_KEY', ''),
@@ -400,7 +398,6 @@ cloudinary.config(
     secure=True
 )
 
-# Configuración de almacenamiento
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
     'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
@@ -408,7 +405,13 @@ CLOUDINARY_STORAGE = {
     'FOLDER': 'orden-rae',
 }
 
-# Usar Cloudinary como almacenamiento predeterminado
-# Esto es CRÍTICO - debe estar SIEMPRE activo
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-MEDIA_URL = '/media/'  # Necesario para que Django funcione
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+MEDIA_URL = '/media/'
