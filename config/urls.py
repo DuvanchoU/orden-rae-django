@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import path
+from pagina import views as pagina_views
 
 urlpatterns = [
     # ADMIN
@@ -18,6 +20,11 @@ urlpatterns = [
     path('ventas/', include('ventas.urls', namespace='ventas')),
     path('compras/', include('compras.urls', namespace='compras')),
     path('usuarios/', include('usuarios.urls', namespace='usuarios')), # staff → /usuarios/login/
+
+    path('perfil/', pagina_views.perfil_view, name='perfil'),
+
+    # ALLAUTH (OAuth 2.0) 
+    path('accounts/', include('allauth.urls')),
 ]
 
 if settings.DEBUG:

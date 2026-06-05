@@ -1342,13 +1342,36 @@ class CotizacionConvertirVentaView(View):
 # PERFIL DE USUARIO
 # ============================================================================
 
-@login_required
 def perfil_usuario(request):
-    cliente = Clientes.objects.filter(
-        email=request.user.email, deleted_at__isnull=True
-    ).first()
-
-    total_pedidos  = Pedido.objects.filter(cliente=cliente).count() if cliente else 0
+    """Vista de perfil del cliente"""
+    
+    # Verificar si es cliente autenticado por sesión
+    if not request.session.get('cliente_auth'):
+        messages.warning(request, 'Debes iniciar sesión para ver tu perfil')
+        return redirect('pagina:login')
+    
+    # Obtener cliente desde la sesión (NO desde request.user)
+    cliente_id = request.session.get('cliente_id')
+    
+    if not cliente_id:
+        messages.error(request, 'No se encontró tu información de cliente')
+        return redirect('pagina:login')
+    
+    try:
+        cliente = Clientes.objects.get(
+            id_cliente=cliente_id,
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
+    except Clientes.DoesNotExist:
+        # Limpiar sesión si el cliente no existe
+        for key in ['cliente_id', 'cliente_auth', 'cliente_nombre', 'cliente_email']:
+            request.session.pop(key, None)
+        messages.error(request, 'Tu cuenta no existe o está inactiva')
+        return redirect('pagina:login')
+    
+    # Calcular estadísticas
+    total_pedidos  = Pedido.objects.filter(cliente=cliente).count()
     puntos_lealtad = total_pedidos * 100
     user_level     = min(10, (puntos_lealtad // 500) + 1)
     xp_current     = puntos_lealtad % 500
@@ -1357,28 +1380,27 @@ def perfil_usuario(request):
     xp_to_next     = xp_next - xp_current
 
     pedidos_recientes = []
-    if cliente:
-        for p in Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')[:5]:
-            pedidos_recientes.append({
-                'id':              p.id_pedido,
-                'numero':          p.numero_pedido or f'ORD-{p.pk}',
-                'fecha':           p.fecha_pedido,
-                'estado':          p.estado_pedido,
-                'estado_color':    'success' if p.estado_pedido == 'COMPLETADO' else 'warning',
-                'total':           p.total_pedido,
-                'total_items':     3,
-                'progreso_percent': {
-                    'PENDIENTE': 25, 'CONFIRMADO': 50,
-                    'EN PROCESO': 75, 'COMPLETADO': 100
-                }.get(p.estado_pedido, 25),
-                'estado_detalle': {
-                    'PENDIENTE': 'Esperando confirmación',
-                    'CONFIRMADO': 'Preparando envío',
-                    'EN PROCESO': 'En camino',
-                    'COMPLETADO': 'Entregado'
-                }.get(p.estado_pedido, 'Procesando'),
-                'puede_rastrear': p.estado_pedido in ['EN PROCESO', 'CONFIRMADO'],
-            })
+    for p in Pedido.objects.filter(cliente=cliente).order_by('-fecha_pedido')[:5]:
+        pedidos_recientes.append({
+            'id':              p.id_pedido,
+            'numero':          p.numero_pedido or f'ORD-{p.pk}',
+            'fecha':           p.fecha_pedido,
+            'estado':          p.estado_pedido,
+            'estado_color':    'success' if p.estado_pedido == 'COMPLETADO' else 'warning',
+            'total':           p.total_pedido,
+            'total_items':     3,
+            'progreso_percent': {
+                'PENDIENTE': 25, 'CONFIRMADO': 50,
+                'EN PROCESO': 75, 'COMPLETADO': 100
+            }.get(p.estado_pedido, 25),
+            'estado_detalle': {
+                'PENDIENTE': 'Esperando confirmación',
+                'CONFIRMADO': 'Preparando envío',
+                'EN PROCESO': 'En camino',
+                'COMPLETADO': 'Entregado'
+            }.get(p.estado_pedido, 'Procesando'),
+            'puede_rastrear': p.estado_pedido in ['EN PROCESO', 'CONFIRMADO'],
+        })
 
     context = {
         'cliente':              cliente,
@@ -1393,8 +1415,9 @@ def perfil_usuario(request):
         'xp_to_next':           xp_to_next,
         'pedidos_recientes':    pedidos_recientes,
         'notificaciones_nuevas': 0,
-        'last_password_change': getattr(request.user, 'last_login', 'Nunca'),
+        'last_password_change': getattr(cliente, 'ultimo_login', 'Nunca'),  # ← Cambiado a cliente
     }
+    
     return render(request, 'pagina/perfil.html', context)
 
 

@@ -13,7 +13,7 @@
 </div>
 
 <!-- Modal editar avatar -->
-{% if user.is_authenticated %}
+{% if user.is_authenticated or cliente_auth %}
 <div class="avatar-edit-overlay" id="avatar-edit-overlay">
     <div class="avatar-edit-modal">
         <div class="avatar-edit-title">Cambiar foto de perfil</div>
@@ -21,7 +21,7 @@
         <div class="avatar-preview-wrap">
             <div class="avatar-preview-circle" onclick="document.getElementById('avatar-file-input').click()">
                 <img id="avatar-preview-img"
-                    src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
+                    src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% elif cliente.foto_perfil %}{{ cliente.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
                     alt="Preview">
                 <div class="avatar-preview-overlay"><i class="fas fa-camera"></i></div>
                 <div class="avatar-loading" id="avatar-loading"></div>
@@ -138,18 +138,26 @@
                 <span class="cart-new-dot" id="cart-new-dot" aria-hidden="true"></span>
             </div>
 
-            <!-- 👤 USUARIO AUTENTICADO -->
-            {% if user.is_authenticated %}
+            <!-- 👤 USUARIO AUTENTICADO (Django User o Cliente en sesión) -->
+            {% if user.is_authenticated or cliente_auth %}
             <div class="menu-usuario" id="menu-usuario">
                 <button class="avatar-btn" aria-label="Menú usuario" aria-expanded="false" onclick="toggleUserMenu()">
                     <div class="avatar-ring">
                         <img
-                            src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
-                            alt="{{ user.get_full_name|default:user.username }}"
+                            src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% elif cliente.foto_perfil %}{{ cliente.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
+                            alt="{% if cliente_nombre %}{{ cliente_nombre }}{% elif user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% else %}Usuario{% endif %}"
                             class="avatar-img"
                             id="header-avatar">
                     </div>
-                    <span class="avatar-name">{{ user.get_full_name|default:user.username|truncatechars:14 }}</span>
+                    <span class="avatar-name">
+                        {% if cliente_nombre %}
+                            {{ cliente_nombre|truncatechars:14 }}
+                        {% elif user.is_authenticated %}
+                            {{ user.get_full_name|default:user.username|truncatechars:14 }}
+                        {% else %}
+                            Usuario
+                        {% endif %}
+                    </span>
                     <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="13" height="13">
                         <polyline points="6 9 12 15 18 9"/>
                     </svg>
@@ -158,13 +166,29 @@
                 <div class="submenu" id="user-submenu" role="menu">
                     <div class="submenu-user-info">
                         <img
-                            src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
-                            alt="{{ user.get_full_name|default:user.username }}"
+                            src="{% if user.foto_perfil %}{{ user.foto_perfil.url }}{% elif cliente.foto_perfil %}{{ cliente.foto_perfil.url }}{% else %}{% static 'img/usuario0.1.png' %}{% endif %}"
+                            alt="{% if cliente_nombre %}{{ cliente_nombre }}{% elif user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% else %}Usuario{% endif %}"
                             class="submenu-avatar-preview"
                             id="submenu-avatar">
                         <div>
-                            <div class="submenu-user-name">{{ user.get_full_name|default:user.username }}</div>
-                            <div class="submenu-user-email">{{ user.email|truncatechars:28 }}</div>
+                            <div class="submenu-user-name">
+                                {% if cliente_nombre %}
+                                    {{ cliente_nombre }}
+                                {% elif user.is_authenticated %}
+                                    {{ user.get_full_name|default:user.username }}
+                                {% else %}
+                                    Usuario
+                                {% endif %}
+                            </div>
+                            <div class="submenu-user-email">
+                                {% if cliente_email %}
+                                    {{ cliente_email|truncatechars:28 }}
+                                {% elif user.is_authenticated %}
+                                    {{ user.email|truncatechars:28 }}
+                                {% else %}
+                                    sin@email.com
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
@@ -187,7 +211,7 @@
                         Cerrar sesión
                     </a>
 
-                    {% if user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
+                    {% if user.is_authenticated and user|has_role:'ADMIN,Gerente,Asesor Comercial,Jefe Logistico' %}
                     <div class="submenu-divider"></div>
                     <a href="{% url 'dashboard:dashboard_home' %}" class="submenu-item submenu-dashboard">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15">
@@ -223,6 +247,6 @@
 {
     "carrito_cantidad": {{ carrito_cantidad|default:0 }},
     "lista_deseos_cantidad": {{ lista_deseos_cantidad|default:0 }},
-    "es_autenticado": {% if user.is_authenticated %}true{% else %}false{% endif %}
+    "es_autenticado": {% if user.is_authenticated or cliente_auth %}true{% else %}false{% endif %}
 }
 </script>

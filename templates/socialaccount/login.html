@@ -1,0 +1,334 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Iniciar sesión con Google - La Super Bodega del Mueble{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --color-primary: #5D4037;
+        --color-secondary: #8D6E63;
+        --color-accent: #A1887F;
+        --color-light: #D7CCC8;
+        --color-bg: #EFEBE9;
+        --color-white: #FFFFFF;
+        --gradient-primary: linear-gradient(135deg, #5D4037 0%, #8D6E63 100%);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: var(--color-bg);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .auth-wrapper {
+        width: 100%;
+        max-width: 1100px;
+        background: var(--color-white);
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(93, 64, 55, 0.15);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 650px;
+    }
+
+    .brand-panel {
+        background: var(--gradient-primary);
+        padding: 60px 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        color: var(--color-white);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .brand-panel::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .brand-logo {
+        width: 320px;
+        height: 180px;
+        background: var(--color-white);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        padding: 20px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .brand-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .brand-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .brand-subtitle {
+        font-size: 1.1rem;
+        font-weight: 300;
+        opacity: 0.95;
+        margin-bottom: 40px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .brand-features {
+        list-style: none;
+        text-align: left;
+        position: relative;
+        z-index: 1;
+    }
+
+    .brand-features li {
+        padding: 12px 0;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .brand-features i {
+        color: #FFD54F;
+        font-size: 1.2rem;
+    }
+
+    .form-panel {
+        padding: 60px 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .oauth-info {
+        text-align: center;
+        max-width: 400px;
+        width: 100%;
+    }
+
+    .oauth-info h2 {
+        color: var(--color-primary);
+        font-size: 2rem;
+        margin-bottom: 20px;
+        font-weight: 700;
+    }
+
+    .oauth-info p {
+        color: var(--color-secondary);
+        font-size: 1.05rem;
+        margin-bottom: 40px;
+        line-height: 1.6;
+    }
+
+    .btn-oauth-continue {
+        display: inline-flex;
+        align-items: center;
+        gap: 15px;
+        padding: 10px 20px;
+        background: var(--color-white);
+        border: 3px solid var(--color-secondary);
+        border-radius: 12px;
+        color: var(--color-secondary);
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        cursor: pointer;
+    }
+
+    .btn-oauth-continue:hover {
+        background: var(--color-secondary);
+        color: var(--color-white);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .btn-oauth-continue img {
+        width: 30px;
+        height: 30px;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 30px;
+        color: var(--color-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        color: var(--color-primary);
+        transform: translateX(-4px);
+    }
+
+    .btn-back i {
+        transition: transform 0.3s ease;
+    }
+
+    .btn-back:hover i {
+        transform: translateX(-4px);
+    }
+
+    @media (max-width: 900px) {
+        .auth-wrapper {
+            grid-template-columns: 1fr;
+            max-width: 500px;
+        }
+
+        .brand-panel {
+            padding: 40px 30px;
+            min-height: 300px;
+        }
+
+        .brand-logo {
+            width: 200px;
+            height: 120px;
+        }
+
+        .brand-title {
+            font-size: 1.8rem;
+        }
+
+        .form-panel {
+            padding: 40px 30px;
+        }
+
+        .oauth-info h2 {
+            font-size: 1.6rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        body {
+            padding: 10px;
+        }
+
+        .auth-wrapper {
+            border-radius: 16px;
+        }
+
+        .brand-panel {
+            padding: 30px 20px;
+        }
+
+        .brand-title {
+            font-size: 1.5rem;
+        }
+
+        .brand-subtitle {
+            font-size: 0.95rem;
+        }
+
+        .form-panel {
+            padding: 30px 20px;
+        }
+
+        .oauth-info h2 {
+            font-size: 1.4rem;
+        }
+
+        .oauth-info p {
+            font-size: 0.95rem;
+        }
+
+        .btn-oauth-continue {
+            padding: 14px 24px;
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="brand-panel">
+        <div class="brand-logo">
+            <img src="{% static 'img/super_bodega0.2.png' %}" alt="La Super Bodega del Mueble">
+        </div>
+        <h1 class="brand-title">LA SUPER BODEGA<br>DEL MUEBLE</h1>
+        <p class="brand-subtitle">¡Tu hogar merece lo mejor!</p>
+        
+        <ul class="brand-features">
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <span>Productos de la más alta calidad.</span>
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <span>Envío a todo el país.</span>
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <span>Garantía en todos nuestros productos.</span>
+            </li>
+            <li>
+                <i class="fas fa-check-circle"></i>
+                <span>Atención personalizada.</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="form-panel">
+        <div class="oauth-info">
+            <h2>Iniciar sesión con Google</h2>
+            <p>
+                Estás a punto de iniciar sesión usando tu cuenta de Google.
+                Tus datos se sincronizarán automáticamente con nuestro sistema.
+            </p>
+
+            <!-- Botón de Google en color café -->
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="provider" value="google" class="btn-oauth-continue">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                    Continuar con Google
+                </button>
+            </form>
+
+            <a href="{% url 'pagina:login' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Volver al login
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

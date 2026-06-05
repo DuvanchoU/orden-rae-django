@@ -303,6 +303,13 @@ def home(request):
         pass
     
     context = {
+        # Variables de autenticación del cliente
+        'cliente_auth': request.session.get('cliente_auth', False),
+        'cliente_id': request.session.get('cliente_id'),
+        'cliente_nombre': request.session.get('cliente_nombre', ''),
+        'cliente_email': request.session.get('cliente_email', ''),
+        'cliente': request.cliente if hasattr(request, 'cliente') else None,
+
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
         'datos_opciones_json': json.dumps(datos_opciones),
         'productos_busqueda_json': json.dumps(productos_busqueda),
@@ -1129,12 +1136,13 @@ def login_view(request):
                 contrasena_valida = (sha_hash == cliente.contrasena_cliente)
 
             if contrasena_valida and cliente.estado == 'ACTIVO':
-                login(request, cliente, backend='ventas.backends.ClientesAuthBackend')
-
+                
+                import time
                 request.session['cliente_auth'] = True
                 request.session['cliente_id'] = cliente.id_cliente
                 request.session['cliente_nombre'] = f"{cliente.nombre} {cliente.apellido}"
                 request.session['cliente_email'] = cliente.email
+                request.session['last_activity_timestamp'] = time.time()
 
                 if remember:
                     request.session.set_expiry(1209600)
@@ -1296,16 +1304,34 @@ def logout_view(request):
 
 def perfil_view(request):
     """Vista de perfil — redirige según tipo de usuario"""
-    if not request.user.is_authenticated:
+    
+    # VERIFICAR AUTENTICACIÓN (cliente O usuario Django)
+    es_cliente = request.session.get('cliente_auth', False)
+    es_staff = request.session.get('usuario_id', None)
+    es_user_django = request.user.is_authenticated
+    
+    # Si NO está autenticado de ninguna forma, redirigir al login
+    if not es_cliente and not es_staff and not es_user_django:
+        messages.warning(request, 'Debes iniciar sesión para ver tu perfil')
         return redirect('pagina:login')
-
-    # Si es usuario staff (Usuarios), va al perfil del dashboard
-    if request.session.get('usuario_id'):
+    
+    # Si es staff (trabajador), redirigir al perfil del dashboard
+    if es_staff:
         return redirect('dashboard:perfil')
-
-    # Si es cliente, va al perfil de cliente (ventas)
-    from ventas.views import perfil_usuario
-    return perfil_usuario(request)
+    
+    # Si es cliente, mostrar perfil de cliente
+    if es_cliente:
+        from ventas.views import perfil_usuario
+        return perfil_usuario(request)
+    
+    # Si es usuario Django (pero no cliente ni staff), redirigir
+    if es_user_django:
+        # Aquí puedes manejar usuarios Django que no son clientes
+        messages.info(request, 'Tu cuenta no está asociada a un perfil de cliente')
+        return redirect('pagina:home')
+    
+    # Fallback
+    return redirect('pagina:login')
 
 # =============================================================================
 # API ENDPOINTS ACTUALIZADOS

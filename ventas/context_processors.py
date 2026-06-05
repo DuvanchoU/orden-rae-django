@@ -2,7 +2,12 @@
 from ventas.models import Carritos, ItemsCarrito, Clientes
 from django.db.models import Sum
 
+
 def carrito_context(request):
+    """
+    Context processor para el carrito de compras.
+    Calcula la cantidad de items en el carrito.
+    """
     carrito_cantidad = 0
 
     try:
@@ -51,3 +56,48 @@ def carrito_context(request):
         print(f"Error en carrito_context: {e}")
 
     return {'carrito_cantidad': carrito_cantidad}
+
+
+def cliente_auth_context(request):
+    """
+    Context processor para la autenticación del cliente.
+    Hace disponible la información del cliente en TODAS las plantillas.
+    """
+    context = {
+        'cliente_auth': False,
+        'cliente_id': None,
+        'cliente_nombre': '',
+        'cliente_email': '',
+        'cliente': None,
+    }
+    
+    # Verificar si hay sesión de cliente
+    if request.session.get('cliente_auth'):
+        cliente_id = request.session.get('cliente_id')
+        
+        if cliente_id:
+            try:
+                cliente = Clientes.objects.get(
+                    id_cliente=cliente_id,
+                    estado='ACTIVO',
+                    deleted_at__isnull=True
+                )
+                
+                context.update({
+                    'cliente_auth': True,
+                    'cliente_id': cliente.id_cliente,
+                    'cliente_nombre': f"{cliente.nombre} {cliente.apellido}",
+                    'cliente_email': cliente.email,
+                    'cliente': cliente,
+                })
+                
+                # Actualizar también request.cliente si existe
+                if hasattr(request, 'cliente'):
+                    request.cliente = cliente
+                    
+            except Clientes.DoesNotExist:
+                # Limpiar sesión si el cliente no existe
+                for key in ['cliente_id', 'cliente_auth', 'cliente_nombre', 'cliente_email']:
+                    request.session.pop(key, None)
+    
+    return context

@@ -1,0 +1,298 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}Error de Autenticación - La Super Bodega del Mueble{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --color-primary: #5D4037;
+        --color-secondary: #8D6E63;
+        --color-accent: #A1887F;
+        --color-light: #D7CCC8;
+        --color-white: #FFFFFF;
+        --gradient-primary: linear-gradient(135deg, #5D4037 0%, #8D6E63 100%);
+    }
+
+    .error-container {
+        max-width: 700px;
+        margin: 80px auto;
+        background: var(--color-white);
+        border-radius: 24px;
+        padding: 60px 40px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(93, 64, 55, 0.15);
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .error-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 30px;
+        background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 30px rgba(239, 83, 80, 0.2);
+    }
+
+    .error-icon i {
+        font-size: 4rem;
+        color: #E53935;
+    }
+
+    .error-title {
+        color: var(--color-primary);
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .error-message {
+        color: var(--color-secondary);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+
+    .error-details {
+        background: rgba(239, 83, 80, 0.05);
+        border-left: 4px solid #E53935;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+
+    .error-details h4 {
+        color: var(--color-primary);
+        font-size: 1rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .error-details p {
+        color: var(--color-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        word-break: break-word;
+    }
+
+    .error-causes {
+        background: rgba(141, 110, 99, 0.05);
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+
+    .error-causes h4 {
+        color: var(--color-primary);
+        font-size: 1rem;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .error-causes ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-causes li {
+        padding: 10px 0;
+        color: var(--color-secondary);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .error-causes li i {
+        color: #FFA726;
+        margin-top: 3px;
+    }
+
+    .btn-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 35px;
+        background: var(--gradient-primary);
+        color: var(--color-white);
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(93, 64, 55, 0.3);
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.4);
+    }
+
+    .btn-home {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 35px;
+        background: transparent;
+        color: var(--color-primary);
+        text-decoration: none;
+        border: 2px solid var(--color-primary);
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-home:hover {
+        background: var(--color-primary);
+        color: var(--color-white);
+        transform: translateY(-2px);
+    }
+
+    .help-section {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 2px solid var(--color-light);
+    }
+
+    .help-section p {
+        color: var(--color-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+
+    .help-section a {
+        color: var(--color-primary);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .help-section a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .error-container {
+            margin: 40px 20px;
+            padding: 40px 25px;
+        }
+
+        .error-title {
+            font-size: 1.8rem;
+        }
+
+        .btn-container {
+            flex-direction: column;
+        }
+
+        .btn-back,
+        .btn-home {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <!-- Icono de error -->
+    <div class="error-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+
+    <!-- Título -->
+    <h1 class="error-title">Falló la autenticación</h1>
+
+    <!-- Mensaje principal -->
+    <p class="error-message">
+        Se produjo un error al intentar iniciar sesión con tu cuenta de Google.
+        No te preocupes, puedes intentar de nuevo o usar otro método.
+    </p>
+
+    <!-- Detalles del error (si existe) -->
+    {% if auth_error %}
+    <div class="error-details">
+        <h4><i class="fas fa-info-circle me-2"></i>Detalles técnicos:</h4>
+        <p><strong>Código:</strong> {{ auth_error }}</p>
+    </div>
+    {% endif %}
+
+    {% if exception %}
+    <div class="error-details">
+        <h4><i class="fas fa-code me-2"></i>Excepción:</h4>
+        <p>{{ exception }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Posibles causas -->
+    <div class="error-causes">
+        <h4><i class="fas fa-question-circle me-2"></i>Posibles causas:</h4>
+        <ul>
+            <li>
+                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+                <span>El correo ya está registrado con otra cuenta</span>
+            </li>
+            <li>
+                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+                <span>Problemas de conexión con los servidores de Google</span>
+            </li>
+            <li>
+                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+                <span>La cuenta de Google no está verificada</span>
+            </li>
+            <li>
+                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+                <span>Configuración incorrecta de OAuth en el sistema</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="btn-container">
+        <a href="{% url 'pagina:login' %}" class="btn-back">
+            <i class="fas fa-arrow-left"></i>
+            Volver al login
+        </a>
+        <a href="/" class="btn-home">
+            <i class="fas fa-home"></i>
+            Ir al inicio
+        </a>
+    </div>
+
+    <!-- Sección de ayuda -->
+    <div class="help-section">
+        <p>
+            <strong>¿Necesitas ayuda?</strong><br>
+            Puedes <a href="{% url 'pagina:login' %}">iniciar sesión con tu correo y contraseña</a> 
+            o <a href="mailto:soporte@lasuperbodega.com">contactar a soporte</a>.
+        </p>
+    </div>
+</div>
+{% endblock %}

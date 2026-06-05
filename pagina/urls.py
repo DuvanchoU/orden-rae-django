@@ -1,5 +1,5 @@
 # pagina/urls.py
-from django.urls import path
+from django.urls import path, include
 from . import views
 from ventas import views as ventas_views
 
@@ -31,6 +31,9 @@ urlpatterns = [
     path('registro/', views.registro_view, name='registro'),
     path('logout/', views.logout_view, name='logout'),
     path('perfil/', views.perfil_view, name='perfil'), 
+
+    # OAuth 2.0 / Social Login
+    path('accounts/', include('allauth.urls')),
 
     # Formularios
     path('contacto/', views.contacto, name='contacto'),

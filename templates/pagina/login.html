@@ -1,4 +1,5 @@
 {% load static %}
+{% load socialaccount %}  
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -91,7 +92,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             position: relative;
             z-index: 1;
@@ -146,21 +147,21 @@
 
         /* Panel Derecho - Formulario */
         .form-panel {
-            padding: 60px 50px;
+            padding: 40px 40px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
 
         .form-header {
-            margin-bottom: 40px;
+            margin-bottom: 25px;
         }
 
         .form-header h2 {
             color: var(--color-primary);
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .form-header p {
@@ -173,13 +174,13 @@
             background: rgba(239, 83, 80, 0.1);
             border: 1px solid rgba(239, 83, 80, 0.2);
             color: #C62828;
-            padding: 12px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 0.9rem;
+            gap: 8px;
+            font-size: 0.85rem;
             animation: slideIn 0.3s ease;
         }
 
@@ -187,6 +188,22 @@
             background: rgba(76, 175, 80, 0.1);
             border-color: rgba(76, 175, 80, 0.2);
             color: #2E7D32;
+        }
+
+        /* Nota de seguridad */
+        .security-note {
+            margin-top: 18px;  /* Reducido de 25px */
+            margin-bottom: 12px;  /* Reducido */
+            text-align: center;
+            color: var(--color-secondary);
+            font-size: 0.8rem;  /* Ligeramente más pequeño */
+        }
+
+        /* Contenedor forgot password */
+        .forgot-password-container {
+            margin-top: 3px;  /* Reducido de 5px */
+            margin-bottom: 8px;  /* Reducido de 10px */
+            text-align: center;
         }
 
         @keyframes slideIn {
@@ -202,15 +219,15 @@
 
         /* Inputs */
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 18px;
         }
 
         .form-label {
             display: block;
             color: var(--color-primary);
             font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
         }
 
         .required {
@@ -223,10 +240,10 @@
 
         .form-control-custom {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 14px;
             border: 2px solid var(--color-light);
-            border-radius: 12px;
-            font-size: 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
             background: var(--color-white);
@@ -263,28 +280,28 @@
         .remember-me {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
+            gap: 18px;
+            margin-bottom: 18px;
             cursor: pointer;
         }
 
         .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             accent-color: var(--color-primary);
             cursor: pointer;
         }
 
         .remember-me span {
             color: var(--color-secondary);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             user-select: none;
         }
 
         .forgot-password {
             color: var(--color-secondary);
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
             transition: color 0.3s;
         }
@@ -297,10 +314,10 @@
         /* Botones */
         .btn-login {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             background: var(--gradient-primary);
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             color: var(--color-white);
             font-size: 1rem;
             font-weight: 600;
@@ -308,7 +325,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(93, 64, 55, 0.3);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .btn-login:hover {
@@ -327,7 +344,7 @@
 
         .divider {
             text-align: center;
-            margin: 24px 0;
+            margin: 18px 0;
             position: relative;
         }
 
@@ -354,10 +371,10 @@
             width: 100%;
             padding: 14px;
             background: transparent;
-            border: 2px solid var(--color-secondary);
-            border-radius: 12px;
+            border: 3px solid var(--color-secondary);
+            border-radius: 10px;
             color: var(--color-secondary);
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             font-family: 'Poppins', sans-serif;
             cursor: pointer;
@@ -367,6 +384,7 @@
             justify-content: center;
             gap: 10px;
             transition: all 0.3s ease;
+            margin-top: 10px;
         }
 
         .btn-register:hover {
@@ -403,6 +421,36 @@
                 display: none;
             }
         }
+
+        .btn-oauth-continue {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            background: var(--color-white);
+            border: 3px solid var(--color-secondary);
+            border-radius: 12px;
+            color: var(--color-secondary);
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .btn-oauth-continue:hover {
+            background: var(--color-secondary);
+            color: var(--color-white);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .btn-oauth-continue img {
+            width: 24px;
+            height: 24px;
+        }   
 
         /* Animaciones */
         .animate-in {
@@ -517,7 +565,7 @@
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
-            </div>
+            </div> 
 
             <!-- Recordarme (solo checkbox, sin enlace) -->
             <div class="form-group animate-in" style="animation-delay: 0.3s">
@@ -541,6 +589,26 @@
                     style="color: var(--color-secondary); text-decoration: none; font-size: 0.9rem;">
                         <i class="fas fa-question-circle me-1"></i>¿Olvidaste tu contraseña?
                 </a>
+            </div>
+
+            <!-- Separador -->
+            <div class="divider animate-in" style="animation-delay: 0.7s">
+                <span>Continúa con</span>
+            </div>
+
+            <!-- Botones OAuth -->
+            <div class="d-grid gap-2 mt-3 animate-in" style="animation-delay: 0.8s">
+                <a href="{% provider_login_url 'google' %}" class="btn-oauth-continue d-flex align-items-center justify-content-center">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" class="me-2">
+                    Ingresa con Google
+                </a>
+            </div>
+
+            <!-- Nota -->
+            <div class="form-group animate-in" style="animation-delay: 0.1s">
+                <label for="id_correo" class="form-label text-center" style="color: var(--color-secondary); font-size: 0.85rem; margin-top: 20px;">
+                🔒 Login seguro. ¡Accede de forma segura! 
+                </label>    
             </div>
 
             <!-- Divider -->
@@ -602,5 +670,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-</body>
-</html> 
+</body></html> 

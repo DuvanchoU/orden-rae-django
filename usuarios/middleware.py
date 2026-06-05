@@ -17,7 +17,7 @@ PUBLIC_PATHS = (
     '/static/',
     '/media/',
     '/admin/',
-    '/accounts/',
+    '/accounts/',      
     '/login/',
     '/registro/',
     '/recuperar-password/',
@@ -27,6 +27,43 @@ PUBLIC_PATHS = (
 )
 
 
+# ─────────────────────────────────────────────────────────────
+# MIDDLEWARE: NO CACHE
+# ─────────────────────────────────────────────────────────────
+class NoCacheMiddleware:
+    """Previene caché del navegador en páginas autenticadas y dashboard."""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        is_authenticated = (
+            (hasattr(request, 'user') and not request.user.is_anonymous) or
+            request.session.get('cliente_auth') or
+            request.session.get('usuario_id')
+        )
+
+        is_dashboard = any(request.path.startswith(p) for p in DASHBOARD_PREFIXES)
+
+        is_auth_page = request.path in [
+            '/usuarios/login/', '/usuarios/logout/',
+            '/login/', '/logout/',
+            '/admin/login/', '/admin/logout/',
+        ]
+
+        if is_dashboard or is_authenticated or is_auth_page:
+            response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+            response['Surrogate-Control'] = 'no-store'
+
+        return response
+
+
+# ─────────────────────────────────────────────────────────────
+# MIDDLEWARE: CUSTOM AUTH (Staff)
+# ─────────────────────────────────────────────────────────────
 class CustomAuthMiddleware:
     """
     Middleware para manejar sesión de usuarios STAFF (Usuarios).
@@ -39,7 +76,7 @@ class CustomAuthMiddleware:
     def __call__(self, request):
         path = request.path
 
-        # ── Rutas excluidas del middleware ────────────────────
+        # ─ Rutas excluidas del middleware ────────────────────
         if path.startswith(PUBLIC_PATHS):
             return self.get_response(request)
 
@@ -49,7 +86,7 @@ class CustomAuthMiddleware:
                 return redirect('/pagina/')
             return self.get_response(request)
 
-        # ── Resolver usuario STAFF desde sesión ──────────────
+        # ── Resolver usuario STAFF desde sesión ─────────────
         usuario_id = request.session.get('usuario_id')
 
         if usuario_id:
@@ -87,37 +124,9 @@ class CustomAuthMiddleware:
         return self.get_response(request)
 
 
-class NoCacheMiddleware:
-    """Previene caché del navegador en páginas autenticadas y dashboard."""
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        response = self.get_response(request)
-
-        is_authenticated = (
-            (hasattr(request, 'user') and not request.user.is_anonymous) or
-            request.session.get('cliente_auth') or
-            request.session.get('usuario_id')
-        )
-
-        is_dashboard = any(request.path.startswith(p) for p in DASHBOARD_PREFIXES)
-
-        is_auth_page = request.path in [
-            '/usuarios/login/', '/usuarios/logout/',
-            '/login/', '/logout/',
-            '/admin/login/', '/admin/logout/',
-        ]
-
-        if is_dashboard or is_authenticated or is_auth_page:
-            response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private, max-age=0'
-            response['Pragma'] = 'no-cache'
-            response['Expires'] = '0'
-            response['Surrogate-Control'] = 'no-store'
-
-        return response
-
-
+# ─────────────────────────────────────────────────────────────
+# MIDDLEWARE: SESSION IDLE TIMEOUT
+# ─────────────────────────────────────────────────────────────
 class SessionIdleTimeoutMiddleware:
     """Cierra sesión después de 10 minutos de inactividad."""
     IDLE_TIMEOUT = 600  # 10 minutos
@@ -126,7 +135,8 @@ class SessionIdleTimeoutMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.path.startswith('/admin/'):
+        # Excluir rutas públicas (incluye /accounts/ y /login/)
+        if request.path.startswith(PUBLIC_PATHS):
             return self.get_response(request)
 
         usuario_id = request.session.get('usuario_id')

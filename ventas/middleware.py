@@ -5,18 +5,25 @@ import logging
 
 logger = logging.getLogger('auth.debug')
 
+
 class ClientesAuthMiddleware:
+    """Middleware para autenticación de clientes de la tienda."""
+    
     def __init__(self, get_response):
         self.get_response = get_response
         
-        # ✅ Solo rutas estrictamente públicas (NO incluir /login/)
+        # Rutas públicas (incluye /accounts/ para OAuth)
         self.public_paths = [
+            '/accounts/',          
+            '/login/',
+            '/registro/',
             '/recuperar-password/',
             '/reset-password/',
             '/verificar-email/',
             '/reenviar-verificacion/',
             '/static/',
             '/media/',
+            '/',
         ]
 
     def __call__(self, request):
@@ -42,7 +49,6 @@ class ClientesAuthMiddleware:
                 for key in ['cliente_id', 'cliente_auth', 'cliente_nombre', 'cliente_email']:
                     request.session.pop(key, None)
                 request.cliente = None
-                from django.contrib.auth.models import AnonymousUser
                 request.user = AnonymousUser()
         else:
             request.cliente = None

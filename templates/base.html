@@ -107,7 +107,7 @@
                 {% if user_permissions.can_view_dashboard %}
                 <li class="nav-item">
                     <a href="{% url 'dashboard:dashboard_home' %}"
-                       class="nav-link {% if request.resolver_match.url_name == 'dashboard_home' or request.resolver_match.url_name == 'dashboard_gerente' or request.resolver_match.url_name == 'dashboard_asesor' or request.resolver_match.url_name == 'dashboard_logistica' %}active{% endif %}">
+                        class="nav-link {% if request.resolver_match.url_name == 'dashboard_home' or request.resolver_match.url_name == 'dashboard_gerente' or request.resolver_match.url_name == 'dashboard_asesor' or request.resolver_match.url_name == 'dashboard_logistica' %}active{% endif %}">
                         <i class="bi bi-speedometer2 me-2"></i> Dashboard
                     </a>
                 </li>
@@ -122,7 +122,7 @@
                 <!-- Productos - Visible para todos con acceso a inventario -->
                 <li>
                     <a href="{% url 'inventario:producto_list' %}" 
-                       class="nav-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-box-seam me-2"></i> Productos
                     </a>
                 </li>
@@ -131,7 +131,7 @@
                 {% if user_rol in 'GERENTE,JEFE LOGISTICO,AUXILIAR DE BODEGA' %}
                 <li>
                     <a href="{% url 'inventario:inventario_list' %}" 
-                       class="nav-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'inventario' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-clipboard-data me-2"></i> Stock
                     </a>
                 </li>
@@ -141,7 +141,7 @@
                 {% if user_rol in 'GERENTE,JEFE LOGISTICO,AUXILIAR DE BODEGA' %}
                 <li>
                     <a href="{% url 'inventario:bodega_list' %}" 
-                       class="nav-link {% if 'bodega' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'bodega' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-building me-2"></i> Bodegas
                     </a>
                 </li>
@@ -150,7 +150,7 @@
                 <!-- Categorías - Todos con acceso a inventario -->
                 <li>
                     <a href="{% url 'inventario:categoria_list' %}" 
-                       class="nav-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'categoria' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-tags me-2"></i> Categorías
                     </a>
                 </li>
@@ -159,7 +159,7 @@
                 {% if user_rol in 'GERENTE,JEFE LOGISTICO,AUXILIAR DE BODEGA' %}
                 <li>
                     <a href="{% url 'inventario:proveedor_list' %}" 
-                       class="nav-link {% if 'proveedor' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'proveedor' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-truck me-2"></i> Proveedores
                     </a>
                 </li>
@@ -173,7 +173,7 @@
                 <li class="nav-section">Producción</li>
                 <li>
                     <a href="{% url 'produccion:produccion_list' %}" 
-                       class="nav-link {% if 'produccion' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'produccion' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-gear-wide-connected me-2"></i> Producción
                     </a>
                 </li>
@@ -189,7 +189,7 @@
                 {% if user_permissions.can_view_clientes %}
                 <li>
                     <a href="{% url 'ventas:cliente_list' %}" 
-                       class="nav-link {% if 'cliente' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'cliente' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-people me-2"></i> Clientes
                     </a>
                 </li>
@@ -199,7 +199,7 @@
                 {% if user_permissions.can_view_pedidos %}
                 <li>
                     <a href="{% url 'ventas:pedido_list' %}" 
-                       class="nav-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-receipt me-2"></i> Pedidos
                     </a>
                 </li>
@@ -207,7 +207,7 @@
                 
                 <li>
                     <a href="{% url 'ventas:venta_list' %}" 
-                       class="nav-link {% if 'venta' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'venta' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-currency-dollar me-2"></i> Ventas
                     </a>
                 </li>
@@ -215,7 +215,7 @@
                 {% if user_permissions.can_view_cotizaciones %}
                 <li>
                     <a href="{% url 'ventas:cotizacion_list' %}" 
-                       class="nav-link {% if 'cotizacion' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'cotizacion' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-file-earmark-text me-2"></i> Cotizaciones
                     </a>
                 </li>
@@ -229,7 +229,7 @@
                 <li class="nav-section">Compras</li>
                 <li>
                     <a href="{% url 'compras:compra_list' %}" 
-                       class="nav-link {% if 'compra' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'compra' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-cart me-2"></i> Compras
                     </a>
                 </li>
@@ -242,13 +242,13 @@
                 <li class="nav-section">Administración</li>
                 <li>
                     <a href="{% url 'usuarios:usuario_list' %}" 
-                       class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-person-badge me-2"></i> Usuarios
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'usuarios:rol_list' %}" 
-                       class="nav-link {% if 'rol' in request.resolver_match.url_name %}active{% endif %}">
+                        class="nav-link {% if 'rol' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-shield-lock me-2"></i> Roles
                     </a>
                 </li>
@@ -324,16 +324,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ✅ VERIFICACIÓN DE SESIÓN - MEJORADO
+// VERIFICACIÓN DE SESIÓN - MEJORADO
 (function() {
     const currentPath = window.location.pathname;
     
     // Rutas que NUNCA deben verificar sesión (públicas)
     const publicPaths = [
+        '/',                   
+        '/productos/',
+        '/categoria/',
+        '/carrito/',
+        '/checkout/',
         '/recuperar-password/',
         '/reset-password/',
         '/verificar-email/',
         '/reenviar-verificacion/',
+        '/accounts/', 
+        '/login/',
+        '/registro/',
     ];
     
     // Si estamos en ruta pública estricta, NO verificar
