@@ -82,19 +82,14 @@ class ProductoCreateView(CreateView):
                 imagen_principal_index = int(self.request.POST.get('imagen_principal_index', 0))
                 
                 for i, imagen in enumerate(imagenes):
-                    # Crear objeto ImagenesProducto - Django guarda automáticamente en Cloudinary
-                    img_obj = ImagenesProducto.objects.create(
+                    # Crear el objeto con el archivo en un solo paso
+                    img_obj = ImagenesProducto(
                         producto=producto,
                         descripcion=f"Imagen {i+1} de {producto.codigo_producto}",
-                        es_principal=1 if i == imagen_principal_index else 0
+                        es_principal=1 if i == imagen_principal_index else 0,
+                        ruta_imagen=imagen  # ← asignar directamente aquí
                     )
-                    
-                    # Asignar el archivo al campo ImageField
-                    img_obj.ruta_imagen.save(
-                        imagen.name,
-                        imagen,
-                        save=True
-                    )
+                    img_obj.save()  # Cloudinary sube el archivo en este momento
                 
             messages.success(self.request, f'Producto "{producto.codigo_producto}" creado exitosamente.')
             return redirect(self.success_url)
@@ -151,25 +146,18 @@ class ProductoUpdateView(UpdateView):
                 nuevas_imagenes = self.request.FILES.getlist('nuevas_imagenes')
                 
                 for i, imagen in enumerate(nuevas_imagenes):
-                    # Verificar si ya hay imagen principal
                     hay_principal = ImagenesProducto.objects.filter(
                         producto=producto, 
                         es_principal=1
                     ).exists()
                     
-                    # Crear nueva imagen
-                    img_obj = ImagenesProducto.objects.create(
+                    img_obj = ImagenesProducto(
                         producto=producto,
                         descripcion=f"Imagen {i+1} de {producto.codigo_producto}",
-                        es_principal=0 if hay_principal else 1
+                        es_principal=0 if hay_principal else 1,
+                        ruta_imagen=imagen  # ← mismo cambio
                     )
-                    
-                    # Guardar archivo en Cloudinary
-                    img_obj.ruta_imagen.save(
-                        imagen.name,
-                        imagen,
-                        save=True
-                    )
+                    img_obj.save()
                 
             messages.success(self.request, f'Producto "{producto.codigo_producto}" actualizado correctamente.')
             return redirect(self.success_url)
