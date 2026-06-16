@@ -8,7 +8,8 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.utils import timezone
-from datetime import timedelta
+from datetime import datetime, date, timedelta
+from django.db.models.fields.files import ImageFieldFile, FieldFile
 from ventas.models import Clientes
 from usuarios.models import Usuarios, RolesOld
 from inventario.models import Producto, Categorias, ImagenesProducto, Inventario
@@ -21,7 +22,7 @@ import logging
 logger = logging.getLogger('auth.debug')
 from django.core.mail import send_mail
 from django.conf import settings
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.core.paginator import Paginator 
 import os
 from django.views.decorators.http import require_POST
@@ -35,6 +36,44 @@ from django.contrib.auth import authenticate, login, logout
 # Vistas para autenticación (login, registro, perfil)
 # Vistas para manejo de carrito y checkout
 # Función auxiliar para generar URL de avatar consistente (usada en testimonios)
+
+# ============================================
+# ENCODER JSON PERSONALIZADO PARA DJANGO
+# ============================================
+import json
+from django.db.models.fields.files import ImageFieldFile, FieldFile
+from decimal import Decimal
+from datetime import datetime, date
+
+class DjangoCustomEncoder(json.JSONEncoder):
+    """Encoder que maneja automáticamente tipos de Django"""
+    def default(self, obj):
+        if isinstance(obj, (ImageFieldFile, FieldFile)):
+            try:
+                return obj.url if obj else ''
+            except:
+                return ''
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
+
+def safe_json_dumps(data, **kwargs):
+    """
+    Serialización segura que maneja tipos de Django.
+    Permite sobrescribir cualquier argumento de json.dumps.
+    """
+    # Si no se especifica ensure_ascii, usar False por defecto
+    if 'ensure_ascii' not in kwargs:
+        kwargs['ensure_ascii'] = False
+    
+    # Si no se especifica cls, usar el encoder personalizado
+    if 'cls' not in kwargs:
+        kwargs['cls'] = DjangoCustomEncoder
+    
+    return json.dumps(data, **kwargs)
+
 def generar_avatar_url(nombre, tamaño=128):
     """Genera una URL de avatar consistente basada en el nombre."""
     colores = [
@@ -311,8 +350,8 @@ def home(request):
         'cliente': request.cliente if hasattr(request, 'cliente') else None,
 
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
-        'datos_opciones_json': json.dumps(datos_opciones),
-        'productos_busqueda_json': json.dumps(productos_busqueda),
+        'datos_opciones_json': safe_json_dumps(datos_opciones),
+        'productos_busqueda_json': safe_json_dumps(productos_busqueda),
         'productos_destacados': productos_destacados,
         'productos_nuevos': productos_nuevos,
         'hay_productos_nuevos': bool(productos_nuevos),
@@ -320,7 +359,7 @@ def home(request):
         'notificaciones': notificaciones,
         'notificaciones_nuevas': notificaciones_nuevas,
         'categorias': categorias,
-        'categorias_json': json.dumps([
+        'categorias_json': safe_json_dumps([
             {'nombre': c['nombre'], 'slug': c['slug']} for c in categorias
         ]),
     }
@@ -474,11 +513,11 @@ def productos(request):
         'page_obj':                page_obj,
         'paginator':               paginator,
         'sort_options':            sort_options,
-        'categorias_json': json.dumps([
+        'categorias_json': safe_json_dumps([
             {'nombre': c['nombre'], 'slug': c['slug'], 'productos_count': c['productos_count']}
             for c in categorias_principales + categorias_secundarias
         ]),
-        'destacados_json': json.dumps([
+        'destacados_json': safe_json_dumps([
             {'nombre': p['nombre'], 'slug': p['slug'], 'precio': p['precio']}
             for p in productos_destacados
         ]),
@@ -570,7 +609,7 @@ def promociones(request):
     context = {
         'promo_combo': promo_combo,
         'promociones': promociones_lista,
-        'promociones_json': json.dumps(promociones_lista),
+        'promociones_json': safe_json_dumps(promociones_lista),
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
         'notificaciones_nuevas': 0,
     }
@@ -784,7 +823,7 @@ def contacto(request):
         }
         
         context['form_data'] = form_data
-        context['form_data_json'] = json.dumps(form_data)
+        context['form_data_json'] = safe_json_dumps(form_data)
         
         # === VALIDACIONES ===
         errores = []
@@ -921,7 +960,7 @@ def cotiza(request):
         }
         
         context['form_data'] = form_data
-        context['form_data_json'] = json.dumps(form_data)
+        context['form_data_json'] = safe_json_dumps(form_data)
         
         # === VALIDACIONES ===
         errores = []
@@ -1011,7 +1050,7 @@ def cotiza(request):
         'comedores': ['Comedor 6 puestos', 'Comedor Familiar'],
         'sillas': ['Silla Poltrona', 'Silla Ergonómica']
     }
-    context['productos_sugeridos_json'] = json.dumps(productos_sugeridos)
+    context['productos_sugeridos_json'] = safe_json_dumps(productos_sugeridos)
     
     return render(request, 'pagina/cotiza.html', context)
 
@@ -1459,10 +1498,15 @@ def api_cupon_remover(request):
 # =============================================================================
 
 
-@login_required
 def checkout(request):
     """Vista de proceso de checkout — requiere sesión de cliente autenticado"""
-    if not request.session.get('cliente_auth') and not request.session.get('usuario_id'):
+    
+    # Verificar si es cliente autenticado por sesión (NO por Django auth)
+    es_cliente = request.session.get('cliente_auth', False)
+    es_staff = request.session.get('usuario_id', None)
+    
+    if not es_cliente and not es_staff:
+        messages.warning(request, 'Debes iniciar sesión para finalizar la compra')
         return redirect('pagina:login')
  
     carrito_session = request.session.get('carrito', {})
@@ -1504,7 +1548,11 @@ def checkout(request):
             sku         = prod.codigo_producto
             img         = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
             if img:
-                imagen_url = img.ruta_imagen
+                # Usar .url para evitar ImageFieldFile
+                try:
+                    imagen_url = img.ruta_imagen.url if img.ruta_imagen else '/static/img/placeholder.jpg'
+                except:
+                    imagen_url = '/static/img/placeholder.jpg'
  
         iva_unitario        = round(precio_base * 0.19, 2)
         iva_total           = round(iva_unitario * cantidad, 2)
@@ -1544,10 +1592,11 @@ def checkout(request):
 
     total_final = max(0, round(total_con_iva - descuento, 2))
  
-    carrito_items_json = json.dumps([
+    # safe_json_dumps ya incluye ensure_ascii=False
+    carrito_items_json = safe_json_dumps([
         {**item, 'precio_base': item['precio_base'], 'iva': item['iva']}
         for item in carrito_items
-    ], ensure_ascii=False)
+    ])
  
     context = {
         'carrito_items':      carrito_items,
@@ -1563,9 +1612,9 @@ def checkout(request):
         'random_number':      ''.join(random.choices(string.ascii_uppercase + string.digits, k=6)),
         'STRIPE_PUBLIC_KEY': getattr(settings, 'STRIPE_PUBLIC_KEY', '')
     }
- 
+
     return render(request, 'pagina/checkout.html', context)
- 
+
 @require_http_methods(["POST"])
 def api_checkout_procesar(request):
     """
@@ -1582,8 +1631,15 @@ def api_checkout_procesar(request):
     from django.utils import timezone
  
     # ── Auth ──────────────────────────────────────────────────────────────────
-    if not request.user.is_authenticated:
-        return JsonResponse({'success': False, 'error': 'Debes iniciar sesión para continuar.'}, status=401)
+    # Verificar sesión de cliente (NO Django auth)
+    es_cliente = request.session.get('cliente_auth', False)
+    cliente_id = request.session.get('cliente_id')
+    
+    if not es_cliente or not cliente_id:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Debes iniciar sesión para continuar.'
+        }, status=401)
  
     try:
         data = json.loads(request.body)
@@ -1600,18 +1656,16 @@ def api_checkout_procesar(request):
         from usuarios.models import Usuarios
  
         # ── 1. Obtener cliente ───────────────────────────────────────────────
-        cliente = None
-        if isinstance(request.user, Clientes):
-            cliente = request.user
-        else:
-            cliente = Clientes.objects.filter(
-                email=request.user.email,
+        # Obtener cliente desde la sesión (NO desde request.user)
+        try:
+            cliente = Clientes.objects.get(
+                id_cliente=cliente_id,
+                estado='ACTIVO',
                 deleted_at__isnull=True
-            ).first()
- 
-        if not cliente:
+            )
+        except Clientes.DoesNotExist:
             return JsonResponse(
-                {'success': False, 'error': 'No se encontró el cliente. Inicia sesión nuevamente.'},
+                {'success': False, 'error': 'Tu cuenta no existe o está inactiva. Inicia sesión nuevamente.'},
                 status=404
             )
  
@@ -1629,10 +1683,12 @@ def api_checkout_procesar(request):
         if carrito_bd:
             for item in ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto'):
                 if item.producto and item.cantidad > 0:
+                    # ✅ CORRECCIÓN: Cuantizar precio_unitario a 2 decimales
+                    precio_unit = Decimal(str(item.precio_unitario)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     items_data.append({
                         'producto':        item.producto,
                         'cantidad':        item.cantidad,
-                        'precio_unitario': Decimal(str(item.precio_unitario)),
+                        'precio_unitario': precio_unit,
                     })
  
         # Fallback: sesión de Django
@@ -1656,10 +1712,12 @@ def api_checkout_procesar(request):
                 if not prod:
                     continue
                 cantidad = int(item_data_s.get('cantidad', 1)) if isinstance(item_data_s, dict) else int(item_data_s)
+                # ✅ CORRECCIÓN: Cuantizar precio_actual a 2 decimales
+                precio_unit = Decimal(str(prod.precio_actual)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 items_data.append({
                     'producto':        prod,
                     'cantidad':        cantidad,
-                    'precio_unitario': Decimal(str(prod.precio_actual)),
+                    'precio_unitario': precio_unit,
                 })
  
         if not items_data:
@@ -1669,35 +1727,36 @@ def api_checkout_procesar(request):
             )
  
         # ── 3. Calcular totales ──────────────────────────────────────────────
-        # Q garantiza exactamente 2 decimales en cada paso.
-        # Sin esto, la suma final puede tener precisión interna extra
-        # que Django DecimalField(decimal_places=2) rechaza con ValidationError.
+        # ✅ CORRECCIÓN: Usar Decimal con quantize en TODAS las operaciones
         Q = Decimal('0.01')
- 
+
+        # Calcular subtotal como Decimal con exactamente 2 decimales
         subtotal = sum(
             (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
             for item in items_data
         ).quantize(Q, rounding=ROUND_HALF_UP)
- 
-        impuesto  = (subtotal * Decimal('0.19')).quantize(Q, rounding=ROUND_HALF_UP)
+
+        # Calcular impuesto como Decimal con exactamente 2 decimales
+        impuesto = (subtotal * Decimal('0.19')).quantize(Q, rounding=ROUND_HALF_UP)
+
+        # Inicializar descuento como Decimal
         descuento = Decimal('0.00')
- 
+
+        # Aplicar cupón si existe
         cupon = request.session.get('cupon_activo')
         if cupon:
-            tipo  = cupon.get('tipo', '')
+            tipo = cupon.get('tipo', '')
             valor = Decimal(str(cupon.get('valor', 0)))
             total_con_iva = (subtotal + impuesto).quantize(Q, rounding=ROUND_HALF_UP)
+    
             if tipo == 'porcentaje':
-                descuento = (
-                    total_con_iva * valor / 100
-                ).quantize(Q, rounding=ROUND_HALF_UP)
+                descuento = (total_con_iva * valor / Decimal('100')).quantize(Q, rounding=ROUND_HALF_UP)
             elif tipo == 'fijo':
                 descuento = min(valor, total_con_iva).quantize(Q, rounding=ROUND_HALF_UP)
- 
-        # FIX: cuantizar el total final — la suma de Decimals puede generar
-        # precision interna extra que Django rechaza en DecimalField(decimal_places=2)
+
+        # Calcular total como Decimal con exactamente 2 decimales
         total = (subtotal + impuesto - descuento).quantize(Q, rounding=ROUND_HALF_UP)
- 
+
         # ── 4. Método de pago ────────────────────────────────────────────────
         metodo_raw = data.get('pago', {}).get('metodo', '')
         metodo_map = {
@@ -1752,8 +1811,6 @@ def api_checkout_procesar(request):
         # ── 6. Guardar todo en transacción atómica ───────────────────────────
         with transaction.atomic():
  
-            # FIX: usuario_id es NOT NULL en pedido y ventas.
-            # Usamos el usuario sistema (id=1). Cámbialo por el id de tu admin si prefieres.
             usuario_sistema = Usuarios.objects.filter(pk=1).first()
  
             # ── 6a. Generar número de pedido único ───────────────────────────
@@ -1767,18 +1824,15 @@ def api_checkout_procesar(request):
                 consec_pedido += 1
                 numero_pedido = f"PED-{consec_pedido:06d}"
  
-            # FIX 1: Reemplazado Pedido.__new__()/__init__() por constructor normal.
-            # FIX 2: estado_pedido='CONFIRMADO' no existe en el ENUM de la BD.
-            #         Valores válidos: 'PENDIENTE', 'EN PROCESO', 'ENTREGADO', 'CANCELADO'
-            # FIX 3: usuario=None rompe la FK NOT NULL → usar usuario_sistema.
+            # ✅ CORRECCIÓN: Usar Decimal directamente (ya está cuantizado)
             pedido = Pedido(
                 cliente=cliente,
                 usuario=usuario_sistema,
                 asesor=None,
                 fecha_pedido=ahora,
                 fecha_entrega_estimada=fecha_entrega,
-                total_pedido=total,
-                estado_pedido='PENDIENTE',        # ← único valor correcto para pedidos nuevos
+                total_pedido=total,  # Decimal con 2 decimales
+                estado_pedido='PENDIENTE',
                 estado_facturacion='NO_FACTURADO',
                 direccion_entrega=direccion_envio,
                 numero_pedido=numero_pedido,
@@ -1789,16 +1843,15 @@ def api_checkout_procesar(request):
  
             # ── 6c. Crear DetallePedido ──────────────────────────────────────
             for item in items_data:
-                subtotal_item = (
-                    item['precio_unitario'] * item['cantidad']
-                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                # ✅ CORRECCIÓN: Cuantizar subtotal_item
+                subtotal_item = (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
  
                 DetallePedido(
                     pedido=pedido,
                     producto=item['producto'],
                     cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario'],
-                    subtotal=subtotal_item,
+                    precio_unitario=item['precio_unitario'],  # Decimal con 2 decimales
+                    subtotal=subtotal_item,  # Decimal con 2 decimales
                     created_at=ahora,
                     updated_at=ahora,
                 ).save()
@@ -1816,20 +1869,18 @@ def api_checkout_procesar(request):
                 consec_venta += 1
                 numero_factura = f"{prefijo}-{consec_venta:06d}"
  
-            # FIX 1: Reemplazado Ventas.__new__()/__init__() por constructor normal.
-            # FIX 2: usuario=None rompe FK NOT NULL → usar usuario_sistema.
-            # FIX 3: estado_venta ENUM válidos: 'COMPLETADA', 'CANCELADA', 'PENDIENTE'
+            # ✅ CORRECCIÓN: Usar Decimal directamente (ya están cuantizados)
             venta = Ventas(
                 usuario=usuario_sistema,
                 cliente=cliente,
                 pedido=pedido,
                 tipo_venta='DIRECTA',
                 fecha_venta=ahora,
-                subtotal=subtotal,
-                impuesto=impuesto,
-                descuento=descuento,
-                total=total,
-                estado_venta='PENDIENTE',          # ← valor válido en el ENUM
+                subtotal=subtotal,  # Decimal con 2 decimales
+                impuesto=impuesto,  # Decimal con 2 decimales
+                descuento=descuento,  # Decimal con 2 decimales
+                total=total,  # Decimal con 2 decimales
+                estado_venta='PENDIENTE',
                 metodo_pago=metodo_pago,
                 observaciones=observaciones,
                 numero_factura=numero_factura,
@@ -1842,17 +1893,16 @@ def api_checkout_procesar(request):
             # ── 6f. Crear DetalleVenta ───────────────────────────────────────
             detalles_venta = []
             for item in items_data:
-                subtotal_item = (
-                    item['precio_unitario'] * item['cantidad']
-                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
- 
+                # ✅ CORRECCIÓN: Cuantizar subtotal_item
+                subtotal_item = (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
+                
                 detalle = DetalleVenta(
                     venta=venta,
                     producto=item['producto'],
                     cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario'],
-                    descuento=Decimal('0.00'),
-                    subtotal=subtotal_item,
+                    precio_unitario=item['precio_unitario'],  # Decimal con 2 decimales
+                    descuento=Decimal('0.00').quantize(Q),  # Decimal con 2 decimales
+                    subtotal=subtotal_item,  # Decimal con 2 decimales
                     costo_estimado=None,
                     created_at=ahora,
                     updated_at=ahora,
@@ -1861,7 +1911,6 @@ def api_checkout_procesar(request):
                 detalles_venta.append(detalle)
  
             # ── 6g. Actualizar dirección del cliente si no tenía ─────────────
-            # FIX: usar getattr() para evitar AttributeError si el campo no existe
             if direccion_envio and not getattr(cliente, 'direccion', None):
                 Clientes.objects.filter(pk=cliente.pk).update(
                     direccion=direccion_envio,

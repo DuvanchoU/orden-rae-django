@@ -117,11 +117,10 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
-            'USER': os.getenv('DB_USER', 'root'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '3306'),
+            'NAME': 'bd_orden_rae_django',
+            'USER': 'root',
+            'PASSWORD': '',
+            'HOST': '127.0.0.1',  
             'OPTIONS': {
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'charset': 'utf8mb4',
@@ -366,3 +365,10 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# Wompi Configuration
+WOMPI_PUBLIC_KEY = os.getenv('WOMPI_PUBLIC_KEY', '')
+WOMPI_PRIVATE_KEY = os.getenv('WOMPI_PRIVATE_KEY', '')
+WOMPI_INTEGRITY_SECRET = os.getenv('WOMPI_INTEGRITY_SECRET', '')
+WOMPI_BASE_URL = os.getenv('WOMPI_BASE_URL', 'https://api.wompi.co/v1')
+WOMPI_CHECKOUT_URL = os.getenv('WOMPI_CHECKOUT_URL', 'https://checkout.wompi.co')

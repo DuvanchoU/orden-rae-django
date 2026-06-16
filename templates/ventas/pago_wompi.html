@@ -1,0 +1,93 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>
+                        Pago con Wompi
+                    </h3>
+                    {% if es_sandbox %}
+                    <small class="opacity-75">🧪 Modo Pruebas (Sandbox)</small>
+                    {% else %}
+                    <small class="opacity-75">✅ Modo Producción</small>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Resumen del pedido -->
+                    <div class="alert alert-info">
+                        <h5>Resumen del pedido</h5>
+                        <p class="mb-1"><strong>Factura:</strong> {{ venta.numero_factura }}</p>
+                        <p class="mb-1"><strong>Total a pagar:</strong> ${{ venta.total|floatformat:0|intcomma }} COP</p>
+                        <p class="mb-0"><strong>Cliente:</strong> {{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</p>
+                    </div>
+
+                    <!-- Formulario de pago -->
+                    <form method="post" action="{% url 'ventas:iniciar_pago_wompi' venta.id_venta %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Método de pago</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-check border rounded p-3 h-100">
+                                        <input class="form-check-input" type="radio" name="metodo_pago" value="CARD" id="pago_tarjeta" checked>
+                                        <label class="form-check-label w-100" for="pago_tarjeta">
+                                            <i class="fas fa-credit-card fa-2x mb-2 d-block text-primary"></i>
+                                            <strong>Tarjeta</strong>
+                                            <br><small class="text-muted">Crédito/Débito</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check border rounded p-3 h-100">
+                                        <input class="form-check-input" type="radio" name="metodo_pago" value="PSE" id="pago_pse">
+                                        <label class="form-check-label w-100" for="pago_pse">
+                                            <i class="fas fa-university fa-2x mb-2 d-block text-success"></i>
+                                            <strong>PSE</strong>
+                                            <br><small class="text-muted">Débito bancario</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check border rounded p-3 h-100">
+                                        <input class="form-check-input" type="radio" name="metodo_pago" value="NEQUI" id="pago_nequi">
+                                        <label class="form-check-label w-100" for="pago_nequi">
+                                            <i class="fas fa-mobile-alt fa-2x mb-2 d-block text-danger"></i>
+                                            <strong>Nequi</strong>
+                                            <br><small class="text-muted">Billetera digital</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if es_sandbox %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-flask me-2"></i>
+                            <strong>Modo Sandbox:</strong> Estás usando el entorno de pruebas de Wompi.
+                            No se procesarán pagos reales.
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Modo Producción:</strong> Se procesará un pago real.
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-lock me-2"></i>
+                            Pagar ${{ venta.total|floatformat:0|intcomma }} COP
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

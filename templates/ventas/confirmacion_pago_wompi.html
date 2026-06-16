@@ -1,0 +1,61 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-body text-center p-5">
+                    {% if transaccion and transaccion.estado == 'APPROVED' %}
+                        <div class="mb-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                        </div>
+                        <h2 class="text-success mb-3">¡Pago Exitoso!</h2>
+                        <p class="lead">Tu pedido ha sido confirmado</p>
+                        
+                        <div class="alert alert-success mt-4 text-start">
+                            <h5>Detalles de la transacción</h5>
+                            <p class="mb-1"><strong>Factura:</strong> {{ venta.numero_factura }}</p>
+                            <p class="mb-1"><strong>Referencia:</strong> {{ transaccion.referencia }}</p>
+                            <p class="mb-1"><strong>Monto pagado:</strong> ${{ transaccion.monto|floatformat:0|intcomma }} COP</p>
+                            <p class="mb-1"><strong>Estado:</strong> {{ transaccion.estado }}</p>
+                            {% if transaccion.wompi_transaction_id %}
+                            <p class="mb-0"><strong>ID Wompi:</strong> {{ transaccion.wompi_transaction_id }}</p>
+                            {% endif %}
+                        </div>
+
+                        {% if transaccion.es_sandbox %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-flask me-2"></i>
+                            <strong>Prueba Sandbox:</strong> Esta transacción fue procesada en modo de pruebas.
+                        </div>
+                        {% endif %}
+                    {% elif transaccion and transaccion.estado == 'DECLINED' %}
+                        <div class="mb-4">
+                            <i class="fas fa-times-circle text-danger" style="font-size: 5rem;"></i>
+                        </div>
+                        <h2 class="text-danger mb-3">Pago Rechazado</h2>
+                        <p class="lead">El pago no pudo ser procesado</p>
+                    {% else %}
+                        <div class="mb-4">
+                            <i class="fas fa-clock text-warning" style="font-size: 5rem;"></i>
+                        </div>
+                        <h2 class="text-warning mb-3">Pago Pendiente</h2>
+                        <p class="lead">Tu pago está siendo procesado</p>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'pagina:home' %}" class="btn btn-primary btn-lg me-2">
+                            <i class="fas fa-home me-2"></i>Volver al inicio
+                        </a>
+                        <a href="{% url 'ventas:historial_transacciones' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-history me-2"></i>Ver historial
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

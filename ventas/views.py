@@ -19,11 +19,34 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.http import require_http_methods
 import json
-from datetime import datetime
+from datetime import datetime, date
+from django.db.models.fields.files import ImageFieldFile, FieldFile
+
 
 
 IVA_RATE = Decimal('0.19')
 
+# ============================================
+# ENCODER JSON PERSONALIZADO PARA DJANGO
+# ============================================
+
+class DjangoCustomEncoder(json.JSONEncoder):
+    """Encoder que maneja automáticamente tipos de Django"""
+    def default(self, obj):
+        if isinstance(obj, (ImageFieldFile, FieldFile)):
+            try:
+                return obj.url if obj else ''
+            except:
+                return ''
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
+
+def safe_json_dumps(data, **kwargs):
+    """Serialización segura para datos de Django"""
+    return json.dumps(data, cls=DjangoCustomEncoder, ensure_ascii=False, **kwargs)
 
 # ============================================================================
 # HELPERS DE CARRITO
@@ -159,7 +182,7 @@ def carrito_compra(request):
                 'iva':         subtotal_iva,
                 'subtotal':    subtotal_base,
                 'cantidad':    item.cantidad,
-                'imagen_url':  img.ruta_imagen if img else '/static/img/placeholder.jpg',
+                'imagen_url':  img.ruta_imagen.url if img and img.ruta_imagen else '/static/img/placeholder.jpg',  # ✅ CORREGIDO
                 'stock':       stock_real,
             })
 
@@ -1579,3 +1602,193 @@ def perfil_stats(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+# ============================================================================
+# WOMPI - PAGOS
+# ============================================================================
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_http_methods
+from django.contrib import messages
+from django.conf import settings
+from .wompi_service import WompiService
+from .models import TransaccionWompi
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+wompi_service = WompiService()
+
+
+@require_http_methods(["GET", "POST"])
+def iniciar_pago_wompi(request, venta_id):
+    """
+    Iniciar proceso de pago con Wompi
+    GET: Muestra formulario de pago
+    POST: Crea transacción y redirige a Wompi
+    """
+    # Verificar autenticación del cliente
+    cliente_email = request.session.get('cliente_email')
+    if not cliente_email:
+        messages.error(request, 'Debes iniciar sesión para realizar el pago')
+        return redirect('pagina:login')
+    
+    # Obtener venta
+    try:
+        from ventas.models import Ventas
+        venta = get_object_or_404(
+            Ventas, 
+            id_venta=venta_id,
+            cliente__email=cliente_email,
+            estado_venta='PENDIENTE'
+        )
+    except Exception as e:
+        messages.error(request, f'Error al obtener la venta: {str(e)}')
+        return redirect('ventas:carrito_compra')
+    
+    if request.method == 'POST':
+        # Generar referencia única
+        referencia = wompi_service.generar_referencia(venta.id_venta)
+        
+        # Crear transacción en Wompi
+        resultado = wompi_service.crear_transaccion(venta, referencia)
+        
+        if resultado and resultado.get('data'):
+            # Guardar transacción en BD
+            transaccion = TransaccionWompi.objects.create(
+                venta=venta,
+                wompi_transaction_id=resultado['data'].get('id'),
+                referencia=referencia,
+                monto=venta.total,
+                estado='PENDING',
+                respuesta_wompi=resultado['data'],
+                es_sandbox=wompi_service.is_sandbox,
+            )
+            
+            # Redirigir a Wompi Checkout
+            checkout_url = resultado['data'].get('redirect_url')
+            if checkout_url:
+                return redirect(checkout_url)
+            else:
+                messages.error(request, 'No se pudo obtener la URL de pago')
+        else:
+            messages.error(request, 'Error al procesar el pago. Intenta de nuevo.')
+        
+        return redirect('ventas:carrito_compra')
+    
+    # GET: Mostrar formulario de pago
+    return render(request, 'ventas/pago_wompi.html', {
+        'venta': venta,
+        'wompi_public_key': settings.WOMPI_PUBLIC_KEY,
+        'es_sandbox': wompi_service.is_sandbox,
+    })
+
+
+@csrf_exempt
+@require_POST
+def wompi_webhook(request):
+    """
+    Webhook para recibir notificaciones de Wompi
+    Wompi envía notificaciones cuando cambia el estado de una transacción
+    """
+    try:
+        # Verificar firma del webhook
+        signature = request.headers.get('X-Signature', '')
+        payload = request.body.decode('utf-8')
+        
+        if not wompi_service.verificar_webhook(payload, signature):
+            logger.warning("Firma de webhook inválida")
+            return HttpResponse('Invalid signature', status=403)
+        
+        data = json.loads(payload)
+        
+        # Procesar notificación
+        transaction_id = data.get('data', {}).get('id')
+        estado = data.get('data', {}).get('status')
+        referencia = data.get('data', {}).get('reference')
+        
+        logger.info(f"Webhook recibido: {transaction_id} - {estado}")
+        
+        if transaction_id and estado:
+            # Buscar transacción
+            transaccion = TransaccionWompi.objects.filter(
+                wompi_transaction_id=transaction_id
+            ).first()
+            
+            if transaccion:
+                # Actualizar estado
+                transaccion.estado = estado
+                transaccion.respuesta_wompi = data
+                transaccion.fecha_actualizacion = timezone.now()
+                transaccion.save()
+                
+                # Actualizar venta si fue aprobada
+                if estado == 'APPROVED':
+                    venta = transaccion.venta
+                    venta.estado_venta = 'COMPLETADA'
+                    venta.save()
+                    
+                    logger.info(f"Venta {venta.id_venta} marcada como completada")
+        
+        return HttpResponse('OK', status=200)
+        
+    except Exception as e:
+        logger.error(f"Error en webhook: {e}")
+        return HttpResponse('Error', status=500)
+
+
+def confirmacion_pago_wompi(request, venta_id):
+    """
+    Página de confirmación después del pago
+    Muestra el resultado final al cliente
+    """
+    try:
+        from ventas.models import Ventas
+        venta = get_object_or_404(Ventas, id_venta=venta_id)
+        transaccion = TransaccionWompi.objects.filter(venta=venta).first()
+        
+        # Consultar estado actual en Wompi
+        if transaccion and transaccion.wompi_transaction_id:
+            resultado = wompi_service.consultar_transaccion(transaccion.wompi_transaction_id)
+            
+            if resultado and resultado.get('data'):
+                estado = resultado['data']['status']
+                transaccion.estado = estado
+                transaccion.respuesta_wompi = resultado['data']
+                transaccion.save()
+                
+                # Actualizar venta si fue aprobada
+                if estado == 'APPROVED':
+                    venta.estado_venta = 'COMPLETADA'
+                    venta.save()
+        
+        return render(request, 'ventas/confirmacion_pago_wompi.html', {
+            'venta': venta,
+            'transaccion': transaccion,
+        })
+    except Exception as e:
+        messages.error(request, f'Error al cargar la confirmación: {str(e)}')
+        return redirect('pagina:home')
+
+
+def historial_transacciones(request):
+    """Historial de transacciones del cliente"""
+    cliente_email = request.session.get('cliente_email')
+    
+    if not cliente_email:
+        return redirect('pagina:login')
+    
+    from ventas.models import Clientes
+    cliente = Clientes.objects.filter(email=cliente_email).first()
+    
+    if not cliente:
+        return redirect('pagina:login')
+    
+    transacciones = TransaccionWompi.objects.filter(
+        venta__cliente=cliente
+    ).order_by('-fecha_creacion')
+    
+    return render(request, 'ventas/historial_transacciones.html', {
+        'transacciones': transacciones,
+    })
