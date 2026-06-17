@@ -100,33 +100,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ==========================================
-# BASE DE DATOS (MySQL local + PostgreSQL producción)
+# BASE DE DATOS (PostgreSQL)
 # ==========================================
 
-# Detectar si estamos en producción (Render)
-if 'DATABASE_URL' in os.environ:
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
+        'USER': os.getenv('DB_USER', 'postgres'), 
+        'PASSWORD': os.getenv('DB_PASSWORD', ''), 
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
-else:
-    # Desarrollo local con MySQL (XAMPP)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'bd_orden_rae_django',
-            'USER': 'root',
-            'PASSWORD': '',
-            'HOST': '127.0.0.1',  
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            },
-        }
-    }
+}
 
 # ==========================================
 # VALIDACIÓN DE CONTRASEÑAS
@@ -173,15 +162,17 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 # ==========================================
-# ALLAUTH - OAUTH 2.0
+# ALLAUTH - OAUTH 2.0 (Configuración Actualizada)
 # ==========================================
+# Configuración de login
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_UNIQUE_EMAIL = True
 
+# Configuración de signup (nueva sintaxis)
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# Configuración social
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
