@@ -100,21 +100,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ==========================================
-# BASE DE DATOS (PostgreSQL)
+# BASE DE DATOS (PostgreSQL Render)
 # ==========================================
+import dj_database_url
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
-        'USER': os.getenv('DB_USER', 'postgres'), 
-        'PASSWORD': os.getenv('DB_PASSWORD', ''), 
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'OPTIONS': {
-            'client_encoding': 'UTF8',
-        },
-    }
+    'default': dj_database_url.config(
+        default=os.getenv(
+            'DATABASE_URL',
+            'postgresql://postgres@localhost:5432/bd_orden_rae_django'
+        ),
+        conn_max_age=600,
+        ssl_require=not DEBUG
+    )
 }
 
 # ==========================================
