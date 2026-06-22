@@ -108,7 +108,7 @@ DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv(
             'DATABASE_URL',
-            'postgresql://postgres@localhost:5432/bd_orden_rae_django'
+            'postgresql://postgres:password@localhost:5432/bd_orden_rae_django'
         ),
         conn_max_age=600,
         ssl_require=not DEBUG

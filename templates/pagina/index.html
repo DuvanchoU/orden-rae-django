@@ -1,4 +1,5 @@
 {% load static %}
+{% load cloudinary %}
 {% load humanize %}
 
 <!DOCTYPE html>
@@ -1326,18 +1327,29 @@
             {% if hay_productos_nuevos and productos_nuevos %}
                 {% for prod in productos_nuevos %}
                 <article class="prod-card"
-                         data-id="{{ prod.id }}"
-                         data-nombre="{{ prod.nombre|escapejs }}"
-                         data-precio="{{ prod.precio }}"
-                         data-img="{{ MEDIA_URL }}{{ prod.imagen_url }}"
-                         data-cat="{{ prod.categoria|default:'General' }}">
+                        data-id="{{ prod.id }}"
+                        data-nombre="{{ prod.nombre|escapejs }}"
+                        data-precio="{{ prod.precio }}"
+                        {% if prod.imagen_url %}
+                            {% cloudinary_url prod.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_data_img %}
+                            data-img="{{ cloudinary_data_img }}"
+                        {% else %}
+                            data-img="https://via.placeholder.com/400x300?text=Sin+Imagen"
+                        {% endif %}
+                        data-cat="{{ prod.categoria|default:'General' }}">
 
                     <div class="prod-img-wrap">
-                        <img src="{{ MEDIA_URL }}{{ prod.imagen_url }}"
-                             alt="{{ prod.nombre }}"
-                             loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}'">
-
+                        {% if prod.imagen_url %}
+                            {% cloudinary_url prod.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_img %}
+                            <img src="{{ cloudinary_img }}"
+                                alt="{{ prod.nombre }}"
+                                loading="lazy"
+                                onerror="this.src='https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}'">
+                        {% else %}
+                            <img src="https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}"
+                                alt="{{ prod.nombre }}"
+                                loading="lazy">
+                        {% endif %}
                         <div class="prod-badges">
                             <span class="p-badge p-badge-new">✦ Nuevo</span>
                         </div>

@@ -121,7 +121,7 @@ class Compras(models.Model):
         self.calcular_total()
         return detalle
 
-    def recibir_compra(self):
+    def recibir_compra(self, bodega_id=None):
         """Marca la compra como recibida y actualiza inventario"""
         if not self.puede_recibirse():
             raise ValidationError("La compra no puede ser recibida")
@@ -131,8 +131,8 @@ class Compras(models.Model):
             self.save()
             
             # Actualizar inventario
-            for detalle in self.detallecompra_set.all():
-                detalle.actualizar_inventario()
+            for detalle in self.detallecompra_set.filter(deleted_at__isnull=True):
+                detalle.actualizar_inventario(bodega_id=bodega_id)
 
     def cancelar_compra(self):
         """Cancela la compra"""
@@ -148,7 +148,7 @@ class Compras(models.Model):
 
     def get_cantidad_productos(self):
         """Obtiene la cantidad total de productos"""
-        return self.detallecompra_set.aggregate(
+        return self.detallecompra_set.filter(deleted_at__isnull=True).aggregate(
             total=Sum('cantidad')
         )['total'] or 0
 
@@ -163,6 +163,10 @@ class DetalleCompra(models.Model):
     cantidad = models.IntegerField()
     precio_unitario = models.DecimalField(max_digits=15, decimal_places=2)
     subtotal = models.DecimalField(max_digits=15, decimal_places=2)
+
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         managed = True
@@ -204,14 +208,24 @@ class DetalleCompra(models.Model):
         self.save()
         return self
 
-    def actualizar_inventario(self):
+    def actualizar_inventario(self, bodega_id=None):
         """Actualiza el inventario al recibir la compra"""
-        from inventario.models import Inventario
+        from inventario.models import Inventario, Bodegas
+    
+        # Si no se pasa bodega_id, usar la primera bodega activa
+        if bodega_id is None:
+            bodega = Bodegas.objects.filter(
+                estado='ACTIVA', 
+                deleted_at__isnull=True
+            ).first()
+            if not bodega:
+                raise ValidationError("No hay bodegas activas disponibles")
+            bodega_id = bodega.id_bodega
         
         # Buscar o crear registro de inventario
         inventario, created = Inventario.objects.get_or_create(
             producto=self.producto,
-            bodega_id=1,  # Ajustar según tu lógica de bodegas
+            bodega_id=bodega_id,
             defaults={
                 'cantidad_disponible': 0,
                 'proveedor_id': self.compra.proveedor_id,

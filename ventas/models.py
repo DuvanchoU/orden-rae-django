@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -491,10 +491,10 @@ class Cotizaciones(models.Model):
         detalles = self.detallecotizacion_set.filter(deleted_at__isnull=True)
         
         subtotal = sum(d.subtotal for d in detalles)
-        # Aquí podrías calcular impuesto y descuento según reglas de negocio
-        impuesto = subtotal * Decimal('0.19')  # 19% IVA ejemplo
-        descuento = self.descuento or 0
-        total = subtotal + impuesto - descuento
+        # FIX: Usar quantize para 2 decimales
+        impuesto = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        descuento = self.descuento or Decimal('0')
+        total = (subtotal + impuesto - descuento).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
         self.subtotal = subtotal
         self.impuesto = impuesto
@@ -941,9 +941,10 @@ class Ventas(models.Model):
         detalles = self.detalleventa_set.filter(deleted_at__isnull=True)
         
         subtotal = sum(d.subtotal for d in detalles)
-        impuesto = subtotal * Decimal('0.19')  # 19% IVA
-        descuento = self.descuento or 0
-        total = subtotal + impuesto - descuento
+        # FIX: Usar quantize para 2 decimales
+        impuesto = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        descuento = self.descuento or Decimal('0')
+        total = (subtotal + impuesto - descuento).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
         self.subtotal = subtotal
         self.impuesto = impuesto
