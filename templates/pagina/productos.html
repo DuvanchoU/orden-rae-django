@@ -1435,7 +1435,7 @@
                     {% for prod in productos_destacados|slice:":4" %}
                     <div class="hero-preview-card" onclick="openProductModal({{ prod.id }})">
                         {% if prod.imagen_url %}
-                            {% cloudinary_url prod.imagen_url format='jpg' quality='auto' fetch_format='auto' width=150 height=150 crop='fill' as cloudinary_img %}
+                            {% cloudinary_url prod.imagen_url.name format='jpg' quality='auto' fetch_format='auto' width=150 height=150 crop='fill' as cloudinary_img %}
                             <img src="{{ cloudinary_img }}" alt="{{ prod.nombre }}" loading="lazy"
                                 onerror="this.src='https://via.placeholder.com/150x150?text=Producto'">
                         {% else %}
@@ -1594,7 +1594,7 @@
                     data-price="{{ prod.precio_numeric }}"
                     data-cat="{{ prod.categoria_slug }}"
                     {% if prod.imagen_url %}
-                        {% cloudinary_url prod.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_data_img %}
+                        {% cloudinary_url prod.imagen_url.name format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_data_img %}
                         data-img="{{ cloudinary_data_img }}"
                     {% else %}
                         data-img="https://via.placeholder.com/400x300?text=Sin+Imagen"
@@ -1605,7 +1605,7 @@
                     <!-- Imagen -->
                     <div class="card-img-wrap">
                         {% if prod.imagen_url %}
-                            {% cloudinary_url prod.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_img %}
+                            {% cloudinary_url prod.imagen_url.name format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_img %}
                             <img src="{{ cloudinary_img }}" alt="{{ prod.nombre }}" loading="lazy"
                                 onerror="this.src='https://via.placeholder.com/400x300?text={{ prod.nombre|urlencode }}'">
                         {% else %}

@@ -1331,7 +1331,7 @@
                         data-nombre="{{ prod.nombre|escapejs }}"
                         data-precio="{{ prod.precio }}"
                         {% if prod.imagen_url %}
-                            {% cloudinary_url prod.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_data_img %}
+                            {% cloudinary_url prod.imagen_url.name format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_data_img %}
                             data-img="{{ cloudinary_data_img }}"
                         {% else %}
                             data-img="https://via.placeholder.com/400x300?text=Sin+Imagen"
@@ -1340,7 +1340,7 @@
 
                     <div class="prod-img-wrap">
                         {% if prod.imagen_url %}
-                            {% cloudinary_url prod.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_img %}
+                            {% cloudinary_url prod.imagen_url.name format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_img %}
                             <img src="{{ cloudinary_img }}"
                                 alt="{{ prod.nombre }}"
                                 loading="lazy"
