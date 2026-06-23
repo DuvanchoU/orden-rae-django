@@ -1,6 +1,7 @@
 {% load static %}
 {% load humanize %}
 {% load custom_auth %}
+{% load cloudinary %}
 
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -1182,11 +1183,12 @@
             <div class="col-lg-5 d-none d-lg-block">
                 <div class="hero-img-card">
                     <span class="img-badge-corner">-{{ promo_combo.porcentaje_descuento|default:24 }}%</span>
-                    {% if promo_combo and promo_combo.imagen_url %}
-                    <img src="{{ promo_combo.imagen_url }}" alt="Combo promocional">
+                    {% if promo_combo.imagen_url %}
+                        {% cloudinary_url promo_combo.imagen_url format='jpg' quality='auto' width=500 height=380 crop='fill' as cloudinary_combo_img %}
+                        <img src="{{ cloudinary_combo_img }}" alt="Combo promocional">
                     {% else %}
-                    <img src="{% static 'img/Sofá5.jpg' %}" alt="Combo promocional"
-                         onerror="this.src='https://via.placeholder.com/500x380?text=Combo+Premium'">
+                        <img src="{% static 'img/Sofá5.jpg' %}" alt="Combo promocional"
+                            onerror="this.src='https://via.placeholder.com/500x380?text=Combo+Premium'">
                     {% endif %}
                     <div class="hero-benefits">
                         <span class="hero-benefit-chip"><i class="fas fa-truck"></i> Envío gratis</span>
@@ -1245,15 +1247,22 @@
                          data-precio="{{ promo.precio_promo }}"
                          data-precio-original="{{ promo.precio_original|default:0 }}"
                          data-descuento="{{ promo.porcentaje_descuento|default:0 }}"
-                         data-img="{{ promo.imagen_url|default:'/static/img/placeholder.jpg' }}"
+                         data-img="{{ promo.imagen_url }}"
                          data-cat-nombre="{{ promo.categoria|default:'General' }}">
 
                     <!-- Imagen -->
                     <div class="pcard-img">
-                        <img src="{{ promo.imagen_url|default:'/static/img/placeholder.jpg' }}"
-                             alt="{{ promo.nombre }}"
-                             loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/400x300?text={{ promo.nombre|urlencode }}'">
+                        {% if promo.imagen_url and promo.imagen_url != '/static/img/placeholder.jpg' %}
+                            {% cloudinary_url promo.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_promo_img %}
+                            <img src="{{ cloudinary_promo_img }}"
+                                 alt="{{ promo.nombre }}"
+                                 loading="lazy"
+                                 onerror="this.src='https://via.placeholder.com/400x300?text={{ promo.nombre|urlencode }}'">
+                        {% else %}
+                            <img src="https://via.placeholder.com/400x300?text={{ promo.nombre|urlencode }}"
+                                 alt="{{ promo.nombre }}"
+                                 loading="lazy">
+                        {% endif %}
 
                         <!-- Overlay con quick add -->
                         <div class="pcard-overlay">

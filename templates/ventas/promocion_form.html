@@ -1,0 +1,517 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Nueva{% endif %} Promoción{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">{% if form.instance.pk %}Editar{% else %}Nueva{% endif %} Promoción</h1>
+        <p class="page-subtitle">{{ form.instance.pk|yesno:"Modifica la promoción,Crea una nueva promoción" }}</p>
+    </div>
+    <a href="{% url 'ventas:promocion_list' %}" class="btn btn-volver">
+        <i class="bi bi-arrow-left me-2"></i>Cancelar
+    </a>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    
+    <div class="row g-4">
+        <!-- Columna Izquierda: Datos de la Promoción -->
+        <div class="col-lg-8">
+            <div class="info-card p-4">
+                <div class="row g-3">
+                    <!-- Nombre -->
+                    <div class="col-12">
+                        <label for="{{ form.nombre.id_for_label }}" class="form-label">
+                            Nombre de la Promoción <span class="text-danger">*</span>
+                        </label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}
+                            <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Descripción -->
+                    <div class="col-12">
+                        <label for="{{ form.descripcion.id_for_label }}" class="form-label">Descripción</label>
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                            <div class="invalid-feedback d-block">{{ form.descripcion.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Describe los detalles de la promoción</small>
+                    </div>
+                    
+                    <!-- Categoría -->
+                    <div class="col-md-6">
+                        <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                            Categoría <span class="text-danger">*</span>
+                        </label>
+                        {{ form.categoria }}
+                        {% if form.categoria.errors %}
+                            <div class="invalid-feedback d-block">{{ form.categoria.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Stock -->
+                    <div class="col-md-6">
+                        <label for="{{ form.stock_disponible.id_for_label }}" class="form-label">
+                            Stock Disponible
+                        </label>
+                        {{ form.stock_disponible }}
+                        {% if form.stock_disponible.errors %}
+                            <div class="invalid-feedback d-block">{{ form.stock_disponible.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Precio Original -->
+                    <div class="col-md-6">
+                        <label for="{{ form.precio_original.id_for_label }}" class="form-label">
+                            Precio Original <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.precio_original }}
+                        </div>
+                        {% if form.precio_original.errors %}
+                            <div class="invalid-feedback d-block">{{ form.precio_original.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Precio Promocional -->
+                    <div class="col-md-6">
+                        <label for="{{ form.precio_promo.id_for_label }}" class="form-label">
+                            Precio Promocional <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            {{ form.precio_promo }}
+                        </div>
+                        {% if form.precio_promo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.precio_promo.errors.0 }}</div>
+                        {% endif %}
+                        <small class="text-muted">Debe ser menor al precio original</small>
+                    </div>
+                    
+                    <!-- Fecha Inicio -->
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">
+                            Fecha de Inicio <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fecha_inicio }}
+                        {% if form.fecha_inicio.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fecha_inicio.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Fecha Fin -->
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">
+                            Fecha de Fin <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fecha_fin }}
+                        {% if form.fecha_fin.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fecha_fin.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Activa -->
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            {{ form.activa }}
+                            <label class="form-check-label" for="{{ form.activa.id_for_label }}">
+                                Promoción Activa
+                            </label>
+                        </div>
+                        <small class="text-muted">Desmarca para desactivar temporalmente la promoción</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Columna Derecha: Imágenes -->
+        <div class="col-lg-4">
+            <div class="info-card p-4">
+                <h6 class="section-title mb-3">
+                    <i class="bi bi-images me-2"></i>Imágenes de la Promoción
+                </h6>
+                
+                <!-- Imágenes Existentes (solo en edición) -->
+                {% if form.instance.pk and imagenes_existentes %}
+                <div class="imagenes-existentes mb-3">
+                    <label class="form-label">Imágenes Actuales</label>
+                    <div class="row g-2" id="imagenesExistentesContainer">
+                        {% for imagen in imagenes_existentes %}
+                        <div class="col-4 posicion-imagen" data-id="{{ imagen.id_imagen }}">
+                            <div class="imagen-existente-wrapper {% if imagen.es_principal %}principal{% endif %}">
+                                <img src="{{ imagen.ruta_imagen.url }}"
+                                     alt="Imagen {{ forloop.counter }}"
+                                     class="img-thumbnail"
+                                     style="width: 100%; height: 80px; object-fit: cover; border-radius: 6px; cursor: pointer;"
+                                     onclick="setImagenPrincipal({{ forloop.counter0 }}, 'existente', {{ imagen.id_imagen }})">
+                                
+                                <!-- Botón para eliminar -->
+                                <div class="imagen-actions">
+                                    <button type="button" 
+                                            class="btn-imagen-delete"
+                                            onclick="marcarParaEliminar({{ imagen.id_imagen }}, this)"
+                                            title="Eliminar imagen">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </div>
+                                
+                                {% if imagen.es_principal %}
+                                <span class="badge-principal">
+                                    <i class="bi bi-star-fill"></i>
+                                </span>
+                                {% endif %}
+                                
+                                <!-- Input hidden para marcar eliminación -->
+                                <input type="hidden" 
+                                       name="imagenes_a_eliminar" 
+                                       class="input-eliminar"
+                                       value="">
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Botón para Agregar Imágenes -->
+                <div class="mb-3">
+                    <input type="file" 
+                           name="nuevas_imagenes" 
+                           id="fileInput" 
+                           multiple 
+                           accept="image/*" 
+                           style="display: none">
+                    
+                    <button type="button" 
+                            class="btn btn-agregar-imagenes w-100" 
+                            onclick="document.getElementById('fileInput').click()">
+                        <i class="bi bi-plus-lg me-2"></i>Agregar imágenes
+                    </button>
+                </div>
+
+                <!-- Preview de nuevas imágenes -->
+                <div id="previewContainer" class="preview-container mb-3"></div>
+                
+                <input type="hidden" name="imagen_principal_index" id="imagen_principal_index" value="0">
+            </div>
+            
+            <!-- Sidebar - Ayuda -->
+            <div class="info-card p-4 mt-3">
+                <h5 class="sidebar-title">
+                    <i class="bi bi-info-circle me-2"></i>Información
+                </h5>
+                <hr class="sidebar-divider">
+                
+                <div class="mb-3">
+                    <p class="mb-2"><strong>Consejos:</strong></p>
+                    <ul class="mb-0 ps-3">
+                        <li class="mb-2">El precio promocional debe ser menor al precio original</li>
+                        <li class="mb-2">El descuento se calcula automáticamente</li>
+                        <li class="mb-2">Las fechas determinan cuándo estará activa</li>
+                        <li class="mb-2">El stock limita las unidades disponibles</li>
+                        <li>Puedes subir múltiples imágenes</li>
+                        <li>La primera imagen será la principal</li>
+                    </ul>
+                </div>
+                
+                {% if form.instance.pk %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-pencil me-2"></i>
+                    Editando promoción #{{ form.instance.pk }}
+                </div>
+                {% else %}
+                <div class="alert alert-success mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Creando nueva promoción
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- BOTONES DE ACCIÓN -->
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-check-lg me-2"></i>Guardar Promoción
+                </button>
+                <a href="{% url 'ventas:promocion_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-lg me-2"></i>Cancelar
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- JavaScript para manejo de imágenes -->
+<script>
+const fileInput = document.getElementById('fileInput');
+const previewContainer = document.getElementById('previewContainer');
+let imagenesAgregadas = [];
+let imagenesAEliminar = new Set();
+
+fileInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+});
+
+function handleFiles(files) {
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    
+    Array.from(files).forEach((file, index) => {
+        if (!validTypes.includes(file.type)) {
+            alert(`El archivo "${file.name}" no es una imagen válida`);
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`La imagen "${file.name}" excede los 5MB`);
+            return;
+        }
+        
+        imagenesAgregadas.push(file);
+        displayPreview(file, imagenesAgregadas.length - 1);
+    });
+}
+
+function displayPreview(file, index) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const div = document.createElement('div');
+        div.className = 'col-4 preview-item';
+        div.innerHTML = `
+            <div class="preview-wrapper">
+                <img src="${e.target.result}" alt="Preview" 
+                     style="width: 100%; height: 80px; object-fit: cover; border-radius: 6px;">
+                <div class="preview-actions">
+                    <button type="button" class="btn-set-principal" onclick="setImagenPrincipal(${index}, 'nueva', null)">
+                        <i class="bi bi-star"></i>
+                    </button>
+                    <button type="button" class="btn-remove" onclick="removeImagen(${index})">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        previewContainer.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImagen(index) {
+    imagenesAgregadas.splice(index, 1);
+    const previews = previewContainer.querySelectorAll('.preview-item');
+    if (previews[index]) {
+        previews[index].remove();
+    }
+}
+
+function setImagenPrincipal(index, tipo, idImagen) {
+    // Remover clase principal de todas las imágenes existentes
+    document.querySelectorAll('.posicion-imagen').forEach(el => {
+        el.classList.remove('principal');
+        const badge = el.querySelector('.badge-principal');
+        if (badge) badge.remove();
+    });
+    
+    // Remover clase principal de todas las previews nuevas
+    document.querySelectorAll('.preview-item').forEach(el => {
+        el.classList.remove('principal');
+    });
+    
+    if (tipo === 'existente') {
+        const elemento = document.querySelector(`.posicion-imagen[data-id="${idImagen}"]`);
+        if (elemento) {
+            elemento.classList.add('principal');
+            const wrapper = elemento.querySelector('.imagen-existente-wrapper');
+            if (wrapper && !wrapper.querySelector('.badge-principal')) {
+                wrapper.insertAdjacentHTML('beforeend', '<span class="badge-principal"><i class="bi bi-star-fill"></i></span>');
+            }
+        }
+        const todasImagenes = document.querySelectorAll('.posicion-imagen');
+        for (let i = 0; i < todasImagenes.length; i++) {
+            if (todasImagenes[i].dataset.id == idImagen) {
+                document.getElementById('imagen_principal_index').value = i;
+                break;
+            }
+        }
+    } else {
+        const previews = previewContainer.querySelectorAll('.preview-item');
+        if (previews[index]) {
+            previews[index].classList.add('principal');
+        }
+        const totalExistentes = document.querySelectorAll('.posicion-imagen').length;
+        document.getElementById('imagen_principal_index').value = totalExistentes + index;
+    }
+}
+
+function marcarParaEliminar(idImagen, boton) {
+    const posicion = boton.closest('.posicion-imagen');
+    const inputEliminar = posicion.querySelector('.input-eliminar');
+    
+    if (inputEliminar.value) {
+        inputEliminar.value = '';
+        boton.classList.remove('activo');
+        posicion.style.opacity = '1';
+    } else {
+        inputEliminar.value = idImagen;
+        boton.classList.add('activo');
+        posicion.style.opacity = '0.5';
+    }
+}
+</script>
+
+<!-- Estilos específicos -->
+<style>
+.imagen-existente-wrapper {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.imagen-existente-wrapper:hover {
+    border-color: var(--accent, #14b8a6);
+}
+
+.imagen-existente-wrapper.principal {
+    border-color: var(--accent, #14b8a6);
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+}
+
+.imagen-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.imagen-existente-wrapper:hover .imagen-actions {
+    opacity: 1;
+}
+
+.btn-imagen-delete {
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-imagen-delete:hover {
+    background-color: rgba(239, 68, 68, 1);
+    transform: scale(1.1);
+}
+
+.btn-imagen-delete.activo {
+    background-color: rgba(239, 68, 68, 1);
+    animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.badge-principal {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: var(--accent, #14b8a6);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.preview-wrapper {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.preview-wrapper:hover {
+    border-color: var(--accent, #14b8a6);
+}
+
+.preview-item.principal .preview-wrapper {
+    border-color: var(--accent, #14b8a6);
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.2);
+}
+
+.preview-actions {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.preview-wrapper:hover .preview-actions {
+    opacity: 1;
+}
+
+.btn-set-principal, .btn-remove {
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-set-principal {
+    background-color: rgba(20, 184, 166, 0.9);
+    color: white;
+}
+
+.btn-remove {
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+.btn-agregar-imagenes {
+    background-color: rgba(20, 184, 166, 0.1);
+    color: var(--accent, #14b8a6);
+    border: 2px dashed var(--accent, #14b8a6);
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.btn-agregar-imagenes:hover {
+    background-color: rgba(20, 184, 166, 0.2);
+    border-color: var(--accent-hover, #0d9488);
+    color: var(--accent-hover, #0d9488);
+    transform: translateY(-1px);
+}
+
+.btn-agregar-imagenes:active {
+    transform: translateY(0);
+}
+</style>
+{% endblock %}

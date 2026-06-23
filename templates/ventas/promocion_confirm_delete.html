@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Eliminar Promoción{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="info-card p-5 text-center">
+            <div class="mb-4">
+                <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2.5rem;"></i>
+                </div>
+                <h2 class="mb-3">¿Eliminar Promoción?</h2>
+                <p class="text-muted mb-4">
+                    Estás a punto de eliminar la promoción <strong>"{{ promocion.nombre }}"</strong>.
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            
+            <div class="alert alert-warning mb-4 text-start">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Información de la promoción:</strong>
+                <ul class="mb-0 mt-2 ps-3">
+                    <li>Precio original: ${{ promocion.precio_original|floatformat:0|intcomma }}</li>
+                    <li>Precio promocional: ${{ promocion.precio_promo|floatformat:0|intcomma }}</li>
+                    <li>Descuento: {{ promocion.porcentaje_descuento }}%</li>
+                    <li>Estado: {% if promocion.esta_activa %}Activa{% else %}Inactiva{% endif %}</li>
+                </ul>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-3 justify-content-center">
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-trash-fill me-2"></i>Sí, Eliminar
+                    </button>
+                    <a href="{% url 'ventas:promocion_list' %}" class="btn btn-secondary px-4">
+                        <i class="bi bi-x-lg me-2"></i>Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

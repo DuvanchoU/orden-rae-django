@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load cloudinary %}
+
+{% block title %}Promociones - Ventas{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">Promociones</h1>
+        <p class="page-subtitle">Gestiona las promociones y ofertas especiales</p>
+    </div>
+    <a href="{% url 'ventas:promocion_create' %}" class="btn btn-nuevo">
+        <i class="bi bi-plus-lg"></i>Nueva Promoción
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="filters-card">
+    <form method="get" class="filters-compact">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Categoría</label>
+                <select name="categoria" class="form-select">
+                    <option value="">Todas</option>
+                    <option value="sofas" {% if request.GET.categoria == 'sofas' %}selected{% endif %}>Sofás</option>
+                    <option value="camas" {% if request.GET.categoria == 'camas' %}selected{% endif %}>Camas</option>
+                    <option value="escritorios" {% if request.GET.categoria == 'escritorios' %}selected{% endif %}>Escritorios</option>
+                    <option value="comedores" {% if request.GET.categoria == 'comedores' %}selected{% endif %}>Comedores</option>
+                    <option value="sillas" {% if request.GET.categoria == 'sillas' %}selected{% endif %}>Sillas</option>
+                    <option value="general" {% if request.GET.categoria == 'general' %}selected{% endif %}>General</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="activa" {% if request.GET.estado == 'activa' %}selected{% endif %}>Activas</option>
+                    <option value="inactiva" {% if request.GET.estado == 'inactiva' %}selected{% endif %}>Inactivas</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input type="date" name="fecha_inicio" class="form-control" value="{{ request.GET.fecha_inicio }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input type="date" name="fecha_fin" class="form-control" value="{{ request.GET.fecha_fin }}">
+            </div>
+            <div class="col-md-3 d-flex gap-3">
+                <button type="submit" class="btn btn-filtrar flex-grow-1">
+                    <i class="bi bi-funnel"></i>Filtrar
+                </button>
+                <a href="{% url 'ventas:promocion_list' %}" 
+                   class="btn btn-limpiar"
+                   title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Estadísticas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: rgba(239, 68, 68, 0.1);">
+                <i class="bi bi-percent" style="color: #ef4444;"></i>
+            </div>
+            <div class="stats-content">
+                <span class="stats-value">{{ total_promociones }}</span>
+                <span class="stats-label">Total Promociones</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: rgba(6, 214, 160, 0.1);">
+                <i class="bi bi-check-circle" style="color: #06D6A0;"></i>
+            </div>
+            <div class="stats-content">
+                <span class="stats-value">{{ promociones_activas }}</span>
+                <span class="stats-label">Promociones Activas</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: rgba(212, 175, 111, 0.1);">
+                <i class="bi bi-tag" style="color: #D4AF6F;"></i>
+            </div>
+            <div class="stats-content">
+                <span class="stats-value">{{ descuento_promedio }}%</span>
+                <span class="stats-label">Descuento Promedio</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-icon" style="background: rgba(139, 94, 60, 0.1);">
+                <i class="bi bi-calendar" style="color: #8B5E3C;"></i>
+            </div>
+            <div class="stats-content">
+                <span class="stats-value">{{ promociones_vencidas }}</span>
+                <span class="stats-label">Próximas a Vencer</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="table table-compact mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Producto</th>
+                    <th>Categoría</th>
+                    <th>Precio Original</th>
+                    <th>Precio Promo</th>
+                    <th>Descuento</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Fin</th>
+                    <th>Estado</th>
+                    <th class="text-end pe-4">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for promocion in promociones %}
+                <tr>
+                    <td class="ps-4" data-label="Producto">
+                        <div class="d-flex align-items-center gap-3">
+                            {% if promocion.imagen_principal and promocion.imagen_principal.ruta_imagen %}
+                                {# Usar Cloudinary si está configurado #}
+                                {% cloudinary_url promocion.imagen_principal.ruta_imagen.name format='jpg' quality='auto' width=50 height=50 crop='fill' as cloudinary_img %}
+                                <img src="{{ cloudinary_img }}" 
+                                     alt="{{ promocion.nombre }}" 
+                                     class="rounded" 
+                                     style="width: 50px; height: 50px; object-fit: cover;"
+                                     onerror="this.src='https://via.placeholder.com/50x50?text=Promo'">
+                            {% else %}
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center" 
+                                     style="width: 50px; height: 50px;">
+                                    <i class="bi bi-image text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold">{{ promocion.nombre }}</div>
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    Stock: {{ promocion.stock_disponible }}
+                                </small>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Categoría">
+                        <span class="text-muted">{{ promocion.get_categoria_display|default:promocion.categoria }}</span>
+                    </td>
+                    <td data-label="Precio Original" class="text-muted text-decoration-line-through">
+                        ${{ promocion.precio_original|floatformat:0|intcomma }}
+                    </td>
+                    <td data-label="Precio Promo" class="fw-bold" style="color: var(--accent);">
+                        ${{ promocion.precio_promo|floatformat:0|intcomma }}
+                    </td>
+                    <td data-label="Descuento">
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                            -{{ promocion.porcentaje_descuento }}%
+                        </span>
+                    </td>
+                    <td data-label="Fecha Inicio">
+                        {{ promocion.fecha_inicio|date:"d/m/Y" }}
+                    </td>
+                    <td data-label="Fecha Fin">
+                        {{ promocion.fecha_fin|date:"d/m/Y" }}
+                    </td>
+                    <td data-label="Estado">
+                        {% if promocion.esta_activa %}
+                            <span class="badge-estado disponible">
+                                ACTIVA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                INACTIVA
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4" data-label="Acciones">
+                        <div class="actions-horizontal">
+                            <a href="{% url 'ventas:promocion_detail' promocion.pk %}" 
+                               class="btn-action btn-action-view" 
+                               title="Ver">
+                                <i class="bi bi-eye-fill"></i>
+                            </a>
+                            <a href="{% url 'ventas:promocion_update' promocion.pk %}" 
+                               class="btn-action btn-action-edit" 
+                               title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'ventas:promocion_delete' promocion.pk %}" 
+                               class="btn-action btn-action-delete" 
+                               title="Eliminar"
+                               onclick="return confirm('¿Estás seguro de eliminar esta promoción?');">
+                                <i class="bi bi-trash-fill"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="empty-state">
+                            <i class="bi bi-gift mb-3 d-block" style="font-size: 3rem; color: var(--border);"></i>
+                            <p class="mb-0">No hay promociones registradas</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="pagination-container d-flex justify-content-between align-items-center mt-4 pt-3">
+        <span class="pagination-info">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            {% if page_obj.paginator.count %}
+                ({{ page_obj.paginator.count }} registros)
+            {% endif %}
+        </span>
+        
+        <nav aria-label="Paginación de resultados">
+            <ul class="pagination-compact mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}">
+                        <i class="bi bi-chevron-left me-1"></i>Anterior
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="bi bi-chevron-left me-1"></i>Anterior</span>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.fecha_inicio %}&fecha_inicio={{ request.GET.fecha_inicio }}{% endif %}{% if request.GET.fecha_fin %}&fecha_fin={{ request.GET.fecha_fin }}{% endif %}">
+                        Siguiente<i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">Siguiente<i class="bi bi-chevron-right ms-1"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

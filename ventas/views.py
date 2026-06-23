@@ -1,30 +1,46 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, View
 from django.urls import reverse_lazy
-from django.db.models import Q, Sum, Count, F
+from django.db.models import Q, Sum, Count, F, Avg
 from django.contrib import messages
-from .models import (
-    Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta,
-    DetalleCotizacion, Carritos, ItemsCarrito, DetallePedido, MetodosPago
-)
-from inventario.models import Producto, ImagenesProducto, Inventario
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db import transaction
-from decimal import Decimal
-from .forms import ClienteForm, PedidoForm, VentaForm, CotizacionForm
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST, require_GET
-from django.views.decorators.http import require_http_methods
-import json
-from datetime import datetime, date
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from decimal import Decimal
+from datetime import datetime, date, timedelta
 from django.db.models.fields.files import ImageFieldFile, FieldFile
+import json
+import logging
 
+# Modelos
+from .models import (
+    Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta,
+    DetalleCotizacion, Carritos, ItemsCarrito, DetallePedido, MetodosPago,
+    Promocion, PromoCombo, TransaccionWompi, ImagenPromocion
+)
+from inventario.models import Producto, ImagenesProducto, Inventario
 
+# Forms
+from .forms import (
+    ClienteForm, PedidoForm, VentaForm, CotizacionForm,
+    PromocionForm, PromoComboForm
+)
+
+# Servicios
+from .wompi_service import WompiService
+from cloudinary.utils import cloudinary_url
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+wompi_service = WompiService()
 
 IVA_RATE = Decimal('0.19')
+
 
 # ============================================
 # ENCODER JSON PERSONALIZADO PARA DJANGO
@@ -44,9 +60,11 @@ class DjangoCustomEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+
 def safe_json_dumps(data, **kwargs):
     """Serialización segura para datos de Django"""
     return json.dumps(data, cls=DjangoCustomEncoder, ensure_ascii=False, **kwargs)
+
 
 # ============================================================================
 # HELPERS DE CARRITO
@@ -156,21 +174,18 @@ def carrito_compra(request):
                 producto=prod, es_principal=1
             ).first()
 
-            # Stock DISPONIBLE primero
             stock_real = Inventario.objects.filter(
                 producto=prod,
                 estado='DISPONIBLE',
                 deleted_at__isnull=True
             ).aggregate(total=Sum('cantidad_disponible'))['total']
 
-            # Si no hay DISPONIBLE, buscar cualquier estado activo
             if not stock_real:
                 stock_real = Inventario.objects.filter(
                     producto=prod,
                     deleted_at__isnull=True
                 ).aggregate(total=Sum('cantidad_disponible'))['total']
 
-            # Si no hay ningún registro, permitir 99
             stock_real = stock_real or 99
 
             items.append({
@@ -182,7 +197,7 @@ def carrito_compra(request):
                 'iva':         subtotal_iva,
                 'subtotal':    subtotal_base,
                 'cantidad':    item.cantidad,
-                'imagen_url':  img.ruta_imagen.url if img and img.ruta_imagen else '/static/img/placeholder.jpg',  # ✅ CORREGIDO
+                'imagen_url':  img.ruta_imagen.url if img and img.ruta_imagen else '/static/img/placeholder.jpg',
                 'stock':       stock_real,
             })
 
@@ -191,7 +206,7 @@ def carrito_compra(request):
 
     context = {
         'carrito_items':      items,
-        'carrito_items_json': json.dumps(items, ensure_ascii=False), 
+        'carrito_items_json': json.dumps(items, ensure_ascii=False),
         'total_carrito':      round(total_carrito, 2),
         'total_iva':          round(total_iva, 2),
         'total_final':        round(total_carrito + total_iva, 2),
@@ -388,8 +403,7 @@ def api_carrito_actualizar(request, item_id):
     try:
         if request.content_type and 'application/json' in request.content_type:
             data     = json.loads(request.body)
-            cantidad = int(data.get('cantidad', 1))
-            cantidad    = int(data.get('cantidad') or 1)
+            cantidad = int(data.get('cantidad') or 1)
         else:
             cantidad = int(request.POST.get('cantidad', 1))
 
@@ -452,12 +466,10 @@ def api_carrito_contador(request):
     except Exception as e:
         return JsonResponse({'cantidad': 0, 'error': str(e)})
 
+
 @require_GET
 def api_carrito_estado(request):
-    """
-    Devuelve el estado actual del carrito para actualización en tiempo real.
-    URL: /ventas/carrito/estado/
-    """
+    """Devuelve el estado actual del carrito para actualización en tiempo real."""
     carrito_bd    = _get_carrito_bd(request)
     items         = []
     total_carrito = 0
@@ -519,14 +531,10 @@ def api_carrito_estado(request):
         'hay_items':        bool(items),
     })
 
+
 @require_GET
 def api_carrito_recomendados(request):
-    """
-    Devuelve productos recomendados excluyendo los que ya están en el carrito.
-    URL: /ventas/api/carrito/recomendados/
-    """
-    from inventario.models import Producto, ImagenesProducto
-
+    """Devuelve productos recomendados excluyendo los que ya están en el carrito."""
     carrito_bd = _get_carrito_bd(request)
     ids_en_carrito = []
 
@@ -556,6 +564,8 @@ def api_carrito_recomendados(request):
         })
 
     return JsonResponse({'productos': productos})
+
+
 # ============================================================================
 # CLIENTES
 # ============================================================================
@@ -810,16 +820,12 @@ class PedidoCreateView(CreateView):
     form_class    = PedidoForm
     success_url   = reverse_lazy('ventas:pedido_list')
 
-    # Solo se muestran clientes activos para asociar al pedido y se valida que el cliente seleccionado esté activo al guardar el pedido 
-    # (para evitar que se desactive un cliente con pedidos pendientes) y así evitar errores de integridad referencial.
     def get_context_data(self, **kwargs):
         context          = super().get_context_data(**kwargs)
         context['titulo'] = 'Nuevo Pedido'
         context['clientes'] = Clientes.objects.filter(estado='ACTIVO', deleted_at__isnull=True)
         return context
 
-    # Al guardar el pedido, se asigna el usuario actual, se establece la fecha de pedido y el estado inicial. 
-    # También se valida que el cliente seleccionado esté activo.
     def form_valid(self, form):
         try:
             cliente = form.cleaned_data['cliente']
@@ -1368,12 +1374,10 @@ class CotizacionConvertirVentaView(View):
 def perfil_usuario(request):
     """Vista de perfil del cliente"""
     
-    # Verificar si es cliente autenticado por sesión
     if not request.session.get('cliente_auth'):
         messages.warning(request, 'Debes iniciar sesión para ver tu perfil')
         return redirect('pagina:login')
     
-    # Obtener cliente desde la sesión (NO desde request.user)
     cliente_id = request.session.get('cliente_id')
     
     if not cliente_id:
@@ -1387,13 +1391,11 @@ def perfil_usuario(request):
             deleted_at__isnull=True
         )
     except Clientes.DoesNotExist:
-        # Limpiar sesión si el cliente no existe
         for key in ['cliente_id', 'cliente_auth', 'cliente_nombre', 'cliente_email']:
             request.session.pop(key, None)
         messages.error(request, 'Tu cuenta no existe o está inactiva')
         return redirect('pagina:login')
     
-    # Calcular estadísticas
     total_pedidos  = Pedido.objects.filter(cliente=cliente).count()
     puntos_lealtad = total_pedidos * 100
     user_level     = min(10, (puntos_lealtad // 500) + 1)
@@ -1438,7 +1440,7 @@ def perfil_usuario(request):
         'xp_to_next':           xp_to_next,
         'pedidos_recientes':    pedidos_recientes,
         'notificaciones_nuevas': 0,
-        'last_password_change': getattr(cliente, 'ultimo_login', 'Nunca'),  # ← Cambiado a cliente
+        'last_password_change': getattr(cliente, 'ultimo_login', 'Nunca'),
     }
     
     return render(request, 'pagina/perfil.html', context)
@@ -1455,7 +1457,6 @@ def perfil_actualizar(request):
         if not cliente:
             return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
 
-        # CAMPOS DEL FORMULARIO
         if 'nombre' in request.POST:
             cliente.nombre = request.POST.get('nombre', '').strip()
         
@@ -1469,12 +1470,10 @@ def perfil_actualizar(request):
             direccion = request.POST.get('direccion', '').strip()
             cliente.direccion = direccion if direccion else None
 
-        # Convertir string a date
         if 'fecha_nacimiento' in request.POST:
             fecha_str = request.POST.get('fecha_nacimiento', '').strip()
             if fecha_str:
                 try:
-                    # Convertir string 'YYYY-MM-DD' a objeto date
                     cliente.fecha_nacimiento = datetime.strptime(fecha_str, '%Y-%m-%d').date()
                 except ValueError:
                     return JsonResponse({
@@ -1484,11 +1483,8 @@ def perfil_actualizar(request):
             else:
                 cliente.fecha_nacimiento = None
         
-        # Validaciones del modelo
         cliente.full_clean()
         cliente.save()
-        
-        # Recargar desde la BD para asegurar tipos correctos
         cliente.refresh_from_db()
 
         return JsonResponse({
@@ -1507,7 +1503,8 @@ def perfil_actualizar(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Error: {str(e)}'}, status=500)
-    
+
+
 @require_POST
 @login_required
 def password_cambiar(request):
@@ -1603,40 +1600,20 @@ def perfil_stats(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 # ============================================================================
 # WOMPI - PAGOS
 # ============================================================================
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_http_methods
-from django.contrib import messages
-from django.conf import settings
-from .wompi_service import WompiService
-from .models import TransaccionWompi
-import json
-import logging
-
-logger = logging.getLogger(__name__)
-wompi_service = WompiService()
-
 
 @require_http_methods(["GET", "POST"])
 def iniciar_pago_wompi(request, venta_id):
-    """
-    Iniciar proceso de pago con Wompi
-    GET: Muestra formulario de pago
-    POST: Crea transacción y redirige a Wompi
-    """
-    # Verificar autenticación del cliente
+    """Iniciar proceso de pago con Wompi"""
     cliente_email = request.session.get('cliente_email')
     if not cliente_email:
         messages.error(request, 'Debes iniciar sesión para realizar el pago')
         return redirect('pagina:login')
     
-    # Obtener venta
     try:
-        from ventas.models import Ventas
         venta = get_object_or_404(
             Ventas, 
             id_venta=venta_id,
@@ -1648,14 +1625,10 @@ def iniciar_pago_wompi(request, venta_id):
         return redirect('ventas:carrito_compra')
     
     if request.method == 'POST':
-        # Generar referencia única
         referencia = wompi_service.generar_referencia(venta.id_venta)
-        
-        # Crear transacción en Wompi
         resultado = wompi_service.crear_transaccion(venta, referencia)
         
         if resultado and resultado.get('data'):
-            # Guardar transacción en BD
             transaccion = TransaccionWompi.objects.create(
                 venta=venta,
                 wompi_transaction_id=resultado['data'].get('id'),
@@ -1666,7 +1639,6 @@ def iniciar_pago_wompi(request, venta_id):
                 es_sandbox=wompi_service.is_sandbox,
             )
             
-            # Redirigir a Wompi Checkout
             checkout_url = resultado['data'].get('redirect_url')
             if checkout_url:
                 return redirect(checkout_url)
@@ -1677,7 +1649,6 @@ def iniciar_pago_wompi(request, venta_id):
         
         return redirect('ventas:carrito_compra')
     
-    # GET: Mostrar formulario de pago
     return render(request, 'ventas/pago_wompi.html', {
         'venta': venta,
         'wompi_public_key': settings.WOMPI_PUBLIC_KEY,
@@ -1688,12 +1659,8 @@ def iniciar_pago_wompi(request, venta_id):
 @csrf_exempt
 @require_POST
 def wompi_webhook(request):
-    """
-    Webhook para recibir notificaciones de Wompi
-    Wompi envía notificaciones cuando cambia el estado de una transacción
-    """
+    """Webhook para recibir notificaciones de Wompi"""
     try:
-        # Verificar firma del webhook
         signature = request.headers.get('X-Signature', '')
         payload = request.body.decode('utf-8')
         
@@ -1703,7 +1670,6 @@ def wompi_webhook(request):
         
         data = json.loads(payload)
         
-        # Procesar notificación
         transaction_id = data.get('data', {}).get('id')
         estado = data.get('data', {}).get('status')
         referencia = data.get('data', {}).get('reference')
@@ -1711,19 +1677,16 @@ def wompi_webhook(request):
         logger.info(f"Webhook recibido: {transaction_id} - {estado}")
         
         if transaction_id and estado:
-            # Buscar transacción
             transaccion = TransaccionWompi.objects.filter(
                 wompi_transaction_id=transaction_id
             ).first()
             
             if transaccion:
-                # Actualizar estado
                 transaccion.estado = estado
                 transaccion.respuesta_wompi = data
                 transaccion.fecha_actualizacion = timezone.now()
                 transaccion.save()
                 
-                # Actualizar venta si fue aprobada
                 if estado == 'APPROVED':
                     venta = transaccion.venta
                     venta.estado_venta = 'COMPLETADA'
@@ -1739,16 +1702,11 @@ def wompi_webhook(request):
 
 
 def confirmacion_pago_wompi(request, venta_id):
-    """
-    Página de confirmación después del pago
-    Muestra el resultado final al cliente
-    """
+    """Página de confirmación después del pago"""
     try:
-        from ventas.models import Ventas
         venta = get_object_or_404(Ventas, id_venta=venta_id)
         transaccion = TransaccionWompi.objects.filter(venta=venta).first()
         
-        # Consultar estado actual en Wompi
         if transaccion and transaccion.wompi_transaction_id:
             resultado = wompi_service.consultar_transaccion(transaccion.wompi_transaction_id)
             
@@ -1758,7 +1716,6 @@ def confirmacion_pago_wompi(request, venta_id):
                 transaccion.respuesta_wompi = resultado['data']
                 transaccion.save()
                 
-                # Actualizar venta si fue aprobada
                 if estado == 'APPROVED':
                     venta.estado_venta = 'COMPLETADA'
                     venta.save()
@@ -1779,7 +1736,6 @@ def historial_transacciones(request):
     if not cliente_email:
         return redirect('pagina:login')
     
-    from ventas.models import Clientes
     cliente = Clientes.objects.filter(email=cliente_email).first()
     
     if not cliente:
@@ -1792,3 +1748,387 @@ def historial_transacciones(request):
     return render(request, 'ventas/historial_transacciones.html', {
         'transacciones': transacciones,
     })
+
+
+# ===========================================================================
+# PROMOCIONES
+# ===========================================================================
+
+class PromocionListView(ListView):
+    """Lista de promociones con filtros y estadísticas"""
+    model = Promocion
+    template_name = 'ventas/promocion_list.html'
+    context_object_name = 'promociones'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        queryset = Promocion.objects.all().prefetch_related('imagenes')
+        
+        categoria = self.request.GET.get('categoria')
+        estado = self.request.GET.get('estado')
+        fecha_inicio = self.request.GET.get('fecha_inicio')
+        fecha_fin = self.request.GET.get('fecha_fin')
+        
+        if categoria:
+            queryset = queryset.filter(categoria=categoria)
+        
+        if estado == 'activa':
+            queryset = queryset.filter(activa=True)
+        elif estado == 'inactiva':
+            queryset = queryset.filter(activa=False)
+        
+        if fecha_inicio:
+            queryset = queryset.filter(fecha_inicio__gte=fecha_inicio)
+        if fecha_fin:
+            queryset = queryset.filter(fecha_fin__lte=fecha_fin)
+        
+        return queryset.order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        total = Promocion.objects.count()
+        activas = Promocion.objects.filter(activa=True).count()
+        descuento_promedio = Promocion.objects.filter(activa=True).aggregate(
+            avg=Avg('porcentaje_descuento')
+        )['avg'] or 0
+        
+        fecha_limite = timezone.now().date() + timedelta(days=7)
+        vencidas = Promocion.objects.filter(
+            activa=True,
+            fecha_fin__lte=fecha_limite
+        ).count()
+        
+        context['total_promociones'] = total
+        context['promociones_activas'] = activas
+        context['descuento_promedio'] = round(descuento_promedio, 1)
+        context['promociones_vencidas'] = vencidas
+        context['titulo'] = 'Promociones'
+        
+        return context
+
+
+class PromocionCreateView(CreateView):
+    """Crear nueva promoción"""
+    model = Promocion
+    template_name = 'ventas/promocion_form.html'
+    form_class = PromocionForm
+    success_url = reverse_lazy('ventas:promocion_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Nueva Promoción'
+        context['imagenes_existentes'] = []
+        return context
+    
+    def form_valid(self, form):
+        try:
+            promocion = form.save(commit=False)
+            promocion.created_at = timezone.now()
+            promocion.updated_at = timezone.now()
+            
+            if promocion.precio_promo >= promocion.precio_original:
+                messages.error(
+                    self.request,
+                    "El precio promocional debe ser menor al precio original"
+                )
+                return self.form_invalid(form)
+            
+            promocion.save()
+            
+            # Guardar imágenes
+            self._guardar_imagenes(promocion)
+            
+            messages.success(
+                self.request,
+                f'Promoción "{promocion.nombre}" creada exitosamente.'
+            )
+            return redirect(self.success_url)
+        except ValidationError as e:
+            messages.error(self.request, f'Error de validación: {str(e)}')
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f'Error al crear: {str(e)}')
+            return self.form_invalid(form)
+    
+    def _guardar_imagenes(self, promocion):
+        """Guarda las imágenes subidas"""
+        nuevas_imagenes = self.request.FILES.getlist('nuevas_imagenes')
+        imagen_principal_index = int(self.request.POST.get('imagen_principal_index', 0))
+        
+        for i, imagen in enumerate(nuevas_imagenes):
+            ImagenPromocion.objects.create(
+                promocion=promocion,
+                ruta_imagen=imagen,
+                es_principal=1 if i == imagen_principal_index else 0
+            )
+
+
+class PromocionDetailView(DetailView):
+    """Detalle de una promoción"""
+    model = Promocion
+    template_name = 'ventas/promocion_detail.html'
+    context_object_name = 'promocion'
+    
+    def get_queryset(self):
+        return Promocion.objects.all()
+
+
+class PromocionUpdateView(UpdateView):
+    """Editar promoción existente"""
+    model = Promocion
+    template_name = 'ventas/promocion_form.html'
+    form_class = PromocionForm
+    success_url = reverse_lazy('ventas:promocion_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar Promoción'
+        context['imagenes_existentes'] = ImagenPromocion.objects.filter(
+            promocion=self.object
+        )
+        return context
+    
+    def form_valid(self, form):
+        try:
+            promocion = form.save(commit=False)
+            promocion.updated_at = timezone.now()
+            
+            if promocion.precio_promo >= promocion.precio_original:
+                messages.error(
+                    self.request,
+                    "El precio promocional debe ser menor al precio original"
+                )
+                return self.form_invalid(form)
+            
+            promocion.save()
+            
+            # Eliminar imágenes marcadas
+            self._eliminar_imagenes()
+            
+            # Guardar nuevas imágenes
+            self._guardar_imagenes(promocion)
+            
+            messages.success(
+                self.request,
+                f'Promoción "{promocion.nombre}" actualizada correctamente.'
+            )
+            return redirect(self.success_url)
+        except Exception as e:
+            messages.error(self.request, f'Error al actualizar: {str(e)}')
+            return self.form_invalid(form)
+    
+    def _eliminar_imagenes(self):
+        """Elimina las imágenes marcadas para eliminación"""
+        imagenes_a_eliminar = self.request.POST.getlist('imagenes_a_eliminar')
+        for id_imagen in imagenes_a_eliminar:
+            if id_imagen:
+                try:
+                    imagen = ImagenPromocion.objects.get(id_imagen=id_imagen)
+                    imagen.ruta_imagen.delete()  # Elimina el archivo
+                    imagen.delete()
+                except ImagenPromocion.DoesNotExist:
+                    pass
+    
+    def _guardar_imagenes(self, promocion):
+        """Guarda las nuevas imágenes subidas"""
+        nuevas_imagenes = self.request.FILES.getlist('nuevas_imagenes')
+        imagen_principal_index = int(self.request.POST.get('imagen_principal_index', 0))
+        
+        # Contar imágenes existentes
+        imagenes_existentes = ImagenPromocion.objects.filter(promocion=promocion).count()
+        
+        for i, imagen in enumerate(nuevas_imagenes):
+            ImagenPromocion.objects.create(
+                promocion=promocion,
+                ruta_imagen=imagen,
+                es_principal=1 if (imagenes_existentes + i) == imagen_principal_index else 0
+            )
+
+
+class PromocionDeleteView(View):
+    """Eliminar promoción"""
+    def post(self, request, pk):
+        try:
+            promocion = get_object_or_404(Promocion, pk=pk)
+            nombre = promocion.nombre
+            promocion.delete()
+            messages.success(
+                request,
+                f'Promoción "{nombre}" eliminada correctamente.'
+            )
+            return redirect('ventas:promocion_list')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar: {str(e)}')
+            return redirect('ventas:promocion_list')
+
+
+# ============================================================================
+# PROMO COMBOS
+# ============================================================================
+
+class PromoComboListView(ListView):
+    """Lista de combos promocionales"""
+    model = PromoCombo
+    template_name = 'ventas/promo_combo_list.html'
+    context_object_name = 'combos'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        return PromoCombo.objects.all().order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Combos Promocionales'
+        context['total_combos'] = PromoCombo.objects.count()
+        context['combos_activos'] = PromoCombo.objects.filter(activa=True).count()
+        return context
+
+
+class PromoComboCreateView(CreateView):
+    """Crear nuevo combo"""
+    model = PromoCombo
+    template_name = 'ventas/promo_combo_form.html'
+    form_class = PromoComboForm
+    success_url = reverse_lazy('ventas:promo_combo_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Nuevo Combo Promocional'
+        return context
+    
+    def form_valid(self, form):
+        try:
+            combo = form.save(commit=False)
+            combo.created_at = timezone.now()
+            combo.updated_at = timezone.now()
+            
+            if combo.precio >= combo.precio_original:
+                messages.error(
+                    self.request,
+                    "El precio del combo debe ser menor al precio original"
+                )
+                return self.form_invalid(form)
+            
+            combo.save()
+            messages.success(
+                self.request,
+                f'Combo "{combo.nombre}" creado exitosamente.'
+            )
+            return redirect(self.success_url)
+        except Exception as e:
+            messages.error(self.request, f'Error: {str(e)}')
+            return self.form_invalid(form)
+
+
+class PromoComboUpdateView(UpdateView):
+    """Editar combo"""
+    model = PromoCombo
+    template_name = 'ventas/promo_combo_form.html'
+    form_class = PromoComboForm
+    success_url = reverse_lazy('ventas:promo_combo_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar Combo Promocional'
+        return context
+
+
+class PromoComboDeleteView(View):
+    """Eliminar combo"""
+    def post(self, request, pk):
+        try:
+            combo = get_object_or_404(PromoCombo, pk=pk)
+            nombre = combo.nombre
+            combo.delete()
+            messages.success(request, f'Combo "{nombre}" eliminado.')
+            return redirect('ventas:promo_combo_list')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+            return redirect('ventas:promo_combo_list')
+
+
+# ============================================================================
+# VISTA PÚBLICA DE PROMOCIONES
+# ============================================================================
+
+def promociones_view(request):
+    """Vista pública para la página de promociones (clientes)"""
+    
+    promociones_qs = Promocion.objects.filter(activa=True).prefetch_related('imagenes')
+    
+    promociones = []
+    for promo in promociones_qs:
+        # Obtener imagen principal de Cloudinary
+        imagen_principal = promo.imagenes.filter(es_principal=1).first() or promo.imagenes.first()
+        imagen_url = ''
+        
+        if imagen_principal and imagen_principal.ruta_imagen:
+            try:
+                # Generar URL de Cloudinary optimizada
+                imagen_url = cloudinary_url(
+                    imagen_principal.ruta_imagen.name,
+                    format='jpg',
+                    quality='auto',
+                    width=400,
+                    height=300,
+                    crop='fill'
+                )[0]
+            except:
+                imagen_url = imagen_principal.ruta_imagen.url
+        
+        promociones.append({
+            'id': promo.id_promocion,
+            'nombre': promo.nombre,
+            'descripcion': promo.descripcion or '',
+            'categoria': promo.categoria,
+            'precio_original': float(promo.precio_original),
+            'precio_promo': float(promo.precio_promo),
+            'porcentaje_descuento': float(promo.porcentaje_descuento) if promo.porcentaje_descuento else 0,
+            'imagen_url': imagen_url or '/static/img/placeholder.jpg',
+            'ahorro': float(promo.ahorro),
+            'fecha_inicio': promo.fecha_inicio.isoformat() if promo.fecha_inicio else None,
+            'fecha_fin': promo.fecha_fin.isoformat() if promo.fecha_fin else None,
+        })
+    
+    combo = PromoCombo.objects.filter(activa=True).first()
+    
+    if combo:
+        # Obtener imagen del combo
+        imagen_combo = combo.imagen_url or '/static/img/Sofá5.jpg'
+        
+        promo_combo = {
+            'id': combo.id_combo,
+            'nombre': combo.nombre,
+            'descripcion': combo.descripcion or '',
+            'precio': float(combo.precio),
+            'precio_original': float(combo.precio_original),
+            'ahorro': float(combo.ahorro) if combo.ahorro else 0,
+            'porcentaje_descuento': float(combo.porcentaje_descuento) if combo.porcentaje_descuento else 0,
+            'imagen_url': imagen_combo,
+            'fecha_inicio': combo.fecha_inicio.isoformat() if combo.fecha_inicio else None,
+            'fecha_fin': combo.fecha_fin.isoformat() if combo.fecha_fin else None,
+        }
+    else:
+        promo_combo = {
+            'id': None,
+            'nombre': 'Combo Premium',
+            'descripcion': '',
+            'precio': 2490000,
+            'precio_original': 3290000,
+            'ahorro': 800000,
+            'porcentaje_descuento': 24,
+            'imagen_url': '/static/img/Sofá5.jpg',
+        }
+    
+    carrito_cantidad = request.session.get('carrito_cantidad', 0)
+    
+    context = {
+        'promociones': promociones,
+        'promociones_json': json.dumps(promociones, ensure_ascii=False),
+        'promo_combo': promo_combo,
+        'carrito_cantidad': carrito_cantidad,
+        'notificaciones_nuevas': 0,
+    }
+    
+    return render(request, 'ventas/promociones.html', context)

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models import Sum
 from django.db import transaction
-from datetime import timedelta
+from datetime import date, timedelta
 import re
 
 class Clientes(models.Model):
@@ -1062,3 +1062,156 @@ class TransaccionWompi(models.Model):
 
     def __str__(self):
         return f"Transacción {self.referencia} - {self.estado}"
+    
+
+# ==========================================
+# FUNCIONES AUXILIARES PARA PROMOCIONES
+# ==========================================
+
+def get_fecha_fin_promocion():
+    """Retorna la fecha actual + 30 días"""
+    return date.today() + timedelta(days=30)
+
+def get_fecha_inicio_promocion():
+    """Retorna la fecha actual"""
+    return date.today()
+
+
+# ============================================================================
+# MODELO PROMOCIONES
+# ============================================================================
+
+class Promocion(models.Model):
+    """Modelo para promociones de productos"""
+    
+    CATEGORIAS = [
+        ('sofas', 'Sofás'),
+        ('camas', 'Camas'),
+        ('escritorios', 'Escritorios'),
+        ('comedores', 'Comedores'),
+        ('sillas', 'Sillas'),
+        ('nocheros', 'Nocheros'),
+        ('mecedoras', 'Mecedoras'),
+        ('general', 'General'),
+    ]
+    
+    id_promocion = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, null=True)
+    categoria = models.CharField(max_length=100, choices=CATEGORIAS, default='general')
+    precio_original = models.DecimalField(max_digits=15, decimal_places=2)
+    precio_promo = models.DecimalField(max_digits=15, decimal_places=2)
+    porcentaje_descuento = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    imagen_url = models.CharField(max_length=500, blank=True, null=True)
+    fecha_inicio = models.DateField(default=get_fecha_inicio_promocion)
+    fecha_fin = models.DateField(default=get_fecha_fin_promocion)
+    activa = models.BooleanField(default=True)
+    stock_disponible = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'promocion'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['categoria']),
+            models.Index(fields=['activa']),
+            models.Index(fields=['fecha_inicio', 'fecha_fin']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        # Si no hay fecha_inicio, usar hoy
+        if not self.fecha_inicio:
+            self.fecha_inicio = date.today()
+        
+        # Si no hay fecha_fin, usar hoy + 30 días
+        if not self.fecha_fin:
+            self.fecha_fin = date.today() + timedelta(days=30)
+        
+        # Calcular automáticamente el porcentaje de descuento
+        if self.precio_original and self.precio_promo:
+            descuento = ((self.precio_original - self.precio_promo) / self.precio_original) * 100
+            self.porcentaje_descuento = round(float(descuento), 2)
+        
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.nombre} - {self.porcentaje_descuento}% OFF"
+    
+    @property
+    def ahorro(self):
+        """Calcula el ahorro"""
+        return self.precio_original - self.precio_promo
+    
+    @property
+    def esta_activa(self):
+        """Verifica si la promoción está activa por fechas"""
+        hoy = date.today()
+        return self.activa and self.fecha_inicio <= hoy <= self.fecha_fin
+    
+    @property
+    def imagen_principal(self):
+        """Retorna la imagen principal de la promoción"""
+        return self.imagenes.filter(es_principal=1).first() or self.imagenes.first()
+
+
+class PromoCombo(models.Model):
+    """Modelo para combos promocionales especiales"""
+    
+    id_combo = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField(blank=True, null=True)
+    precio_original = models.DecimalField(max_digits=15, decimal_places=2)
+    precio = models.DecimalField(max_digits=15, decimal_places=2)
+    ahorro = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
+    porcentaje_descuento = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    imagen_url = models.CharField(max_length=500, blank=True, null=True)
+    fecha_inicio = models.DateField(default=get_fecha_inicio_promocion)
+    fecha_fin = models.DateField(default=get_fecha_fin_promocion)
+    activa = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'promo_combo'
+        ordering = ['-created_at']
+    
+    def save(self, *args, **kwargs):
+        # Si no hay fecha_inicio, usar hoy
+        if not self.fecha_inicio:
+            self.fecha_inicio = date.today()
+        
+        # Si no hay fecha_fin, usar hoy + 30 días
+        if not self.fecha_fin:
+            self.fecha_fin = date.today() + timedelta(days=30)
+        
+        # Calcular ahorro y porcentaje automáticamente
+        if self.precio_original and self.precio:
+            self.ahorro = self.precio_original - self.precio
+            self.porcentaje_descuento = round(float((self.ahorro / self.precio_original) * 100), 2)
+        
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.nombre} - Ahorro: ${self.ahorro:,.0f}"
+    
+class ImagenPromocion(models.Model):
+    """Imágenes de promociones (múltiples imágenes por promoción)"""
+    id_imagen = models.AutoField(primary_key=True)
+    promocion = models.ForeignKey(
+        Promocion, 
+        on_delete=models.CASCADE,
+        related_name='imagenes'
+    )
+    ruta_imagen = models.ImageField(upload_to='promociones/')
+    descripcion = models.CharField(max_length=255, blank=True, null=True)
+    es_principal = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'imagen_promocion'
+        ordering = ['-es_principal', 'created_at']
+    
+    def __str__(self):
+        return f"Imagen {self.id_imagen} - {self.promocion.nombre}"

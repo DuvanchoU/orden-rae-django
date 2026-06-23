@@ -1,5 +1,5 @@
 from django import forms
-from .models import Clientes, Pedido, Ventas, Cotizaciones, DetallePedido, DetalleVenta, DetalleCotizacion
+from .models import Clientes, Pedido, Ventas, Cotizaciones, DetallePedido, DetalleVenta, DetalleCotizacion, Promocion, PromoCombo
 from inventario.models import Producto
 from decimal import Decimal
 from django.utils import timezone
@@ -604,3 +604,104 @@ class DetalleCotizacionForm(forms.ModelForm):
         if descuento < 0:
             raise forms.ValidationError("El descuento no puede ser negativo")
         return descuento
+    
+# ============================================================================
+# PROMOCIONES
+# ============================================================================
+
+class PromocionForm(forms.ModelForm):
+    class Meta:
+        model = Promocion
+        fields = [
+            'nombre', 'descripcion', 'categoria', 'precio_original',
+            'precio_promo', 'imagen_url', 'fecha_inicio', 'fecha_fin',
+            'activa', 'stock_disponible'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre de la promoción'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción de la promoción'
+            }),
+            'categoria': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'precio_original': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '0.01'
+            }),
+            'precio_promo': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '0.01'
+            }),
+            'imagen_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://ejemplo.com/imagen.jpg'
+            }),
+            'fecha_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'fecha_fin': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'activa': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'stock_disponible': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+        }
+
+
+class PromoComboForm(forms.ModelForm):
+    class Meta:
+        model = PromoCombo
+        fields = [
+            'nombre', 'descripcion', 'precio_original', 'precio',
+            'imagen_url', 'fecha_inicio', 'fecha_fin', 'activa'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre del combo'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción del combo'
+            }),
+            'precio_original': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '0.01'
+            }),
+            'precio': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '0.01'
+            }),
+            'imagen_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://ejemplo.com/imagen.jpg'
+            }),
+            'fecha_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'fecha_fin': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'activa': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }

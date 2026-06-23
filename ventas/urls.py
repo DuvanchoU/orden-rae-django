@@ -67,9 +67,25 @@ urlpatterns = [
     path('perfil/notificaciones/leidas/', views.notificaciones_marcar_leidas, name='notificaciones_marcar_leidas'),
     path('perfil/preferencias/', views.preferencias_guardar, name='preferencias_guardar'),
 
-    # Wompi - Pagos 
+    # ── Wompi - Pagos ──────────────────────────────────────────────────────
     path('pago/wompi/iniciar/<int:venta_id>/', views.iniciar_pago_wompi, name='iniciar_pago_wompi'),
     path('pago/wompi/webhook/', views.wompi_webhook, name='wompi_webhook'),
     path('pago/wompi/confirmacion/<int:venta_id>/', views.confirmacion_pago_wompi, name='confirmacion_pago_wompi'),
     path('pago/wompi/historial/', views.historial_transacciones, name='historial_transacciones'),
+
+    # ── Promociones ───────────────────────────────────────────────────────
+    path('promociones/', views.PromocionListView.as_view(), name='promocion_list'),
+    path('promociones/nueva/', views.PromocionCreateView.as_view(), name='promocion_create'),
+    path('promociones/<int:pk>/', views.PromocionDetailView.as_view(), name='promocion_detail'),
+    path('promociones/<int:pk>/editar/', views.PromocionUpdateView.as_view(), name='promocion_update'),
+    path('promociones/<int:pk>/eliminar/', views.PromocionDeleteView.as_view(), name='promocion_delete'),
+    
+    # Promo Combos (CRUD)
+    path('combos/', views.PromoComboListView.as_view(), name='promo_combo_list'),
+    path('combos/nuevo/', views.PromoComboCreateView.as_view(), name='promo_combo_create'),
+    path('combos/<int:pk>/editar/', views.PromoComboUpdateView.as_view(), name='promo_combo_update'),
+    path('combos/<int:pk>/eliminar/', views.PromoComboDeleteView.as_view(), name='promo_combo_delete'),
+    
+    # Vista pública de promociones (para clientes)
+    path('promociones/publico/', views.promociones_view, name='promociones_publico'),
 ]

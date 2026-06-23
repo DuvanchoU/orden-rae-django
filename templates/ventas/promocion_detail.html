@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Promoción #{{ promocion.id_promocion }} - {{ promocion.nombre }}{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="detail-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="detail-title">{{ promocion.nombre }}</h1>
+        <p class="detail-subtitle">Detalle de la promoción</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'ventas:promocion_list' %}" class="btn btn-volver">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </a>
+        <a href="{% url 'ventas:promocion_update' promocion.pk %}" class="btn btn-editar">
+            <i class="bi bi-pencil-fill me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta Principal - Información -->
+    <div class="col-lg-8">
+        <div class="info-card p-4">
+            <div class="row g-4">
+                <!-- Nombre -->
+                <div class="col-12">
+                    <label class="info-label">NOMBRE DE LA PROMOCIÓN</label>
+                    <p class="info-value fw-bold fs-4">{{ promocion.nombre }}</p>
+                </div>
+                
+                <!-- Descripción -->
+                <div class="col-12">
+                    <label class="info-label">DESCRIPCIÓN</label>
+                    <p class="info-value" style="white-space: pre-wrap;">
+                        {{ promocion.descripcion|default:"Sin descripción" }}
+                    </p>
+                </div>
+                
+                <!-- Categoría -->
+                <div class="col-md-6">
+                    <label class="info-label">CATEGORÍA</label>
+                    <p class="info-value">{{ promocion.get_categoria_display|default:promocion.categoria }}</p>
+                </div>
+                
+                <!-- Estado -->
+                <div class="col-md-6">
+                    <label class="info-label">ESTADO</label>
+                    <div>
+                        {% if promocion.esta_activa %}
+                            <span class="badge-estado disponible">
+                                ACTIVA
+                            </span>
+                        {% else %}
+                            <span class="badge-estado agotado">
+                                INACTIVA
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Precio Original -->
+                <div class="col-md-6">
+                    <label class="info-label">PRECIO ORIGINAL</label>
+                    <p class="info-value text-muted text-decoration-line-through">
+                        ${{ promocion.precio_original|floatformat:0|intcomma }}
+                    </p>
+                </div>
+                
+                <!-- Precio Promocional -->
+                <div class="col-md-6">
+                    <label class="info-label">PRECIO PROMOCIONAL</label>
+                    <p class="info-value fw-bold" style="font-size: 1.8rem; color: var(--accent);">
+                        ${{ promocion.precio_promo|floatformat:0|intcomma }}
+                    </p>
+                </div>
+                
+                <!-- Porcentaje Descuento -->
+                <div class="col-md-6">
+                    <label class="info-label">PORCENTAJE DE DESCUENTO</label>
+                    <p class="info-value">
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fs-6 px-3 py-2">
+                            <i class="bi bi-percent me-1"></i>{{ promocion.porcentaje_descuento }}%
+                        </span>
+                    </p>
+                </div>
+                
+                <!-- Ahorro -->
+                <div class="col-md-6">
+                    <label class="info-label">AHORRO</label>
+                    <p class="info-value fw-bold text-success">
+                        ${{ promocion.ahorro|floatformat:0|intcomma }}
+                    </p>
+                </div>
+                
+                <!-- Fecha Inicio -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA DE INICIO</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-check me-2 text-muted"></i>
+                        {{ promocion.fecha_inicio|date:"d/m/Y" }}
+                    </p>
+                </div>
+                
+                <!-- Fecha Fin -->
+                <div class="col-md-6">
+                    <label class="info-label">FECHA DE FIN</label>
+                    <p class="info-value">
+                        <i class="bi bi-calendar-x me-2 text-muted"></i>
+                        {{ promocion.fecha_fin|date:"d/m/Y" }}
+                    </p>
+                </div>
+                
+                <!-- Stock -->
+                <div class="col-md-6">
+                    <label class="info-label">STOCK DISPONIBLE</label>
+                    <p class="info-value">{{ promocion.stock_disponible }} unidades</p>
+                </div>
+                
+                <!-- Imagen -->
+                <div class="col-md-6">
+                    <label class="info-label">IMAGEN</label>
+                    {% if promocion.imagen_url %}
+                    <div class="mt-2">
+                        <img src="{{ promocion.imagen_url }}" 
+                             alt="{{ promocion.nombre }}" 
+                             class="img-fluid rounded" 
+                             style="max-height: 200px; object-fit: cover;">
+                    </div>
+                    {% else %}
+                    <p class="info-value text-muted">Sin imagen</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta Lateral -->
+    <div class="col-lg-4">
+        <div class="sidebar-card p-4">
+            <h5 class="sidebar-title">Información del Sistema</h5>
+            <hr class="sidebar-divider">
+            
+            <div class="info-row mb-3">
+                <label class="info-label-small">ID PROMOCIÓN</label>
+                <p class="info-text fw-bold">{{ promocion.pk }}</p>
+            </div>
+            
+            <div class="info-row mb-3">
+                <label class="info-label-small">CREADO EL</label>
+                <p class="info-text">{{ promocion.created_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+            </div>
+            
+            <div class="info-row mb-3">
+                <label class="info-label-small">ÚLTIMA ACTUALIZACIÓN</label>
+                <p class="info-text">{{ promocion.updated_at|date:"d/m/Y H:i"|default:"No registrado" }}</p>
+            </div>
+            
+            <div class="info-row mb-3">
+                <label class="info-label-small">DIAS RESTANTES</label>
+                <p class="info-text">
+                    {% if promocion.esta_activa %}
+                        {{ promocion.fecha_fin|timeuntil }}
+                    {% else %}
+                        <span class="text-muted">Promoción finalizada</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Imagen Principal -->
+            <div class="col-md-6">
+                <label class="info-label">IMAGEN PRINCIPAL</label>
+                {% if promocion.imagen_principal %}
+                <div class="mt-2">
+                    <img src="{{ promocion.imagen_principal.ruta_imagen.url }}" 
+                        alt="{{ promocion.nombre }}" 
+                        class="img-fluid rounded" 
+                        style="max-height: 300px; object-fit: cover;">
+                </div>
+                {% else %}
+                <p class="info-value text-muted">Sin imagen</p>
+                {% endif %}
+            </div>
+
+            <!-- Galería de Imágenes -->
+            <div class="col-12">
+                <label class="info-label">GALERÍA DE IMÁGENES</label>
+                {% if promocion.imagenes.all %}
+                <div class="row g-2 mt-2">
+                    {% for imagen in promocion.imagenes.all %}
+                    <div class="col-md-3 col-6">
+                        <div class="position-relative">
+                            <img src="{{ imagen.ruta_imagen.url }}" 
+                                alt="Imagen {{ forloop.counter }}" 
+                                class="img-fluid rounded" 
+                                style="height: 120px; object-fit: cover; width: 100%;">
+                            {% if imagen.es_principal %}
+                            <span class="badge bg-success position-absolute top-0 end-0 m-1">
+                                <i class="bi bi-star-fill"></i> Principal
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="info-value text-muted">No hay imágenes adicionales</p>
+                {% endif %}
+            </div>
+            
+            <!-- Botones de Acción -->
+            <div class="action-buttons mt-4">
+                <a href="{% url 'ventas:promocion_update' promocion.pk %}" 
+                   class="btn-action-primary w-100 mb-2">
+                    <i class="bi bi-pencil-fill me-2"></i>Editar Promoción
+                </a>
+                <a href="{% url 'ventas:promocion_delete' promocion.pk %}" 
+                   class="btn-action-danger w-100"
+                   onclick="return confirm('¿Estás seguro de eliminar esta promoción?');">
+                    <i class="bi bi-trash-fill me-2"></i>Eliminar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

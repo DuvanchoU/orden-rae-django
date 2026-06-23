@@ -1380,7 +1380,7 @@
                         </div>
 
                         <div class="prod-price-row">
-                            <span class="prod-price">${{ prod.precio|floatformat:0 }}">
+                            <span class="prod-price" data-precio="{{ prod.precio }}">
                                 ${{ prod.precio|floatformat:0 }}
                             </span>
                         </div>
@@ -1640,6 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    updatePricesInPage();
     /* ══════════════════════════════════════
         HERO SLIDER
     ══════════════════════════════════════ */

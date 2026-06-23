@@ -220,6 +220,16 @@
                     </a>
                 </li>
                 {% endif %}
+
+                <!-- PROMOCIONES -->
+                {% if user_permissions.can_view_ventas %}
+                <li>
+                    <a href="{% url 'ventas:promocion_list' %}" 
+                        class="nav-link {% if 'promocion' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="bi bi-percent me-2"></i> Promociones
+                    </a>
+                </li>
+                {% endif %}
                 {% endif %}
 
                 <!-- ===================================================== -->
