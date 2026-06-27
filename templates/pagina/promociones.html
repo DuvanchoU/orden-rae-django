@@ -1184,7 +1184,7 @@
                 <div class="hero-img-card">
                     <span class="img-badge-corner">-{{ promo_combo.porcentaje_descuento|default:24 }}%</span>
                     {% if promo_combo.imagen_url %}
-                        {% cloudinary_url promo_combo.imagen_url format='jpg' quality='auto' width=500 height=380 crop='fill' as cloudinary_combo_img %}
+                        {% cloudinary_url promo_combo.imagen_url.name format='jpg' quality='auto' width=500 height=380 crop='fill' as cloudinary_combo_img %}
                         <img src="{{ cloudinary_combo_img }}" alt="Combo promocional">
                     {% else %}
                         <img src="{% static 'img/Sofá5.jpg' %}" alt="Combo promocional"
@@ -1252,8 +1252,8 @@
 
                     <!-- Imagen -->
                     <div class="pcard-img">
-                        {% if promo.imagen_url and promo.imagen_url != '/static/img/placeholder.jpg' %}
-                            {% cloudinary_url promo.imagen_url format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_promo_img %}
+                        {% if promo.imagen_url and promo.imagen_url != '/static/img/Promocion_sofa.png' %}
+                            {% cloudinary_url promo.imagen_url.name format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_promo_img %}
                             <img src="{{ cloudinary_promo_img }}"
                                  alt="{{ promo.nombre }}"
                                  loading="lazy"

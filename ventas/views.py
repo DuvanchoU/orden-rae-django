@@ -2055,27 +2055,12 @@ class PromoComboDeleteView(View):
 def promociones_view(request):
     """Vista pública para la página de promociones (clientes)"""
     
-    promociones_qs = Promocion.objects.filter(activa=True).prefetch_related('imagenes')
+    promociones_qs = Promocion.objects.filter(activa=True)
     
     promociones = []
     for promo in promociones_qs:
-        # Obtener imagen principal de Cloudinary
-        imagen_principal = promo.imagenes.filter(es_principal=1).first() or promo.imagenes.first()
-        imagen_url = ''
-        
-        if imagen_principal and imagen_principal.ruta_imagen:
-            try:
-                # Generar URL de Cloudinary optimizada
-                imagen_url = cloudinary_url(
-                    imagen_principal.ruta_imagen.name,
-                    format='jpg',
-                    quality='auto',
-                    width=400,
-                    height=300,
-                    crop='fill'
-                )[0]
-            except:
-                imagen_url = imagen_principal.ruta_imagen.url
+        # Usar imagen_url directamente (puede ser URL de Cloudinary o estática)
+        imagen_url = promo.imagen_url or '/static/img/placeholder.jpg'
         
         promociones.append({
             'id': promo.id_promocion,
@@ -2085,7 +2070,7 @@ def promociones_view(request):
             'precio_original': float(promo.precio_original),
             'precio_promo': float(promo.precio_promo),
             'porcentaje_descuento': float(promo.porcentaje_descuento) if promo.porcentaje_descuento else 0,
-            'imagen_url': imagen_url or '/static/img/placeholder.jpg',
+            'imagen_url': imagen_url,
             'ahorro': float(promo.ahorro),
             'fecha_inicio': promo.fecha_inicio.isoformat() if promo.fecha_inicio else None,
             'fecha_fin': promo.fecha_fin.isoformat() if promo.fecha_fin else None,
