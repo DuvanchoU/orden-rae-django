@@ -1241,27 +1241,26 @@
             {% if promociones %}
                 {% for promo in promociones %}
                 <article class="promo-card-new"
-                         data-cat="{{ promo.categoria|lower|default:'general' }}"
-                         data-id="{{ promo.id }}"
-                         data-nombre="{{ promo.nombre|escapejs }}"
-                         data-precio="{{ promo.precio_promo }}"
-                         data-precio-original="{{ promo.precio_original|default:0 }}"
-                         data-descuento="{{ promo.porcentaje_descuento|default:0 }}"
-                         data-img="{{ promo.imagen_url }}"
-                         data-cat-nombre="{{ promo.categoria|default:'General' }}">
+                        data-cat="{{ promo.categoria|lower|default:'general' }}"
+                        data-id="{{ promo.id }}"
+                        data-nombre="{{ promo.nombre|escapejs }}"
+                        data-precio="{{ promo.precio_promo }}"
+                        data-precio-original="{{ promo.precio_original|default:0 }}"
+                        data-descuento="{{ promo.porcentaje_descuento|default:0 }}"
+                        data-img="{{ promo.imagen_url }}"
+                        data-cat-nombre="{{ promo.categoria|default:'General' }}">
 
                     <!-- Imagen -->
                     <div class="pcard-img">
-                        {% if promo.imagen_url and promo.imagen_url != '/static/img/Promocion_sofa.png' %}
-                            {% cloudinary_url promo.imagen_url.name format='jpg' quality='auto' width=400 height=300 crop='fill' as cloudinary_promo_img %}
-                            <img src="{{ cloudinary_promo_img }}"
-                                 alt="{{ promo.nombre }}"
-                                 loading="lazy"
-                                 onerror="this.src='https://via.placeholder.com/400x300?text={{ promo.nombre|urlencode }}'">
+                        {% if promo.imagen_url and promo.imagen_url != '/static/img/placeholder.jpg' %}
+                            <img src="{{ promo.imagen_url }}"
+                                alt="{{ promo.nombre }}"
+                                loading="lazy"
+                                onerror="this.src='https://via.placeholder.com/400x300?text={{ promo.nombre|urlencode }}'">
                         {% else %}
                             <img src="https://via.placeholder.com/400x300?text={{ promo.nombre|urlencode }}"
-                                 alt="{{ promo.nombre }}"
-                                 loading="lazy">
+                                alt="{{ promo.nombre }}"
+                                loading="lazy">
                         {% endif %}
 
                         <!-- Overlay con quick add -->

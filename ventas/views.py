@@ -2055,12 +2055,18 @@ class PromoComboDeleteView(View):
 def promociones_view(request):
     """Vista pública para la página de promociones (clientes)"""
     
-    promociones_qs = Promocion.objects.filter(activa=True)
+    promociones_qs = Promocion.objects.filter(activa=True).prefetch_related('imagenes')
     
     promociones = []
     for promo in promociones_qs:
-        # Usar imagen_url directamente (puede ser URL de Cloudinary o estática)
-        imagen_url = promo.imagen_url or '/static/img/placeholder.jpg'
+        # USAR la imagen principal desde ImagenPromocion (relación real)
+        imagen_principal = promo.imagen_principal
+        
+        if imagen_principal and imagen_principal.ruta_imagen:
+            # MediaCloudinaryStorage ya devuelve una URL completa, lista para usar
+            imagen_url = imagen_principal.ruta_imagen.url
+        else:
+            imagen_url = '/static/img/placeholder.jpg'
         
         promociones.append({
             'id': promo.id_promocion,
@@ -2079,7 +2085,6 @@ def promociones_view(request):
     combo = PromoCombo.objects.filter(activa=True).first()
     
     if combo:
-        # Obtener imagen del combo
         imagen_combo = combo.imagen_url or '/static/img/Sofá5.jpg'
         
         promo_combo = {
