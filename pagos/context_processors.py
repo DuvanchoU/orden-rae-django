@@ -1,12 +1,13 @@
 from django.conf import settings
 
 
-def stripe_settings(request):
+def wompi_settings(request):
     """
-    Inyecta la clave pública de Stripe en todos los templates.
-    Agregar en settings.py → TEMPLATES → OPTIONS → context_processors:
-        'pagos.context_processors.stripe_settings',
+    Inyecta la llave pública de Wompi en todos los templates.
+    Configurado en settings.py -> TEMPLATES -> OPTIONS -> context_processors:
+        'pagos.context_processors.wompi_settings',
     """
     return {
-        'STRIPE_PUBLIC_KEY': getattr(settings, 'STRIPE_PUBLIC_KEY', ''),
+        'WOMPI_PUBLIC_KEY': getattr(settings, 'WOMPI_PUBLIC_KEY', ''),
+        'WOMPI_CURRENCY':   getattr(settings, 'WOMPI_CURRENCY', 'COP'),
     }

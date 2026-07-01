@@ -204,6 +204,95 @@ def carrito_compra(request):
             total_carrito += subtotal_base
             total_iva     += subtotal_iva
 
+    # ══════════════════════════════════════════════════════
+    # CÁLCULO DATOS WOMPI (para el widget en el carrito)
+    # ══════════════════════════════════════════════════════
+    wompi_data = None
+    cliente_datos_completos = False
+
+    # Verificar autenticación del cliente (por sesión)
+    es_cliente = request.session.get('cliente_auth', False)
+    cliente_id = request.session.get('cliente_id')
+
+    if es_cliente and cliente_id and items:  # Solo si hay items en el carrito
+        try:
+            from ventas.models import Clientes
+            import hashlib
+            import time
+            from datetime import datetime, timedelta, timezone as tz
+            from django.conf import settings
+            
+            cliente = Clientes.objects.get(
+                id_cliente=cliente_id,
+                estado='ACTIVO',
+                deleted_at__isnull=True
+            )
+            
+            # Datos del cliente (limpiar espacios)
+            customer_name  = f"{cliente.nombre} {cliente.apellido}".strip()
+            customer_email = (cliente.email or '').strip()
+            customer_phone = (cliente.telefono or '').strip()
+            customer_doc   = (cliente.documento or '').strip()
+            
+            # Debug: ver qué datos tiene
+            print(f"\n{'='*50}")
+            print(f"🔍 WOMPI DEBUG - Cliente ID: {cliente.id_cliente}")
+            print(f"   Nombre completo: '{customer_name}'")
+            print(f"   Email:           '{customer_email}'")
+            print(f"   Teléfono:        '{customer_phone}'")
+            print(f"   Documento:       '{customer_doc}'")
+            
+            # Validación flexible: solo nombre y email son OBLIGATORIOS
+            # Teléfono y documento son opcionales (Wompi los pide en el modal si faltan)
+            cliente_datos_completos = bool(customer_name and customer_email)
+            
+            print(f" Datos completos: {cliente_datos_completos}")
+            print(f"{'='*50}\n")
+            
+            if cliente_datos_completos:
+                # Monto total (con IVA)
+                total_final = round(total_carrito + total_iva, 2)
+                amount_in_cents = int(total_final * 100)
+                
+                # Referencia única
+                reference = f"ORDER-{cliente.id_cliente}-{int(time.time())}"
+                
+                # Firma de integridad
+                integrity_secret = settings.WOMPI_INTEGRITY_SECRET
+                cadena = f"{reference}{amount_in_cents}{settings.WOMPI_CURRENCY}{integrity_secret}"
+                signature = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
+                
+                # Fecha expiración (24h)
+                expiration = (datetime.now(tz.utc) + timedelta(hours=24)).isoformat()
+                
+                # Dirección
+                direccion = getattr(cliente, 'direccion', '') or ''
+                
+                wompi_data = {
+                    'public_key':         settings.WOMPI_PUBLIC_KEY,
+                    'amount_in_cents':    amount_in_cents,
+                    'reference':          reference,
+                    'signature':          signature,
+                    'redirect_url':       request.build_absolute_uri('/pagos/exito/'),
+                    'expiration_time':    expiration,
+                    'tax_vat_cents':      int(total_iva * 100),
+                    'customer_email':     customer_email,
+                    'customer_name':      customer_name,
+                    'customer_phone':     customer_phone or '',  # Puede estar vacío
+                    'customer_doc':       customer_doc or '',    # Puede estar vacío
+                    'shipping_address':   direccion,
+                    'customer_name_full': customer_name,
+                }
+        except Clientes.DoesNotExist:
+            print(f"⚠️ Cliente {cliente_id} no encontrado en BD")
+        except Exception as e:
+            print(f"⚠️ Error preparando datos Wompi: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # ══════════════════════════════════════════════════════
+    # CONTEXT FINAL
+    # ══════════════════════════════════════════════════════
     context = {
         'carrito_items':      items,
         'carrito_items_json': json.dumps(items, ensure_ascii=False),
@@ -213,7 +302,12 @@ def carrito_compra(request):
         'carrito_cantidad':   sum(i['cantidad'] for i in items),
         'hay_items':          bool(items),
         'notificaciones_nuevas': 0,
+        
+        # 👇 DATOS WOMPI PARA EL WIDGET
+        'wompi':                  wompi_data,
+        'cliente_datos_completos': cliente_datos_completos,
     }
+    
     return render(request, 'pagina/carrito.html', context)
 
 

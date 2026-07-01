@@ -1493,11 +1493,10 @@ def api_cupon_remover(request):
     request.session.modified = True
     return JsonResponse({'success': True})
 
-# =============================================================================
-# API ENDPOINTS PARA AJAX - URLs deben coincidir con el JavaScript
-# =============================================================================
 
-
+#══════════════════════════════════════════════════════
+## CHECKOUT — Vista de proceso de pago
+#══════════════════════════════════════════════════════
 def checkout(request):
     """Vista de proceso de checkout — requiere sesión de cliente autenticado"""
     
@@ -1548,7 +1547,6 @@ def checkout(request):
             sku         = prod.codigo_producto
             img         = ImagenesProducto.objects.filter(producto=prod, es_principal=1).first()
             if img:
-                # Usar .url para evitar ImageFieldFile
                 try:
                     imagen_url = img.ruta_imagen.url if img.ruta_imagen else '/static/img/placeholder.jpg'
                 except:
@@ -1592,7 +1590,6 @@ def checkout(request):
 
     total_final = max(0, round(total_con_iva - descuento, 2))
  
-    # safe_json_dumps ya incluye ensure_ascii=False
     carrito_items_json = safe_json_dumps([
         {**item, 'precio_base': item['precio_base'], 'iva': item['iva']}
         for item in carrito_items
@@ -1610,10 +1607,13 @@ def checkout(request):
         'cupon_activo':       cupon_activo,
         'hay_items':          len(carrito_items) > 0,
         'random_number':      ''.join(random.choices(string.ascii_uppercase + string.digits, k=6)),
-        'STRIPE_PUBLIC_KEY': getattr(settings, 'STRIPE_PUBLIC_KEY', '')
+        'STRIPE_PUBLIC_KEY': getattr(settings, 'STRIPE_PUBLIC_KEY', ''),
+        'cliente_nombre':     request.session.get('cliente_nombre', ''),
+        'cliente_email':      request.session.get('cliente_email', ''),
     }
 
     return render(request, 'pagina/checkout.html', context)
+
 
 @require_http_methods(["POST"])
 def api_checkout_procesar(request):
@@ -1631,7 +1631,6 @@ def api_checkout_procesar(request):
     from django.utils import timezone
  
     # ── Auth ──────────────────────────────────────────────────────────────────
-    # Verificar sesión de cliente (NO Django auth)
     es_cliente = request.session.get('cliente_auth', False)
     cliente_id = request.session.get('cliente_id')
     
@@ -1656,7 +1655,6 @@ def api_checkout_procesar(request):
         from usuarios.models import Usuarios
  
         # ── 1. Obtener cliente ───────────────────────────────────────────────
-        # Obtener cliente desde la sesión (NO desde request.user)
         try:
             cliente = Clientes.objects.get(
                 id_cliente=cliente_id,
@@ -1669,7 +1667,7 @@ def api_checkout_procesar(request):
                 status=404
             )
  
-        # ── 2. Recopilar items del carrito (BD primero, sesión como fallback) ──
+        # ── 2. Recopilar items del carrito ─────────────────────────────────────
         items_data = []
  
         carrito_bd = (
@@ -1683,7 +1681,6 @@ def api_checkout_procesar(request):
         if carrito_bd:
             for item in ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto'):
                 if item.producto and item.cantidad > 0:
-                    # ✅ CORRECCIÓN: Cuantizar precio_unitario a 2 decimales
                     precio_unit = Decimal(str(item.precio_unitario)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     items_data.append({
                         'producto':        item.producto,
@@ -1712,7 +1709,6 @@ def api_checkout_procesar(request):
                 if not prod:
                     continue
                 cantidad = int(item_data_s.get('cantidad', 1)) if isinstance(item_data_s, dict) else int(item_data_s)
-                # ✅ CORRECCIÓN: Cuantizar precio_actual a 2 decimales
                 precio_unit = Decimal(str(prod.precio_actual)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 items_data.append({
                     'producto':        prod,
@@ -1727,22 +1723,17 @@ def api_checkout_procesar(request):
             )
  
         # ── 3. Calcular totales ──────────────────────────────────────────────
-        # ✅ CORRECCIÓN: Usar Decimal con quantize en TODAS las operaciones
         Q = Decimal('0.01')
 
-        # Calcular subtotal como Decimal con exactamente 2 decimales
         subtotal = sum(
             (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
             for item in items_data
         ).quantize(Q, rounding=ROUND_HALF_UP)
 
-        # Calcular impuesto como Decimal con exactamente 2 decimales
         impuesto = (subtotal * Decimal('0.19')).quantize(Q, rounding=ROUND_HALF_UP)
 
-        # Inicializar descuento como Decimal
         descuento = Decimal('0.00')
 
-        # Aplicar cupón si existe
         cupon = request.session.get('cupon_activo')
         if cupon:
             tipo = cupon.get('tipo', '')
@@ -1754,7 +1745,6 @@ def api_checkout_procesar(request):
             elif tipo == 'fijo':
                 descuento = min(valor, total_con_iva).quantize(Q, rounding=ROUND_HALF_UP)
 
-        # Calcular total como Decimal con exactamente 2 decimales
         total = (subtotal + impuesto - descuento).quantize(Q, rounding=ROUND_HALF_UP)
 
         # ── 4. Método de pago ────────────────────────────────────────────────
@@ -1824,14 +1814,13 @@ def api_checkout_procesar(request):
                 consec_pedido += 1
                 numero_pedido = f"PED-{consec_pedido:06d}"
  
-            # ✅ CORRECCIÓN: Usar Decimal directamente (ya está cuantizado)
             pedido = Pedido(
                 cliente=cliente,
                 usuario=usuario_sistema,
                 asesor=None,
                 fecha_pedido=ahora,
                 fecha_entrega_estimada=fecha_entrega,
-                total_pedido=total,  # Decimal con 2 decimales
+                total_pedido=total,
                 estado_pedido='PENDIENTE',
                 estado_facturacion='NO_FACTURADO',
                 direccion_entrega=direccion_envio,
@@ -1843,15 +1832,14 @@ def api_checkout_procesar(request):
  
             # ── 6c. Crear DetallePedido ──────────────────────────────────────
             for item in items_data:
-                # ✅ CORRECCIÓN: Cuantizar subtotal_item
                 subtotal_item = (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
  
                 DetallePedido(
                     pedido=pedido,
                     producto=item['producto'],
                     cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario'],  # Decimal con 2 decimales
-                    subtotal=subtotal_item,  # Decimal con 2 decimales
+                    precio_unitario=item['precio_unitario'],
+                    subtotal=subtotal_item,
                     created_at=ahora,
                     updated_at=ahora,
                 ).save()
@@ -1869,17 +1857,16 @@ def api_checkout_procesar(request):
                 consec_venta += 1
                 numero_factura = f"{prefijo}-{consec_venta:06d}"
  
-            # ✅ CORRECCIÓN: Usar Decimal directamente (ya están cuantizados)
             venta = Ventas(
                 usuario=usuario_sistema,
                 cliente=cliente,
                 pedido=pedido,
                 tipo_venta='DIRECTA',
                 fecha_venta=ahora,
-                subtotal=subtotal,  # Decimal con 2 decimales
-                impuesto=impuesto,  # Decimal con 2 decimales
-                descuento=descuento,  # Decimal con 2 decimales
-                total=total,  # Decimal con 2 decimales
+                subtotal=subtotal,
+                impuesto=impuesto,
+                descuento=descuento,
+                total=total,
                 estado_venta='PENDIENTE',
                 metodo_pago=metodo_pago,
                 observaciones=observaciones,
@@ -1893,16 +1880,15 @@ def api_checkout_procesar(request):
             # ── 6f. Crear DetalleVenta ───────────────────────────────────────
             detalles_venta = []
             for item in items_data:
-                # ✅ CORRECCIÓN: Cuantizar subtotal_item
                 subtotal_item = (item['precio_unitario'] * item['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
                 
                 detalle = DetalleVenta(
                     venta=venta,
                     producto=item['producto'],
                     cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario'],  # Decimal con 2 decimales
-                    descuento=Decimal('0.00').quantize(Q),  # Decimal con 2 decimales
-                    subtotal=subtotal_item,  # Decimal con 2 decimales
+                    precio_unitario=item['precio_unitario'],
+                    descuento=Decimal('0.00').quantize(Q),
+                    subtotal=subtotal_item,
                     costo_estimado=None,
                     created_at=ahora,
                     updated_at=ahora,
@@ -1958,6 +1944,174 @@ def api_checkout_procesar(request):
             {'success': False, 'error': f'Error al procesar la compra: {str(e)}'},
             status=500
         )
+
+# ══════════════════════════════════════════════════════
+# CHECKOUT WOMPI — Widget con datos automáticos del cliente
+# ══════════════════════════════════════════════════════
+
+@login_required
+def checkout_wompi_view(request):
+    """
+    Vista que prepara el Widget de Wompi con datos automáticos del cliente.
+    Usa autenticación por sesión (cliente_auth) y datos del modelo Clientes.
+    """
+    import time
+    from datetime import datetime, timedelta, timezone as tz
+    from decimal import Decimal
+    
+    # ── 1. Verificar autenticación del cliente (por sesión) ──
+    es_cliente = request.session.get('cliente_auth', False)
+    cliente_id = request.session.get('cliente_id')
+    
+    if not es_cliente or not cliente_id:
+        messages.warning(request, 'Debes iniciar sesión para pagar con Wompi')
+        return redirect('pagina:login')
+    
+    # ── 2. Obtener cliente desde la BD ──
+    try:
+        cliente = Clientes.objects.get(
+            id_cliente=cliente_id,
+            estado='ACTIVO',
+            deleted_at__isnull=True
+        )
+    except Clientes.DoesNotExist:
+        messages.error(request, 'Tu cuenta no existe o está inactiva')
+        return redirect('pagina:login')
+    
+    # ── 3. Obtener carrito (BD primero, sesión como fallback) ──
+    carrito_session = request.session.get('carrito', {})
+    carrito_items = []
+    total_carrito = Decimal('0')
+    total_iva = Decimal('0')
+    
+    # Intentar carrito de BD primero
+    carrito_bd = Carritos.objects.filter(
+        cliente=cliente, 
+        deleted_at__isnull=True
+    ).first()
+    
+    if carrito_bd:
+        for item in ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto'):
+            if item.producto and item.cantidad > 0:
+                precio_unit = Decimal(str(item.precio_unitario))
+                subtotal = precio_unit * item.cantidad
+                iva_item = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'))
+                
+                carrito_items.append({
+                    'producto': item.producto,
+                    'cantidad': item.cantidad,
+                    'precio_unitario': precio_unit,
+                    'subtotal': subtotal,
+                    'iva': iva_item,
+                })
+                
+                total_carrito += subtotal
+                total_iva += iva_item
+    else:
+        # Fallback: carrito de sesión
+        if not carrito_session:
+            messages.warning(request, 'Tu carrito está vacío')
+            return redirect('pagina:productos')
+        
+        producto_ids = list(carrito_session.keys())
+        productos_qs = Producto.objects.filter(
+            id_producto__in=producto_ids,
+            estado='DISPONIBLE',
+            deleted_at__isnull=True
+        )
+        productos_map = {str(p.id_producto): p for p in productos_qs}
+        
+        for producto_id_str, item_data in carrito_session.items():
+            if isinstance(item_data, dict):
+                cantidad = int(item_data.get('cantidad', 1))
+                prod = productos_map.get(producto_id_str)
+                if prod:
+                    precio_unit = Decimal(str(prod.precio_actual))
+                    subtotal = precio_unit * cantidad
+                    iva_item = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'))
+                    
+                    carrito_items.append({
+                        'producto': prod,
+                        'cantidad': cantidad,
+                        'precio_unitario': precio_unit,
+                        'subtotal': subtotal,
+                        'iva': iva_item,
+                    })
+                    
+                    total_carrito += subtotal
+                    total_iva += iva_item
+    
+    if not carrito_items:
+        messages.warning(request, 'Tu carrito está vacío')
+        return redirect('pagina:productos')
+    
+    # ── 4. Aplicar cupón si existe ──
+    cupon_activo = request.session.get('cupon_activo')
+    descuento = Decimal('0')
+    total_con_iva = (total_carrito + total_iva).quantize(Decimal('0.01'))
+    
+    if cupon_activo:
+        tipo = cupon_activo.get('tipo', '')
+        valor = Decimal(str(cupon_activo.get('valor', 0)))
+        
+        if tipo == 'porcentaje':
+            descuento = (total_con_iva * valor / Decimal('100')).quantize(Decimal('0.01'))
+        elif tipo == 'fijo':
+            descuento = min(valor, total_con_iva).quantize(Decimal('0.01'))
+    
+    total_final = max(Decimal('0'), total_con_iva - descuento).quantize(Decimal('0.01'))
+    
+    # ── 5. Montos en centavos (Wompi lo exige) ──
+    amount_in_cents = int(total_final * 100)
+    tax_vat_in_cents = int(total_iva * 100)
+    
+    # ── 6. Referencia única ──
+    reference = f"ORDER-{cliente.id_cliente}-{int(time.time())}"
+    
+    # ── 7. Firma de integridad (SHA-256) ──
+    integrity_secret = settings.WOMPI_INTEGRITY_SECRET
+    cadena = f"{reference}{amount_in_cents}{settings.WOMPI_CURRENCY}{integrity_secret}"
+    signature = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
+    
+    # ── 8. Fecha de expiración (24 horas) ──
+    expiration = (datetime.now(tz.utc) + timedelta(hours=24)).isoformat()
+    
+    # ── 9. Datos del cliente desde la BD ──
+    customer_name = f"{cliente.nombre} {cliente.apellido}".strip()
+    customer_email = cliente.email
+    customer_phone = cliente.telefono or ''
+    customer_doc = cliente.documento or ''
+    
+    # Dirección de envío (del cliente o vacía)
+    direccion = getattr(cliente, 'direccion', '') or ''
+    ciudad = getattr(cliente, 'ciudad', '') or 'Bogotá'
+    region = getattr(cliente, 'departamento', '') or 'Cundinamarca'
+    
+    # ── 10. URL de redirección después del pago ──
+    redirect_url = request.build_absolute_uri('/pago-exitoso/')
+    
+    # ── 11. Renderizar template ──
+    context = {
+        'wompi_public_key':   settings.WOMPI_PUBLIC_KEY,
+        'amount_in_cents':    amount_in_cents,
+        'reference':          reference,
+        'signature':          signature,
+        'expiration_time':    expiration,
+        'redirect_url':       redirect_url,
+        'tax_vat_in_cents':   tax_vat_in_cents,
+        'customer_email':     customer_email,
+        'customer_name':      customer_name,
+        'customer_phone':     customer_phone,
+        'customer_doc':       customer_doc,
+        'shipping_address_1': direccion,
+        'shipping_city':      ciudad,
+        'shipping_region':    region,
+        'total_carrito':      float(total_final),
+        'items_carrito':      carrito_items,
+        'carrito_cantidad':   sum(i['cantidad'] for i in carrito_items),
+    }
+    
+    return render(request, 'pagina/checkout_wompi.html', context)
 
 @require_http_methods(["GET"])
 def api_listar_notificaciones(request):

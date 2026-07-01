@@ -4,11 +4,11 @@ from . import views
 app_name = 'pagos'
 
 urlpatterns = [
-    path('crear-payment-intent/', views.crear_payment_intent, name='crear_payment_intent'),
+    path('iniciar-transaccion/', views.iniciar_transaccion, name='iniciar_transaccion'),
     path('confirmar-pago/', views.confirmar_pago, name='confirmar_pago'),
-    path('webhook/',  views.stripe_webhook, name='stripe_webhook'),
+    path('webhook/', views.wompi_webhook, name='wompi_webhook'),
     path('exito/', views.pago_exitoso, name='pago_exitoso'),
 
     # Solo disponible con DEBUG=True — para verificar configuración
-    path('debug-stripe/', views.debug_stripe, name='debug_stripe'),
+    path('debug-wompi/', views.debug_wompi, name='debug_wompi'),
 ]

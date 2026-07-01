@@ -87,7 +87,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',  # ← Requerido por allauth
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'pagos.context_processors.stripe_settings',
+                'pagos.context_processors.wompi_settings',
                 'ventas.context_processors.carrito_context',
                 'usuarios.context_processors.user_permissions',
                 'django.template.context_processors.media',
@@ -105,14 +105,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 import dj_database_url
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv(
-            'DATABASE_URL',
-            'postgresql://postgres:password@localhost:5432/bd_orden_rae_django'
-        ),
-        conn_max_age=600,
-        ssl_require=not DEBUG
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'orden_rae?06#dgc'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5433'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
+    }
 }
 
 # ==========================================
@@ -180,12 +183,21 @@ SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
-        'CLIENT_ID': os.getenv('SOCIALACCOUNT_PROVIDERS_GOOGLE_CLIENT_ID'),
-        'SECRET': os.getenv('SOCIALACCOUNT_PROVIDERS_GOOGLE_SECRET'),
+        'APPS': [
+            {
+                'client_id': os.getenv('SOCIALACCOUNT_PROVIDERS_GOOGLE_CLIENT_ID'),
+                'secret': os.getenv('SOCIALACCOUNT_PROVIDERS_GOOGLE_SECRET'),
+                'key': '',
+            },
+        ],
     }
 }
 
 SOCIALACCOUNT_ADAPTER = 'pagina.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_ADAPTER = "usuarios.social_adapter.MySocialAccountAdapter"
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+
+ACCOUNT_UNIQUE_EMAIL = True
 
 # ==========================================
 # SESIONES
@@ -232,13 +244,6 @@ if 'smtp' in EMAIL_BACKEND.lower():
 PASSWORD_RESET_TIMEOUT = 3600
 EMAIL_VERIFICATION_TIMEOUT = 86400
 SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
-
-# ==========================================
-# STRIPE
-# ==========================================
-STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', 'pk_test_51TYVv0CGUP1IqyPzfEb75sDRQnUvbvbIDI9l7YoQv7Wd4xjziycCWgBBwCPeAvRycDLdedk8D1SmKMdXRhh6IXR800PUiOUGls')
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default='')
-STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 # ==========================================
 # LÍMITES DE ARCHIVOS
@@ -333,16 +338,16 @@ import cloudinary.uploader
 import cloudinary.api
 
 cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', ''),
-    api_key=os.getenv('CLOUDINARY_API_KEY', ''),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET', ''),
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', 'ddncfyxbo'),
+    api_key=os.getenv('CLOUDINARY_API_KEY', '925648523678929'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET', 'Ztrnee2Zau3RBz9b9v_EakLLGI8'),
     secure=True
 )
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'ddncfyxbo'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '925648523678929'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', 'Ztrnee2Zau3RBz9b9v_EakLLGI8'),
     'FOLDER': 'orden-rae',
 }
 
@@ -356,8 +361,9 @@ STORAGES = {
 }
 
 # Wompi Configuration
-WOMPI_PUBLIC_KEY = os.getenv('WOMPI_PUBLIC_KEY', '')
-WOMPI_PRIVATE_KEY = os.getenv('WOMPI_PRIVATE_KEY', '')
-WOMPI_INTEGRITY_SECRET = os.getenv('WOMPI_INTEGRITY_SECRET', '')
+WOMPI_PUBLIC_KEY = os.getenv('WOMPI_PUBLIC_KEY', 'pub_prod_1oRfrAIE2zIMDIXeDgxmDwoVlsxTe5FW')
+WOMPI_PRIVATE_KEY = os.getenv('WOMPI_PRIVATE_KEY', 'prv_prod_LDjDSBoxgtkbzSQqhCQzjl7djeYksXtg')
+WOMPI_INTEGRITY_SECRET = os.getenv('WOMPI_INTEGRITY_SECRET', 'prod_integrity_eYgEqKmorhu1TdXMu9Y6yuksuM8Ao8Fs')
 WOMPI_BASE_URL = os.getenv('WOMPI_BASE_URL', 'https://api.wompi.co/v1')
 WOMPI_CHECKOUT_URL = os.getenv('WOMPI_CHECKOUT_URL', 'https://checkout.wompi.co')
+WOMPI_CURRENCY = 'COP'

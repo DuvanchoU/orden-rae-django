@@ -21,11 +21,6 @@ urlpatterns = [
     path('rastrear-pedido/', views.rastrear_pedido, name='rastrear_pedido'),
     path('info-ayuda/<slug:slug>/', views.info_ayuda, name='info_ayuda'),
 
-    # Checkout
-    path('checkout/', views.checkout, name='checkout'),
-    path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
-
-
     # Usuario y Autenticación
     path('login/', views.login_view, name='login'),
     path('registro/', views.registro_view, name='registro'),
@@ -41,8 +36,8 @@ urlpatterns = [
 
     # API
     path('api/carrito/agregar/', views.api_agregar_carrito, name='api_carrito_agregar'),
-    path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
     path('api/cotiza/enviar/', views.api_cotiza_enviar, name='api_cotiza_enviar'),
+    path('api/checkout/procesar/', views.api_checkout_procesar, name='api_checkout_procesar'),
     path('api/contacto/enviar/', views.api_contacto_enviar, name='api_contacto_enviar'),
     path('api/wishlist/toggle/', views.api_wishlist_toggle, name='api_wishlist_toggle'),
     path('api/spin-to-win/', views.api_spin_to_win, name='api_spin_to_win'),
@@ -71,4 +66,7 @@ urlpatterns = [
     path('reset-password/<str:token>/', views.reset_password_confirm_view, name='reset_password_confirm'),
     path('reenviar-verificacion/', views.enviar_verificacion_email_view, name='reenviar_verificacion'),
     
+    # Pagos
+    path('checkout/', views.checkout, name='checkout'),
+    path('checkout/wompi/', views.checkout_wompi_view, name='checkout_wompi')
 ]

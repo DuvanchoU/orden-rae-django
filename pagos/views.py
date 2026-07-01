@@ -1,6 +1,5 @@
 import json
 import logging
-import stripe
 
 from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
@@ -10,13 +9,12 @@ from django.utils import timezone
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
-from django.contrib.auth.decorators import login_required
 
-from .models import PagoStripe
+from .models import PagoWompi
+from . import services as wompi
 
 logger = logging.getLogger(__name__)
 
-stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -25,22 +23,21 @@ stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 
 def _get_cliente(request):
     """
-    Retorna la instancia de Clientes (ventas.models) correspondiente al usuario.
-    El modelo de autenticación es ventas.Clientes (tiene id_cliente, email, etc.).
-    Si el usuario autenticado es directamente una instancia de Clientes, se retorna.
-    En caso contrario busca por email.
+    Obtiene el cliente autenticado usando el MISMO criterio que el resto del
+    sitio (pagina.views.checkout, pagina.views.api_checkout_procesar):
+    sesión manual, NO django.contrib.auth. El login de clientes nunca llama
+    a auth.login(), por lo que request.user.is_authenticated es False para
+    ellos y @login_required los redirige a /login/ en vez de devolver JSON.
     """
     from ventas.models import Clientes
-    if not request.user.is_authenticated:
+
+    cliente_id = request.session.get('cliente_id')
+    es_cliente = request.session.get('cliente_auth', False)
+    if not es_cliente or not cliente_id:
         return None
 
-    # Si el modelo de usuario ES Clientes (AUTH_USER_MODEL = 'ventas.Clientes')
-    if isinstance(request.user, Clientes):
-        return request.user
-
-    # Fallback: buscar por email (cuando AUTH_USER_MODEL es distinto)
     return Clientes.objects.filter(
-        email=request.user.email, deleted_at__isnull=True
+        id_cliente=cliente_id, estado='ACTIVO', deleted_at__isnull=True
     ).first()
 
 
@@ -49,12 +46,11 @@ def _get_carrito_items(request):
     from inventario.models import Producto
 
     carrito_bd = None
-    if request.user.is_authenticated:
-        cliente = _get_cliente(request)
-        if cliente:
-            carrito_bd = Carritos.objects.filter(
-                cliente=cliente, deleted_at__isnull=True
-            ).first()
+    cliente = _get_cliente(request)
+    if cliente:
+        carrito_bd = Carritos.objects.filter(
+            cliente=cliente, deleted_at__isnull=True
+        ).first()
 
     if not carrito_bd and request.session.session_key:
         carrito_bd = Carritos.objects.filter(
@@ -90,12 +86,25 @@ def _get_carrito_items(request):
     return items_data
 
 
-def _calcular_totales(items_data, cupon=None):
-    # Q garantiza exactamente 2 decimales en cada paso para que
-    # Django DecimalField(decimal_places=2) no lance ValidationError.
-    Q = Decimal('0.01')
+def _get_carrito_items_por_cliente(cliente):
+    """Igual que _get_carrito_items pero sin depender de `request` (lo usa el webhook)."""
+    from ventas.models import Carritos, ItemsCarrito
+    carrito_bd = Carritos.objects.filter(cliente=cliente, deleted_at__isnull=True).first()
+    items_data = []
+    if carrito_bd:
+        for item in ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto'):
+            if item.producto and item.cantidad > 0:
+                items_data.append({
+                    'producto':        item.producto,
+                    'cantidad':        item.cantidad,
+                    'precio_unitario': Decimal(str(item.precio_unitario)),
+                })
+    return items_data, carrito_bd
 
-    subtotal  = sum(
+
+def _calcular_totales(items_data, cupon=None):
+    Q = Decimal('0.01')
+    subtotal = sum(
         (i['precio_unitario'] * i['cantidad']).quantize(Q, rounding=ROUND_HALF_UP)
         for i in items_data
     ).quantize(Q, rounding=ROUND_HALF_UP)
@@ -112,27 +121,18 @@ def _calcular_totales(items_data, cupon=None):
         elif tipo == 'fijo':
             descuento = min(valor, total_con_iva).quantize(Q, rounding=ROUND_HALF_UP)
 
-    # FIX: cuantizar el total final — la suma puede generar precisión
-    # interna extra en Python que Django rechaza en DecimalField(decimal_places=2)
     total = (subtotal + impuesto - descuento).quantize(Q, rounding=ROUND_HALF_UP)
 
-    return {
-        'subtotal':  subtotal,
-        'impuesto':  impuesto,
-        'descuento': descuento,
-        'total':     total,
-    }
+    return {'subtotal': subtotal, 'impuesto': impuesto, 'descuento': descuento, 'total': total}
 
 
-def _cop_a_stripe_amount(monto_cop: Decimal) -> int:
+def _cop_a_centavos(monto_cop: Decimal) -> int:
     """
-    COP (Peso colombiano) es ZERO-DECIMAL en Stripe.
-    https://stripe.com/docs/currencies#zero-decimal
-
-    Se envía el valor en pesos directamente, SIN multiplicar por 100.
-    Ej: $50.000 COP  →  amount=50000
+    Wompi SIEMPRE usa centavos (a diferencia del zero-decimal de Stripe).
+    Ej: $50.000 COP -> amount_in_cents = 5000000
     """
-    return int(monto_cop.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    pesos = int(monto_cop.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    return pesos * 100
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -140,440 +140,457 @@ def _cop_a_stripe_amount(monto_cop: Decimal) -> int:
 # ──────────────────────────────────────────────────────────────────────────
 
 @require_GET
-def debug_stripe(request):
-    """GET /pagos/debug-stripe/  — verifica configuración. Solo en DEBUG=True."""
+def debug_wompi(request):
+    """GET /pagos/debug-wompi/  — verifica configuración. Solo en DEBUG=True."""
     if not getattr(settings, 'DEBUG', False):
         return HttpResponse('No disponible en producción', status=403)
 
-    pk = getattr(settings, 'STRIPE_PUBLIC_KEY', '')
-    sk = getattr(settings, 'STRIPE_SECRET_KEY', '')
-    wh = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+    pk   = getattr(settings, 'WOMPI_PUBLIC_KEY', '')
+    pvk  = getattr(settings, 'WOMPI_PRIVATE_KEY', '')
+    isec = getattr(settings, 'WOMPI_INTEGRITY_SECRET', '')
+    esec = getattr(settings, 'WOMPI_EVENTS_SECRET', '')
 
-    api_ok = False
-    api_err = ''
+    api_ok, api_err = False, ''
     try:
-        stripe.PaymentIntent.list(limit=1)
-        api_ok = True
-    except stripe.error.AuthenticationError as e:
-        api_err = f'Clave secreta inválida: {e}'
+        api_ok = bool(wompi.verificar_merchant(pk)) if pk else False
     except Exception as e:
         api_err = str(e)
 
     return JsonResponse({
-        'STRIPE_PUBLIC_KEY':      f'{pk[:15]}…' if pk else '❌ NO CONFIGURADA',
-        'STRIPE_SECRET_KEY':      f'{sk[:15]}…' if sk else '❌ NO CONFIGURADA',
-        'STRIPE_WEBHOOK_SECRET':  f'{wh[:15]}…' if wh else '⚠️ No configurada',
-        'pk_es_test':             pk.startswith('pk_test_') if pk else False,
-        'sk_es_test':             sk.startswith('sk_test_') if sk else False,
+        'WOMPI_PUBLIC_KEY':       f'{pk[:18]}…' if pk else '❌ NO CONFIGURADA',
+        'WOMPI_PRIVATE_KEY':      f'{pvk[:18]}…' if pvk else '❌ NO CONFIGURADA',
+        'WOMPI_INTEGRITY_SECRET': f'{isec[:18]}…' if isec else '❌ NO CONFIGURADA',
+        'WOMPI_EVENTS_SECRET':    f'{esec[:18]}…' if esec else '⚠️ No configurada',
+        'pk_es_sandbox':          pk.startswith('pub_test_') if pk else False,
+        'base_url':               getattr(settings, 'WOMPI_BASE_URL', ''),
         'api_conecta_ok':         api_ok,
         'api_error':              api_err,
-        'stripe_lib_version':     stripe.VERSION,
+        # NUEVO: refleja exactamente lo que ve iniciar_transaccion para este request
+        'sesion_cliente_auth':    request.session.get('cliente_auth', False),
+        'sesion_cliente_id':      request.session.get('cliente_id'),
     })
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# ENDPOINT 1: Crear PaymentIntent
+# ENDPOINT 1: Iniciar transacción (genera referencia + firma para el Widget)
 # ──────────────────────────────────────────────────────────────────────────
 
 @require_POST
-@login_required
-def crear_payment_intent(request):
-    """POST /pagos/crear-payment-intent/"""
-    if not stripe.api_key:
-        logger.error('STRIPE_SECRET_KEY no configurada')
+def iniciar_transaccion(request):
+    """POST /pagos/iniciar-transaccion/"""
+    if not getattr(settings, 'WOMPI_PUBLIC_KEY', '') or not getattr(settings, 'WOMPI_INTEGRITY_SECRET', ''):
+        logger.error('WOMPI_PUBLIC_KEY / WOMPI_INTEGRITY_SECRET no configuradas')
         return JsonResponse(
             {'error': 'Pasarela de pago no configurada. Contacta al administrador.'},
             status=500
         )
 
-    try:
-        body  = json.loads(request.body or '{}')
-        cupon = body.get('cupon') or request.session.get('cupon_activo')
+    cliente = _get_cliente(request)
+    if not cliente:
+        # 401 explícito en JSON — nunca una redirección HTML como hacía @login_required
+        return JsonResponse({'error': 'Debes iniciar sesión para continuar.'}, status=401)
 
-        items = _get_carrito_items(request)
+    try:
+        body     = json.loads(request.body or '{}')
+        cupon    = body.get('cupon') or request.session.get('cupon_activo')
+        contacto = body.get('contacto', {})
+        envio    = body.get('envio', {})
+
+        items, _ = _get_carrito_items_por_cliente(cliente)
+        if not items:
+            items = _get_carrito_items(request)
         if not items:
             return JsonResponse({'error': 'El carrito está vacío'}, status=400)
 
-        totales       = _calcular_totales(items, cupon)
-        amount_stripe = _cop_a_stripe_amount(totales['total'])
+        totales         = _calcular_totales(items, cupon)
+        amount_in_cents = _cop_a_centavos(totales['total'])
 
-        # Mínimo Stripe para COP zero-decimal: 500 pesos
-        if amount_stripe < 500:
+        # Mínimo recomendado por Wompi: $1.500 COP
+        if amount_in_cents < 150000:
             return JsonResponse(
-                {'error': f'Monto mínimo: $500 COP (actual: ${amount_stripe})'},
+                {'error': f'Monto mínimo: $1.500 COP (actual: ${amount_in_cents // 100})'},
                 status=400
             )
-
-        cliente = _get_cliente(request)
-        if not cliente:
-            return JsonResponse({'error': 'No se encontró el perfil de cliente.'}, status=404)
 
         desc = ', '.join(
             f"{i['producto'].referencia_producto or i['producto'].codigo_producto} x{i['cantidad']}"
             for i in items[:5]
         )
 
-        logger.info(f'Creando PI: amount={amount_stripe} COP para {getattr(cliente, "email", "anon")}')
+        referencia = wompi.generar_referencia()
+        firma      = wompi.generar_firma_integridad(referencia, amount_in_cents, 'COP')
 
-        intent = stripe.PaymentIntent.create(
-            amount=amount_stripe,
-            currency='cop',
-            payment_method_types=['card'],
-            description=f'ORDER RAE — {desc}',
-            metadata={
-                'cliente_id':    str(cliente.id_cliente) if cliente else '',
-                'cliente_email': cliente.email           if cliente else '',
-                'session_key':   request.session.session_key or '',
-                'descuento':     str(totales['descuento']),
-                'cupon_codigo':  cupon.get('codigo', '') if cupon else '',
-            },
-        )
+        logger.info(f'Iniciando transacción Wompi: ref={referencia} amount_in_cents={amount_in_cents}')
 
-        PagoStripe.objects.create(
-            payment_intent_id=intent.id,
-            cliente_id=cliente.id_cliente if cliente else None,
-            # BUG FIX: guardamos en pesos (zero-decimal), igual que lo que enviamos a Stripe
-            monto=amount_stripe,
-            moneda='cop',
+        PagoWompi.objects.create(
+            referencia=referencia,
+            cliente_id=cliente.id_cliente,
+            monto=int(totales['total']),
+            monto_centavos=amount_in_cents,
+            moneda='COP',
             estado='PENDIENTE',
             descripcion=desc,
+            checkout_data_json=json.dumps({'contacto': contacto, 'envio': envio}),
         )
-
-        logger.info(f'PaymentIntent creado: {intent.id}')
 
         return JsonResponse({
-            'client_secret':     intent.client_secret,
-            'payment_intent_id': intent.id,
-            'total':             float(totales['total']),
-            'subtotal':          float(totales['subtotal']),
-            'impuesto':          float(totales['impuesto']),
-            'descuento':         float(totales['descuento']),
-            'amount_stripe':     amount_stripe,
+            'public_key':           settings.WOMPI_PUBLIC_KEY,
+            'referencia':           referencia,
+            'amount_in_cents':      amount_in_cents,
+            'currency':             'COP',
+            'signature':            firma,
+            'total':                float(totales['total']),
+            'subtotal':             float(totales['subtotal']),
+            'impuesto':             float(totales['impuesto']),
+            'impuesto_en_centavos': _cop_a_centavos(totales['impuesto']),
+            'descuento':            float(totales['descuento']),
+            'redirect_url':         request.build_absolute_uri('/pagos/exito/'),
         })
 
-    except stripe.error.AuthenticationError:
-        logger.error('Stripe AuthenticationError — verifica STRIPE_SECRET_KEY')
-        return JsonResponse(
-            {'error': 'Error de autenticación con el proveedor de pagos.'},
-            status=500
-        )
-    except stripe.error.StripeError as e:
-        logger.error(f'StripeError en crear_payment_intent: {e}')
-        return JsonResponse(
-            {'error': str(getattr(e, 'user_message', None) or e)},
-            status=400
-        )
     except Exception as e:
-        logger.exception('Error inesperado en crear_payment_intent')
+        logger.exception('Error inesperado en iniciar_transaccion')
         return JsonResponse({'error': str(e)}, status=500)
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# ENDPOINT 2: Confirmar Pago → crea Pedido + Venta
+# Lógica compartida: crea Pedido + Venta cuando Wompi aprueba el pago.
+# La usan tanto confirmar_pago (camino normal) como el webhook (respaldo /
+# métodos asíncronos como PSE). Es idempotente.
+# ──────────────────────────────────────────────────────────────────────────
+
+def _completar_compra_si_aprobado(pago_reg, tx_wompi):
+    from ventas.models import (
+        Clientes, Ventas, DetalleVenta, MetodosPago,
+        Pedido, DetallePedido, ItemsCarrito, Carritos,
+    )
+    from usuarios.models import Usuarios
+
+    if pago_reg.venta_id:
+        return pago_reg  # ya procesado — evita duplicar pedidos
+
+    cliente = Clientes.objects.filter(pk=pago_reg.cliente_id, deleted_at__isnull=True).first()
+    if not cliente:
+        raise ValueError('Cliente no encontrado para el pago')
+
+    items, carrito_bd = _get_carrito_items_por_cliente(cliente)
+    if not items:
+        raise ValueError('Carrito vacío al confirmar el pago')
+
+    checkout_data = json.loads(pago_reg.checkout_data_json or '{}')
+    contacto = checkout_data.get('contacto', {})
+    envio    = checkout_data.get('envio', {})
+
+    dirs            = [envio.get('ciudad', ''), envio.get('direccion', ''), envio.get('apartamento', '')]
+    direccion_envio = ' - '.join(d.strip() for d in dirs if d and d.strip())
+    observaciones   = (
+        f"Pedido web | Wompi ref: {pago_reg.referencia} | TX: {pago_reg.wompi_transaction_id} | "
+        f"{contacto.get('nombre', '')} {contacto.get('telefono', '')} | {direccion_envio}"
+    )
+    instrucciones = (envio.get('instrucciones') or '').strip()
+    if instrucciones:
+        observaciones += f" | {instrucciones}"
+
+    cupon   = None
+    totales = _calcular_totales(items, cupon)
+
+    ahora         = timezone.now()
+    fecha_entrega = (ahora + timezone.timedelta(days=5)).date()
+
+    metodo_pago, _ = MetodosPago.objects.get_or_create(
+        nombre='Wompi',
+        defaults={
+            'descripcion': 'Pago en línea vía Wompi (Tarjeta / PSE / Nequi)',
+            'created_at':  ahora,
+            'updated_at':  ahora,
+        }
+    )
+
+    with transaction.atomic():
+        usuario_sistema = Usuarios.objects.filter(pk=1).first()
+
+        ult_p = Pedido.objects.filter(deleted_at__isnull=True).order_by('-id_pedido').first()
+        cp    = (ult_p.id_pedido if ult_p else 0) + 1
+        num_p = f"PED-{cp:06d}"
+        while Pedido.objects.filter(numero_pedido=num_p).exists():
+            cp += 1
+            num_p = f"PED-{cp:06d}"
+
+        pedido = Pedido(
+            cliente=cliente,
+            usuario=usuario_sistema,
+            asesor=None,
+            fecha_pedido=ahora,
+            fecha_entrega_estimada=fecha_entrega,
+            total_pedido=totales['total'],
+            estado_pedido='PENDIENTE',
+            estado_facturacion='NO_FACTURADO',
+            direccion_entrega=direccion_envio,
+            numero_pedido=num_p,
+            created_at=ahora,
+            updated_at=ahora,
+        )
+        pedido.save()
+
+        for item in items:
+            sub = (item['precio_unitario'] * item['cantidad']).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            DetallePedido(
+                pedido=pedido, producto=item['producto'], cantidad=item['cantidad'],
+                precio_unitario=item['precio_unitario'], subtotal=sub,
+                created_at=ahora, updated_at=ahora,
+            ).save()
+
+        ult_v = Ventas.objects.filter(prefijo='FAC', deleted_at__isnull=True).order_by('-id_venta').first()
+        cv    = (ult_v.id_venta if ult_v else 0) + 1
+        num_f = f"FAC-{cv:06d}"
+        while Ventas.objects.filter(numero_factura=num_f).exists():
+            cv += 1
+            num_f = f"FAC-{cv:06d}"
+
+        venta = Ventas(
+            usuario=usuario_sistema, cliente=cliente, pedido=pedido,
+            tipo_venta='DIRECTA', fecha_venta=ahora,
+            subtotal=totales['subtotal'], impuesto=totales['impuesto'],
+            descuento=totales['descuento'], total=totales['total'],
+            estado_venta='PENDIENTE', metodo_pago=metodo_pago,
+            observaciones=observaciones, numero_factura=num_f, prefijo='FAC',
+            created_at=ahora, updated_at=ahora,
+        )
+        venta.save()
+
+        for item in items:
+            sub = (item['precio_unitario'] * item['cantidad']).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            DetalleVenta(
+                venta=venta, producto=item['producto'], cantidad=item['cantidad'],
+                precio_unitario=item['precio_unitario'], descuento=Decimal('0.00'),
+                subtotal=sub, costo_estimado=None, created_at=ahora, updated_at=ahora,
+            ).save()
+
+        pago_reg.estado       = 'COMPLETADO'
+        pago_reg.venta_id     = venta.id_venta
+        pago_reg.pedido_id    = pedido.id_pedido
+        pago_reg.confirmed_at = ahora
+        pago_reg.save()
+
+        if direccion_envio and not getattr(cliente, 'direccion', None):
+            Clientes.objects.filter(pk=cliente.pk).update(direccion=direccion_envio, updated_at=ahora)
+
+        if carrito_bd:
+            ItemsCarrito.objects.filter(carrito=carrito_bd).delete()
+            Carritos.objects.filter(pk=carrito_bd.pk).update(deleted_at=ahora, updated_at=ahora)
+
+    logger.info(f'Compra OK vía Wompi: {venta.numero_factura} / {pedido.numero_pedido}')
+    return pago_reg
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# ENDPOINT 2: Confirmar pago — llamado por el frontend tras cerrar el Widget
 # ──────────────────────────────────────────────────────────────────────────
 
 @require_POST
-@login_required
 def confirmar_pago(request):
-    """POST /pagos/confirmar-pago/"""
-    from ventas.models import (
-        Clientes, Ventas, DetalleVenta, MetodosPago,
-        Pedido, DetallePedido, Carritos, ItemsCarrito,
-    )
+    """POST /pagos/confirmar-pago/  body: {transaction_id, referencia}"""
+    cliente = _get_cliente(request)
+    if not cliente:
+        return JsonResponse({'error': 'Debes iniciar sesión para continuar.'}, status=401)
 
     try:
         data = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'error': 'Datos JSON inválidos'}, status=400)
 
-    payment_intent_id = data.get('payment_intent_id', '').strip()
-    if not payment_intent_id:
-        return JsonResponse({'error': 'payment_intent_id es requerido'}, status=400)
+    transaction_id = (data.get('transaction_id') or '').strip()
+    referencia     = (data.get('referencia') or '').strip()
+    if not transaction_id or not referencia:
+        return JsonResponse({'error': 'transaction_id y referencia son requeridos'}, status=400)
 
-    try:
-        intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        logger.info(f'PI {payment_intent_id} → estado: {intent.status}')
+    pago_reg = PagoWompi.objects.filter(referencia=referencia, cliente_id=cliente.id_cliente).first()
+    if not pago_reg:
+        return JsonResponse({'error': 'Referencia de pago no encontrada'}, status=404)
 
-        if intent.status != 'succeeded':
-            return JsonResponse(
-                {'error': f'Pago no completado (estado: {intent.status})'},
-                status=400
-            )
-
-        # Idempotencia: si ya fue procesado, retornar éxito sin duplicar
-        pago_reg = PagoStripe.objects.filter(payment_intent_id=payment_intent_id).first()
-        if pago_reg and pago_reg.estado == 'COMPLETADO' and pago_reg.venta_id:
-            return JsonResponse({
-                'success':       True,
-                'order_number':  f"FAC-{pago_reg.venta_id:06d}",
-                'pedido_number': f"PED-{pago_reg.pedido_id:06d}" if pago_reg.pedido_id else '',
-                # BUG FIX: monto ya está en pesos (zero-decimal), no dividir entre 100
-                'total':         float(pago_reg.monto),
-                'message':       'Pago ya procesado anteriormente',
-            })
-
-        cliente = _get_cliente(request)
-        if not cliente:
-            return JsonResponse({'error': 'Cliente no encontrado'}, status=404)
-
-        items = _get_carrito_items(request)
-        if not items:
-            return JsonResponse({'error': 'Carrito vacío'}, status=400)
-
-        cupon   = request.session.get('cupon_activo')
-        totales = _calcular_totales(items, cupon)
-
-        envio    = data.get('envio',    {})
-        contacto = data.get('contacto', {})
-
-        dirs            = [envio.get('ciudad',''), envio.get('direccion',''), envio.get('apartamento','')]
-        direccion_envio = ' - '.join(d.strip() for d in dirs if d.strip())
-        observaciones   = (
-            f"Pedido web | Stripe PI: {payment_intent_id[:20]} | "
-            f"{contacto.get('nombre','')} {contacto.get('telefono','')} | "
-            f"{direccion_envio}"
-        )
-        instrucciones = envio.get('instrucciones', '').strip()
-        if instrucciones:
-            observaciones += f" | {instrucciones}"
-
-        ahora         = timezone.now()
-        fecha_entrega = (ahora + timezone.timedelta(days=5)).date()
-
-        metodo_pago, _ = MetodosPago.objects.get_or_create(
-            nombre='Stripe — Tarjeta',
-            defaults={
-                'descripcion': 'Pago con tarjeta vía Stripe',
-                'created_at':  ahora,
-                'updated_at':  ahora,
-            }
-        )
-
-        carrito_bd = None
-        if hasattr(cliente, 'id_cliente'):
-            carrito_bd = Carritos.objects.filter(cliente=cliente, deleted_at__isnull=True).first()
-        if not carrito_bd and request.session.session_key:
-            carrito_bd = Carritos.objects.filter(
-                session_id=request.session.session_key, deleted_at__isnull=True
-            ).first()
-
-        with transaction.atomic():
-            from usuarios.models import Usuarios
-            # usuario_id es NOT NULL en pedido y ventas.
-            # Usamos el usuario "sistema" (id=1) para pedidos web.
-            # Si el admin tiene una cuenta en Usuarios, cámbialo por su id.
-            usuario_sistema = Usuarios.objects.filter(pk=1).first()
-
-            # ── Número de Pedido ──────────────────────────────────────────
-            ult_p  = Pedido.objects.filter(deleted_at__isnull=True).order_by('-id_pedido').first()
-            cp     = (ult_p.id_pedido if ult_p else 0) + 1
-            num_p  = f"PED-{cp:06d}"
-            while Pedido.objects.filter(numero_pedido=num_p).exists():
-                cp += 1
-                num_p = f"PED-{cp:06d}"
-
-            # BUG FIX: estado_pedido ENUM real = 'PENDIENTE'|'EN PROCESO'|'ENTREGADO'|'CANCELADO'
-            # 'CONFIRMADO' no existe en la BD → Data truncated error.
-            # BUG FIX: usuario es NOT NULL en la tabla → usar usuario_sistema.
-            pedido = Pedido(
-                cliente=cliente,
-                usuario=usuario_sistema,
-                asesor=None,
-                fecha_pedido=ahora,
-                fecha_entrega_estimada=fecha_entrega,
-                total_pedido=totales['total'],
-                estado_pedido='PENDIENTE',        # ← valor válido en el ENUM
-                estado_facturacion='NO_FACTURADO',
-                direccion_entrega=direccion_envio,
-                numero_pedido=num_p,
-                created_at=ahora,
-                updated_at=ahora,
-            )
-            pedido.save()
-
-            for item in items:
-                sub = (item['precio_unitario'] * item['cantidad']).quantize(
-                    Decimal('0.01'), rounding=ROUND_HALF_UP
-                )
-                DetallePedido(
-                    pedido=pedido,
-                    producto=item['producto'],
-                    cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario'],
-                    subtotal=sub,
-                    created_at=ahora,
-                    updated_at=ahora,
-                ).save()
-
-            # ── Número de Factura ─────────────────────────────────────────
-            ult_v  = Ventas.objects.filter(prefijo='FAC', deleted_at__isnull=True).order_by('-id_venta').first()
-            cv     = (ult_v.id_venta if ult_v else 0) + 1
-            num_f  = f"FAC-{cv:06d}"
-            while Ventas.objects.filter(numero_factura=num_f).exists():
-                cv += 1
-                num_f = f"FAC-{cv:06d}"
-
-            # BUG FIX: usuario es NOT NULL en ventas → usar usuario_sistema.
-            # BUG FIX: estado_venta ENUM real = 'COMPLETADA'|'CANCELADA'|'PENDIENTE'
-            venta = Ventas(
-                usuario=usuario_sistema,
-                cliente=cliente,
-                pedido=pedido,
-                tipo_venta='DIRECTA',
-                fecha_venta=ahora,
-                subtotal=totales['subtotal'],
-                impuesto=totales['impuesto'],
-                descuento=totales['descuento'],
-                total=totales['total'],
-                estado_venta='PENDIENTE',          # ← valor válido en el ENUM
-                metodo_pago=metodo_pago,
-                observaciones=observaciones,
-                numero_factura=num_f,
-                prefijo='FAC',
-                created_at=ahora,
-                updated_at=ahora,
-            )
-            venta.save()
-
-            for item in items:
-                sub = (item['precio_unitario'] * item['cantidad']).quantize(
-                    Decimal('0.01'), rounding=ROUND_HALF_UP
-                )
-                DetalleVenta(
-                    venta=venta,
-                    producto=item['producto'],
-                    cantidad=item['cantidad'],
-                    precio_unitario=item['precio_unitario'],
-                    descuento=Decimal('0.00'),
-                    subtotal=sub,
-                    costo_estimado=None,
-                    created_at=ahora,
-                    updated_at=ahora,
-                ).save()
-
-            # ── Actualizar registro de pago ───────────────────────────────
-            if pago_reg:
-                pago_reg.estado      = 'COMPLETADO'
-                pago_reg.venta_id    = venta.id_venta
-                pago_reg.pedido_id   = pedido.id_pedido
-                pago_reg.confirmed_at = ahora
-                pago_reg.save()
-            else:
-                PagoStripe.objects.filter(payment_intent_id=payment_intent_id).update(
-                    estado='COMPLETADO',
-                    venta_id=venta.id_venta,
-                    pedido_id=pedido.id_pedido,
-                    confirmed_at=ahora,
-                )
-
-            # BUG FIX: verificar que el cliente tenga el campo 'direccion' antes de usarlo
-            if direccion_envio and not getattr(cliente, 'direccion', None):
-                Clientes.objects.filter(pk=cliente.pk).update(
-                    direccion=direccion_envio, updated_at=ahora
-                )
-
-            # ── Vaciar carrito ────────────────────────────────────────────
-            if carrito_bd:
-                ItemsCarrito.objects.filter(carrito=carrito_bd).delete()
-                Carritos.objects.filter(pk=carrito_bd.pk).update(
-                    deleted_at=ahora, updated_at=ahora
-                )
-
-            request.session['carrito']          = {}
-            request.session['carrito_cantidad'] = 0
-            request.session.pop('cupon_activo', None)
-            request.session.modified = True
-
-        logger.info(f'Compra OK: {venta.numero_factura} / {pedido.numero_pedido}')
-
+    # Idempotencia
+    if pago_reg.estado == 'COMPLETADO' and pago_reg.venta_id:
         return JsonResponse({
             'success':       True,
-            'order_number':  venta.numero_factura,
-            'pedido_number': pedido.numero_pedido,
-            'total':         float(totales['total']),
-            'subtotal':      float(totales['subtotal']),
-            'impuesto':      float(totales['impuesto']),
-            'descuento':     float(totales['descuento']),
-            'items':         len(items),
-            'message':       '¡Pedido creado exitosamente!',
+            'order_number':  f"FAC-{pago_reg.venta_id:06d}",
+            'pedido_number': f"PED-{pago_reg.pedido_id:06d}" if pago_reg.pedido_id else '',
+            'total':         float(pago_reg.monto),
+            'message':       'Pago ya procesado anteriormente',
         })
 
-    except stripe.error.AuthenticationError:
-        return JsonResponse({'error': 'Error de autenticación con Stripe'}, status=500)
-    except stripe.error.StripeError as e:
-        logger.error(f'StripeError en confirmar_pago: {e}')
-        return JsonResponse({'error': str(getattr(e, 'user_message', None) or e)}, status=400)
-    except Exception as e:
-        logger.exception('Error inesperado en confirmar_pago')
-        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+    # Nunca confiar en el estado que reporta el frontend: se verifica contra Wompi.
+    try:
+        tx = wompi.consultar_transaccion(transaction_id)
+    except wompi.WompiError as e:
+        return JsonResponse({'error': f'No se pudo verificar el pago con Wompi: {e}'}, status=502)
+
+    estado_wompi = tx.get('status')
+    pago_reg.wompi_transaction_id = tx.get('id', transaction_id)
+    pago_reg.payment_method_type  = tx.get('payment_method_type', '')
+    pago_reg.estado_wompi_raw     = estado_wompi
+    pago_reg.metadata_json        = json.dumps(tx)[:9000]
+
+    if estado_wompi != 'APPROVED':
+        if estado_wompi in ('DECLINED', 'ERROR'):
+            pago_reg.estado        = 'FALLIDO'
+            pago_reg.failed_at     = timezone.now()
+            pago_reg.error_message = tx.get('status_message', '')
+        elif estado_wompi == 'VOIDED':
+            pago_reg.estado = 'CANCELADO'
+        else:
+            pago_reg.estado = 'PENDIENTE'  # ej. PSE en proceso — el webhook lo confirmará luego
+        pago_reg.save()
+        return JsonResponse(
+            {'error': f'Pago no aprobado (estado: {estado_wompi})', 'status': estado_wompi},
+            status=400
+        )
+
+    pago_reg.save()
+
+    try:
+        pago_reg = _completar_compra_si_aprobado(pago_reg, tx)
+    except ValueError as e:
+        logger.exception('Error creando pedido/venta tras pago aprobado')
+        return JsonResponse({'error': str(e)}, status=400)
+
+    request.session['carrito']          = {}
+    request.session['carrito_cantidad'] = 0
+    request.session.pop('cupon_activo', None)
+    request.session.modified = True
+
+    return JsonResponse({
+        'success':       True,
+        'order_number':  f"FAC-{pago_reg.venta_id:06d}",
+        'pedido_number': f"PED-{pago_reg.pedido_id:06d}",
+        'total':         float(pago_reg.monto),
+        'items':         0,
+        'message':       '¡Pedido creado exitosamente!',
+    })
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# ENDPOINT 3: Webhook
+# ENDPOINT 3: Webhook (Wompi -> tu servidor)
 # ──────────────────────────────────────────────────────────────────────────
 
 @csrf_exempt
 @require_POST
-def stripe_webhook(request):
-    payload        = request.body
-    sig_header     = request.META.get('HTTP_STRIPE_SIGNATURE', '')
-    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+def wompi_webhook(request):
+    """POST /pagos/webhook/ — configúralo en el Dashboard de Wompi (Sandbox y Producción por separado)."""
+    try:
+        event = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return HttpResponse(status=400)
 
-    if webhook_secret:
+    if not wompi.verificar_checksum_evento(event):
+        logger.warning('Webhook Wompi con checksum inválido — posible spoofing, se descarta')
+        return HttpResponse(status=400)
+
+    tx         = event.get('data', {}).get('transaction', {})
+    tx_id      = tx.get('id')
+    tx_status  = tx.get('status')
+    referencia = tx.get('reference')
+
+    logger.info(f'Webhook Wompi: {event.get("event")} -> tx={tx_id} status={tx_status} ref={referencia}')
+
+    pago_reg = PagoWompi.objects.filter(referencia=referencia).first()
+    if not pago_reg:
+        logger.warning(f'Webhook Wompi: referencia {referencia} no encontrada en BD')
+        return HttpResponse(status=200)  # 200 para que Wompi no reintente indefinidamente
+
+    pago_reg.wompi_transaction_id = tx_id
+    pago_reg.payment_method_type  = tx.get('payment_method_type', '')
+    pago_reg.estado_wompi_raw     = tx_status
+    pago_reg.metadata_json        = json.dumps(tx)[:9000]
+
+    if tx_status == 'APPROVED':
+        pago_reg.save()
         try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+            _completar_compra_si_aprobado(pago_reg, tx)
         except ValueError:
-            return HttpResponse(status=400)
-        except stripe.error.SignatureVerificationError:
-            return HttpResponse(status=400)
-    else:
-        # Desarrollo sin webhook secret: procesar sin verificar firma
-        logger.warning('Webhook sin verificación de firma (STRIPE_WEBHOOK_SECRET no configurado)')
-        try:
-            event = json.loads(payload)
-        except Exception:
-            return HttpResponse(status=400)
-
-    event_type = event['type']
-    data_obj   = event['data']['object']
-    logger.info(f'Webhook Stripe: {event_type}')
-
-    if event_type == 'payment_intent.succeeded':
-        pi_id = data_obj['id']
-        PagoStripe.objects.filter(payment_intent_id=pi_id, estado='PENDIENTE').update(
-            estado='COMPLETADO', confirmed_at=timezone.now()
-        )
-    elif event_type == 'payment_intent.payment_failed':
-        pi_id = data_obj['id']
-        err   = data_obj.get('last_payment_error', {})
-        PagoStripe.objects.filter(payment_intent_id=pi_id).update(
-            estado='FALLIDO', failed_at=timezone.now(),
-            error_code=err.get('code', ''), error_message=err.get('message', ''),
-        )
-    elif event_type == 'charge.refunded':
-        pi_id = data_obj.get('payment_intent', '')
-        if pi_id:
-            PagoStripe.objects.filter(payment_intent_id=pi_id).update(
-                estado='REEMBOLSADO',
-                monto_reembolsado=data_obj.get('amount_refunded', 0),
-            )
+            logger.exception('Webhook: no se pudo completar la compra (carrito vacío o cliente inválido)')
+    elif tx_status in ('DECLINED', 'ERROR'):
+        pago_reg.estado        = 'FALLIDO'
+        pago_reg.failed_at     = timezone.now()
+        pago_reg.error_message = tx.get('status_message', '')
+        pago_reg.save()
+    elif tx_status == 'VOIDED':
+        pago_reg.estado = 'CANCELADO'
+        pago_reg.save()
+    else:  # PENDING
+        pago_reg.estado = 'PENDIENTE'
+        pago_reg.save()
 
     return HttpResponse(status=200)
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# ENDPOINT 4: Página éxito
+# ENDPOINT 4: Página de éxito (redirección informativa desde el Widget)
 # ──────────────────────────────────────────────────────────────────────────
 
 @require_GET
 def pago_exitoso(request):
-    payment_intent_id = request.GET.get('payment_intent', '')
-    pago = PagoStripe.objects.filter(
-        payment_intent_id=payment_intent_id
-    ).first() if payment_intent_id else None
+    """
+    GET /pagos/exito/?id=<transaction_id>
 
-    return render(request, 'pagos/exito.html', {
-        'pago':              pago,
-        'payment_intent_id': payment_intent_id,
-        'carrito_cantidad':  0,
+    Wompi redirige aquí tras el Web Checkout (redirect-url). Según la doc oficial,
+    la redirección NO debe usarse como método de validación de la transacción —
+    solo con fines informativos para el usuario. La fuente de verdad real y
+    definitiva sigue siendo `wompi_webhook`, que es idempotente.
+
+    Aun así, consultamos la API de Wompi aquí mismo para darle al usuario feedback
+    inmediato (en vez de dejarlo esperando a que llegue el webhook, que puede
+    tardar unos segundos). Si el webhook ya corrió antes de que el usuario vuelva,
+    esto simplemente no hace nada nuevo (_completar_compra_si_aprobado es idempotente).
+    """
+    transaction_id = request.GET.get('id', '')
+    pago = None
+    estado_mostrado = 'DESCONOCIDO'
+
+    if transaction_id:
+        pago = PagoWompi.objects.filter(wompi_transaction_id=transaction_id).first()
+
+        if not pago:
+            # El webhook probablemente no ha llegado todavía — consultamos directo a Wompi.
+            try:
+                tx = wompi.consultar_transaccion(transaction_id)
+            except wompi.WompiError:
+                logger.exception('pago_exitoso: no se pudo consultar la transacción en Wompi')
+                tx = None
+
+            if tx:
+                referencia = tx.get('reference')
+                pago = PagoWompi.objects.filter(referencia=referencia).first()
+
+                if pago:
+                    pago.wompi_transaction_id = tx.get('id', transaction_id)
+                    pago.payment_method_type  = tx.get('payment_method_type', '')
+                    pago.estado_wompi_raw     = tx.get('status')
+                    pago.metadata_json        = json.dumps(tx)[:9000]
+
+                    estado_wompi = tx.get('status')
+                    if estado_wompi == 'APPROVED':
+                        pago.save()
+                        try:
+                            pago = _completar_compra_si_aprobado(pago, tx)
+                        except ValueError:
+                            logger.exception('pago_exitoso: no se pudo completar la compra')
+                    elif estado_wompi in ('DECLINED', 'ERROR'):
+                        pago.estado        = 'FALLIDO'
+                        pago.failed_at     = timezone.now()
+                        pago.error_message = tx.get('status_message', '')
+                        pago.save()
+                    elif estado_wompi == 'VOIDED':
+                        pago.estado = 'CANCELADO'
+                        pago.save()
+                    else:
+                        pago.estado = 'PENDIENTE'  # ej. PSE aún procesando
+                        pago.save()
+
+        if pago:
+            estado_mostrado = pago.estado
+
+    return render(request, 'pagos/pago_exitoso.html', {
+        'pago': pago,
+        'transaction_id': transaction_id,
+        'estado': estado_mostrado,
+        'carrito_cantidad': 0,
     })
