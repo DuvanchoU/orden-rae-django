@@ -16,6 +16,7 @@ from datetime import datetime, date, timedelta
 from django.db.models.fields.files import ImageFieldFile, FieldFile
 import json
 import logging
+from django.conf import settings
 
 # Modelos
 from .models import (
@@ -148,9 +149,6 @@ def _sync_session(request, carrito_bd):
     request.session.modified = True
 
 
-# ============================================================================
-# VISTAS DEL CARRITO (Web)
-# ============================================================================
 
 def carrito_compra(request):
     carrito_bd    = _get_carrito_bd(request)
@@ -204,107 +202,130 @@ def carrito_compra(request):
             total_carrito += subtotal_base
             total_iva     += subtotal_iva
 
-    # ══════════════════════════════════════════════════════
+    # ═══════════════════════════════════════════════════════════════════════
+    # PRODUCTOS RECOMENDADOS (4 aleatorios)
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    productos_disponibles = list(
+        Producto.objects.filter(
+            deleted_at__isnull=True
+        ).exclude(
+            id_producto__in=[item['producto_id'] for item in items]
+        )
+    )
+    
+    if len(productos_disponibles) >= 4:
+        productos_recomendados = random.sample(productos_disponibles, 4)
+    else:
+        productos_recomendados = productos_disponibles
+    
+    productos_recomendados_data = []
+    for p in productos_recomendados:
+        img_rec = ImagenesProducto.objects.filter(
+            producto=p, es_principal=1
+        ).first()
+        
+        productos_recomendados_data.append({
+            'id': p.id_producto,
+            'nombre': p.referencia_producto or p.codigo_producto,
+            'precio': float(p.precio_producto) if hasattr(p, 'precio_producto') else 0,
+            'imagen_url': img_rec.ruta_imagen.url if img_rec and img_rec.ruta_imagen else '/static/img/placeholder.jpg'
+        })
+
+    # ═══════════════════════════════════════════════════════════════════════
     # CÁLCULO DATOS WOMPI (para el widget en el carrito)
-    # ══════════════════════════════════════════════════════
+    # ═══════════════════════════════════════════════════════════════════════
     wompi_data = None
     cliente_datos_completos = False
 
-    # Verificar autenticación del cliente (por sesión)
     es_cliente = request.session.get('cliente_auth', False)
     cliente_id = request.session.get('cliente_id')
 
-    if es_cliente and cliente_id and items:  # Solo si hay items en el carrito
+    print(f"\n{'='*60}")
+    print(f"🔍 DEBUG CARRITO:")
+    print(f"   cliente_auth: {es_cliente}")
+    print(f"   cliente_id: {cliente_id}")
+    print(f"   Items: {len(items)}")
+    print(f"{'='*60}\n")
+
+    if es_cliente and cliente_id and items:
         try:
-            from ventas.models import Clientes
             import hashlib
             import time
             from datetime import datetime, timedelta, timezone as tz
-            from django.conf import settings
             
             cliente = Clientes.objects.get(
                 id_cliente=cliente_id,
-                estado='ACTIVO',
                 deleted_at__isnull=True
             )
             
-            # Datos del cliente (limpiar espacios)
             customer_name  = f"{cliente.nombre} {cliente.apellido}".strip()
             customer_email = (cliente.email or '').strip()
             customer_phone = (cliente.telefono or '').strip()
             customer_doc   = (cliente.documento or '').strip()
             
-            # Debug: ver qué datos tiene
-            print(f"\n{'='*50}")
-            print(f"🔍 WOMPI DEBUG - Cliente ID: {cliente.id_cliente}")
-            print(f"   Nombre completo: '{customer_name}'")
-            print(f"   Email:           '{customer_email}'")
-            print(f"   Teléfono:        '{customer_phone}'")
-            print(f"   Documento:       '{customer_doc}'")
+            print(f"📋 Cliente encontrado:")
+            print(f"   Nombre: '{customer_name}'")
+            print(f"   Email: '{customer_email}'")
+            print(f"   Teléfono: '{customer_phone}'")
+            print(f"   Documento: '{customer_doc}'")
             
-            # Validación flexible: solo nombre y email son OBLIGATORIOS
-            # Teléfono y documento son opcionales (Wompi los pide en el modal si faltan)
-            cliente_datos_completos = bool(customer_name and customer_email)
+            cliente_datos_completos = True
             
-            print(f" Datos completos: {cliente_datos_completos}")
-            print(f"{'='*50}\n")
+            print(f"✅ cliente_datos_completos: {cliente_datos_completos}")
             
-            if cliente_datos_completos:
-                # Monto total (con IVA)
-                total_final = round(total_carrito + total_iva, 2)
-                amount_in_cents = int(total_final * 100)
-                
-                # Referencia única
-                reference = f"ORDER-{cliente.id_cliente}-{int(time.time())}"
-                
-                # Firma de integridad
-                integrity_secret = settings.WOMPI_INTEGRITY_SECRET
-                cadena = f"{reference}{amount_in_cents}{settings.WOMPI_CURRENCY}{integrity_secret}"
-                signature = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
-                
-                # Fecha expiración (24h)
-                expiration = (datetime.now(tz.utc) + timedelta(hours=24)).isoformat()
-                
-                # Dirección
-                direccion = getattr(cliente, 'direccion', '') or ''
-                
-                wompi_data = {
-                    'public_key':         settings.WOMPI_PUBLIC_KEY,
-                    'amount_in_cents':    amount_in_cents,
-                    'reference':          reference,
-                    'signature':          signature,
-                    'redirect_url':       request.build_absolute_uri('/pagos/exito/'),
-                    'expiration_time':    expiration,
-                    'tax_vat_cents':      int(total_iva * 100),
-                    'customer_email':     customer_email,
-                    'customer_name':      customer_name,
-                    'customer_phone':     customer_phone or '',  # Puede estar vacío
-                    'customer_doc':       customer_doc or '',    # Puede estar vacío
-                    'shipping_address':   direccion,
-                    'customer_name_full': customer_name,
-                }
+            total_final = round(total_carrito + total_iva, 2)
+            amount_in_cents = int(total_final * 100)
+            
+            reference = f"ORDER-{cliente.id_cliente}-{int(time.time())}"
+            
+            integrity_secret = settings.WOMPI_INTEGRITY_SECRET
+            cadena = f"{reference}{amount_in_cents}{settings.WOMPI_CURRENCY}{integrity_secret}"
+            signature = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
+            
+            expiration = (datetime.now(tz.utc) + timedelta(hours=24)).isoformat()
+            
+            direccion = getattr(cliente, 'direccion', '') or ''
+            
+            wompi_data = {
+                'public_key':         settings.WOMPI_PUBLIC_KEY,
+                'amount_in_cents':    amount_in_cents,
+                'reference':          reference,
+                'signature':          signature,
+                'redirect_url':       request.build_absolute_uri('/pagos/exito/'),
+                'expiration_time':    expiration,
+                'tax_vat_cents':      int(total_iva * 100),
+                'customer_email':     customer_email,
+                'customer_name':      customer_name,
+                'customer_phone':     customer_phone,
+                'customer_doc':       customer_doc,
+                'shipping_address':   direccion,
+            }
+            
+            print(f"✅ Wompi data preparado correctamente")
+            print(f"{'='*60}\n")
+            
         except Clientes.DoesNotExist:
-            print(f"⚠️ Cliente {cliente_id} no encontrado en BD")
+            print(f"⚠️ Cliente {cliente_id} NO encontrado en BD")
+            print(f"{'='*60}\n")
         except Exception as e:
-            print(f"⚠️ Error preparando datos Wompi: {e}")
+            print(f"❌ Error preparando Wompi: {e}")
             import traceback
             traceback.print_exc()
+            print(f"{'='*60}\n")
 
-    # ══════════════════════════════════════════════════════
-    # CONTEXT FINAL
-    # ══════════════════════════════════════════════════════
+    # ═══════════════════════════════════════════════════════════════════════
+    # CONTEXT FINAL (UN SOLO RETURN AL FINAL)
+    # ═══════════════════════════════════════════════════════════════════════
     context = {
-        'carrito_items':      items,
-        'carrito_items_json': json.dumps(items, ensure_ascii=False),
-        'total_carrito':      round(total_carrito, 2),
-        'total_iva':          round(total_iva, 2),
-        'total_final':        round(total_carrito + total_iva, 2),
-        'carrito_cantidad':   sum(i['cantidad'] for i in items),
-        'hay_items':          bool(items),
-        'notificaciones_nuevas': 0,
-        
-        # 👇 DATOS WOMPI PARA EL WIDGET
-        'wompi':                  wompi_data,
+        'carrito_items': items,
+        'carrito_cantidad': sum(item['cantidad'] for item in items),
+        'total_carrito': total_carrito,
+        'total_iva': total_iva,
+        'hay_items': len(items) > 0,
+        'carrito_items_json': json.dumps(items, default=str),
+        'productos_recomendados': productos_recomendados_data,
+        'wompi': wompi_data,
         'cliente_datos_completos': cliente_datos_completos,
     }
     
@@ -626,38 +647,66 @@ def api_carrito_estado(request):
     })
 
 
-@require_GET
+# ============================================================================
+# API: Recomendaciones de productos para el carrito
+# ============================================================================
+
+import random
 def api_carrito_recomendados(request):
-    """Devuelve productos recomendados excluyendo los que ya están en el carrito."""
-    carrito_bd = _get_carrito_bd(request)
-    ids_en_carrito = []
-
-    if carrito_bd:
-        ids_en_carrito = list(
-            ItemsCarrito.objects.filter(carrito=carrito_bd)
-            .values_list('producto_id', flat=True)
-        )
-
-    productos_qs = Producto.objects.filter(
-        estado='DISPONIBLE',
-        deleted_at__isnull=True
-    ).exclude(
-        id_producto__in=ids_en_carrito
-    ).order_by('-created_at')[:8]
-
-    productos = []
-    for prod in productos_qs:
-        img = ImagenesProducto.objects.filter(
-            producto=prod, es_principal=1
-        ).first()
-        productos.append({
-            'id':        prod.id_producto,
-            'nombre':    prod.referencia_producto or prod.codigo_producto,
-            'precio':    float(prod.precio_actual),
-            'imagen_url': img.ruta_imagen if img else '/static/img/placeholder.jpg',
-        })
-
-    return JsonResponse({'productos': productos})
+    print("🔍 Endpoint api_carrito_recomendados llamado")
+    
+    try:
+        # Obtener productos disponibles
+        productos_qs = Producto.objects.filter(disponible=True)
+        print(f"📊 Total productos disponibles: {productos_qs.count()}")
+        
+        productos_disponibles = list(productos_qs)
+        
+        if len(productos_disponibles) == 0:
+            print("⚠️ No hay productos disponibles")
+            return JsonResponse({
+                'success': True,
+                'productos': []
+            })
+        
+        # Seleccionar 4 productos aleatorios
+        if len(productos_disponibles) >= 4:
+            productos_aleatorios = random.sample(productos_disponibles, 4)
+        else:
+            productos_aleatorios = productos_disponibles
+        
+        print(f"✅ Seleccionados {len(productos_aleatorios)} productos aleatorios")
+        
+        productos_data = []
+        for p in productos_aleatorios:
+            producto_dict = {
+                'id': p.id,
+                'nombre': p.nombre,
+                'precio': float(p.precio),
+                'imagen_url': p.imagen.url if p.imagen else '/static/img/placeholder.jpg'
+            }
+            productos_data.append(producto_dict)
+            print(f"  - Producto: {p.nombre} (${p.precio})")
+        
+        response_data = {
+            'success': True,
+            'productos': productos_data
+        }
+        
+        print(f"📤 Enviando respuesta: {response_data}")
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        print(f"❌ Error en api_carrito_recomendados: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'productos': []
+        }, status=500)
 
 
 # ============================================================================

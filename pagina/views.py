@@ -924,13 +924,48 @@ def api_contacto_enviar(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-def generar_codigo_aleatorio(longitud=6):
-    """Genera código único para cotización"""
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=longitud))
+def generar_codigo_aleatorio():
+    """Genera un código aleatorio de 6 caracteres"""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+# Si no tienes safe_json_dumps, agrégalo:
+import json
+from django.db.models.fields.files import ImageFieldFile, FieldFile
+from datetime import datetime, date
+from decimal import Decimal
+
+class DjangoCustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (ImageFieldFile, FieldFile)):
+            try:
+                return obj.url if obj else ''
+            except:
+                return ''
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
+
+def safe_json_dumps(data, **kwargs):
+    return json.dumps(data, cls=DjangoCustomEncoder, ensure_ascii=False, **kwargs)
 
 
 def cotiza(request):
     """Vista de página de cotización con formulario multi-paso"""
+    
+    # Obtener productos destacados para mostrar
+    productos_destacados = []
+    try:
+        from inventario.models import Producto
+        productos_destacados = list(
+            Producto.objects.filter(
+                estado='DISPONIBLE',
+                deleted_at__isnull=True
+            ).order_by('-created_at')[:4]
+        )
+    except Exception as e:
+        print(f"Error cargando productos destacados: {e}")
     
     context = {
         'carrito_cantidad': request.session.get('carrito_cantidad', 0),
@@ -940,7 +975,8 @@ def cotiza(request):
         'enviado': False,
         'random_code': generar_codigo_aleatorio(),
         'user_full_name': request.user.get_full_name() if request.user.is_authenticated else '',
-        'user_email':     request.user.email if request.user.is_authenticated else '',
+        'user_email': request.user.email if request.user.is_authenticated else '',
+        'productos_destacados': productos_destacados,  # ← AGREGADO
     }
     
     if request.method == 'POST':
@@ -971,8 +1007,10 @@ def cotiza(request):
         if not form_data['email'] or not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', form_data['email']):
             errores.append('El correo electrónico no es válido')
         
-        if not form_data['telefono'] or not re.match(r'^\+57\s[0-9]{3}\s[0-9]{3}\s[0-9]{4}$', form_data['telefono']):
-            errores.append('El teléfono debe tener formato: +57 3XX XXX XXXX')
+        # Validación de teléfono más flexible
+        telefono_limpio = form_data['telefono'].replace(' ', '').replace('+', '')
+        if not form_data['telefono'] or len(telefono_limpio) < 10:
+            errores.append('El teléfono debe tener al menos 10 dígitos')
         
         if not form_data['ciudad']:
             errores.append('Selecciona tu ciudad')
@@ -987,7 +1025,6 @@ def cotiza(request):
         
         # === PROCESAR COTIZACIÓN ===
         try:
-            # Preparar mensaje para email
             asunto = f'Nueva cotización: {form_data["producto"] or "Producto no especificado"}'
             mensaje = f"""
             NUEVA SOLICITUD DE COTIZACIÓN - ORDER RAE
@@ -1011,32 +1048,16 @@ def cotiza(request):
             PREFERENCIAS:
             • Newsletter: {'Sí' if form_data['newsletter'] else 'No'}
             
-            FECHA: {request.META.get('HTTP_X_REAL_IP', request.META.get("REMOTE_ADDR", "Desconocida"))}
             CÓDIGO: COT-2026-{context['random_code']}
             =========================================
             """
             
-            # Enviar email (configurar EMAIL en settings.py)
-            # send_mail(
-            #     subject=asunto,
-            #     message=mensaje,
-            #     from_email=settings.DEFAULT_FROM_EMAIL,
-            #     recipient_list=['cotizaciones@ordenrae.com'],
-            #     fail_silently=False,
-            # )
-            
-            # Para desarrollo: imprimir en consola
             print(f"📋 NUEVA COTIZACIÓN #{context['random_code']}:\n{mensaje}")
             
-            # Guardar en sesión para mostrar confirmación
             context['enviado'] = True
-            context['form_data'] = {}  # Limpiar formulario
+            context['form_data'] = {}
             
-            # Mensaje para notificaciones JS
             messages.success(request, '¡Tu cotización ha sido enviada exitosamente!')
-            
-            # Limpiar borrador guardado
-            # (se hace en el frontend con localStorage.removeItem)
             
         except Exception as e:
             context['errores'] = [f'Error al procesar: {str(e)}']

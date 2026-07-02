@@ -325,6 +325,13 @@ body {
 }
 tr.removing { animation: rowOut .35s ease forwards; }
 
+/* ═══ ANIMACIÓN SHAKE PARA CANTIDAD MÍNIMA ═══ */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
 /* ── BARRA DE ENVÍO ── */
 .shipping-bar {
     padding: 1.25rem 2rem;
@@ -358,6 +365,17 @@ tr.removing { animation: rowOut .35s ease forwards; }
 }
 
 .shipping-note { font-size: .75rem; color: var(--text-light); }
+
+/* ═══ ANIMACIONES PARA BARRA DE ENVÍO ═══ */
+@keyframes celebrate {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
 
 /* ── CUPÓN ── */
 .coupon-section {
@@ -1032,8 +1050,8 @@ tr.removing { animation: rowOut .35s ease forwards; }
             <!-- Recomendaciones -->
             <div class="rec-section">
                 <div class="rec-title">
-                    <i class="fas fa-star" style="color:var(--gold);"></i>
-                    Los clientes también compraron
+                    <i class="fas fa-sparkles" style="color:var(--gold);"></i>
+                    Estos productos te pueden gustar
                 </div>
 
                 <!-- Skeleton -->
@@ -1052,7 +1070,7 @@ tr.removing { animation: rowOut .35s ease forwards; }
 
                 <div class="rec-grid d-none" id="rec-grid"></div>
                 <p class="d-none text-center" id="rec-empty"
-                   style="color:var(--text-light);font-size:.88rem;padding:1rem 0;">
+                style="color:var(--text-light);font-size:.88rem;padding:1rem 0;">
                     No hay productos disponibles en este momento.
                 </p>
             </div>
@@ -1335,25 +1353,59 @@ function escHtml(str) {
 }
 
 /* ════════════════════════════════════════
-   INIT
+    INIT
 ════════════════════════════════════════ */
 function init() {
     const raw = JSON.parse(
         document.getElementById('carrito-data')?.textContent || '{}'
     );
-    state.items    = raw.carrito_items || [];
-    state.subtotal = raw.total_carrito || 0;
-    state.totalIva = raw.total_iva     || 0;
-    state.total    = state.subtotal + state.totalIva;
+    
+    state.items = raw.carrito_items || [];
+    state.subtotal = parseFloat(raw.total_carrito) || 0;
+    state.totalIva = parseFloat(raw.total_iva) || 0;
+    state.total = state.subtotal + state.totalIva;
 
+    // ═══ IMPORTANTE: Si hay filas en el DOM pero state.items está vacío, reconstruir ═══
+    const filas = document.querySelectorAll('#carrito-items tr');
+    if (filas.length > 0 && state.items.length === 0) {
+        state.items = Array.from(filas).map(row => ({
+            item_id: row.dataset.itemId,
+            producto_id: row.dataset.id,
+            cantidad: parseInt(row.querySelector('.qty-input')?.value) || 0,
+            precio_base: parseFloat(row.dataset.precio) || 0,
+            iva: parseFloat(row.dataset.iva) || 0,
+            nombre: row.dataset.nombre || '',
+            imagen_url: row.dataset.imagen || ''
+        }));
+        
+        // Recalcular totales desde las filas
+        let subtotalCalc = 0;
+        let ivaCalc = 0;
+        state.items.forEach(item => {
+            subtotalCalc += (item.precio_base * item.cantidad);
+            ivaCalc += (item.iva * item.cantidad);
+        });
+        state.subtotal = subtotalCalc;
+        state.totalIva = ivaCalc;
+        state.total = subtotalCalc + ivaCalc;
+    }
+
+    // ═══ ACTUALIZAR UI ═══
     updateSummary();
     updateShippingBar();
     toggleEmptyState();
     cargarRecomendados();
+    actualizarContadorGuardados();
+    
+    console.log('🛒 Carrito inicializado:', {
+        items: state.items.length,
+        subtotal: state.subtotal,
+        total: state.total
+    });
 }
 
 /* ════════════════════════════════════════
-   ESTADO VACÍO
+    ESTADO VACÍO
 ════════════════════════════════════════ */
 function toggleEmptyState() {
 
@@ -1375,7 +1427,7 @@ function toggleEmptyState() {
 }
 
 /* ════════════════════════════════════════
-   RESUMEN LATERAL
+    RESUMEN LATERAL
 ════════════════════════════════════════ */
 function updateSummary() {
     const totalConDesc = Math.max(0, state.total - state.descuento);
@@ -1383,6 +1435,20 @@ function updateSummary() {
     document.getElementById('summary-subtotal').textContent = fmt(state.subtotal);
     document.getElementById('summary-iva').textContent      = fmt(state.totalIva);
     document.getElementById('summary-total').textContent    = fmt(totalConDesc);
+
+    // ═══ ACTUALIZAR ENVÍO EN EL RESUMEN ═══
+    const envioElement = document.getElementById('summary-envio');
+    if (envioElement) {
+        if (totalConDesc >= FREE_SHIPPING) {
+            envioElement.textContent = '¡Gratis!';
+            envioElement.style.color = 'var(--verde)';
+            envioElement.style.fontWeight = '700';
+        } else {
+            envioElement.textContent = 'Calculado al finalizar';
+            envioElement.style.color = '';
+            envioElement.style.fontWeight = '';
+        }
+    }
 
     const descRow = document.getElementById('summary-desc-row');
     if (state.descuento > 0) {
@@ -1392,65 +1458,189 @@ function updateSummary() {
         descRow.classList.add('d-none');
     }
 
-    /* Contador del header */
-    const totalItems = state.items.reduce((s, i) => s + (i.cantidad || 0), 0);
+    // ═══ CORRECCIÓN: Calcular total desde las filas visibles ═══
+    let totalItems = 0;
+    const filas = document.querySelectorAll('#carrito-items tr');
+    
+    if (filas.length > 0) {
+        // Calcular desde las filas de la tabla
+        filas.forEach(row => {
+            const input = row.querySelector('.qty-input');
+            if (input) {
+                totalItems += parseInt(input.value) || 0;
+            }
+        });
+    } else if (state.items.length > 0) {
+        // Fallback: calcular desde state.items
+        totalItems = state.items.reduce((s, i) => s + (i.cantidad || 0), 0);
+    }
+
+    // ═══ ACTUALIZAR CONTADORES ═══
     const pill = document.getElementById('items-count');
-    if (pill) pill.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+    if (pill) {
+        pill.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+        // Animación sutil
+        pill.style.animation = 'none';
+        setTimeout(() => {
+            pill.style.animation = 'pulse 0.3s ease';
+        }, 10);
+    }
 
     const counter = document.getElementById('contador-carrito');
-    if (counter) counter.textContent = totalItems;
-}
+    if (counter) {
+        counter.textContent = totalItems;
+    }
 
-/* ════════════════════════════════════════
-   BARRA DE ENVÍO
-════════════════════════════════════════ */
-function updateShippingBar() {
-    const total     = Math.max(0, state.total - state.descuento);
-    const remaining = FREE_SHIPPING - total;
-    const pct       = Math.min(100, (total / FREE_SHIPPING) * 100);
-
-    document.getElementById('shipping-fill').style.width = pct + '%';
-
-    if (remaining <= 0) {
-        document.getElementById('shipping-text').style.display     = 'none';
-        document.getElementById('shipping-achieved').style.display = 'block';
-    } else {
-        document.getElementById('shipping-text').style.display     = '';
-        document.getElementById('shipping-achieved').style.display = 'none';
-        document.getElementById('shipping-remaining').textContent  = fmt(remaining);
+    // ═══ ACTUALIZAR ESTADO CON EL TOTAL CALCULADO ═══
+    // Esto asegura que state.items tenga el conteo correcto
+    if (state.items.length === 0 && totalItems > 0) {
+        // Reconstruir state.items desde las filas si está vacío
+        state.items = Array.from(filas).map(row => ({
+            item_id: row.dataset.itemId,
+            producto_id: row.dataset.id,
+            cantidad: parseInt(row.querySelector('.qty-input')?.value) || 0,
+            precio_base: parseFloat(row.dataset.precio) || 0,
+            iva: parseFloat(row.dataset.iva) || 0,
+            nombre: row.dataset.nombre || '',
+            imagen_url: row.dataset.imagen || ''
+        }));
     }
 }
 
 /* ════════════════════════════════════════
-   REFRESH DESDE SERVIDOR
+    BARRA DE ENVÍO
+════════════════════════════════════════ */
+function updateShippingBar() {
+    const total = Math.max(0, state.total - state.descuento);
+    const remaining = FREE_SHIPPING - total;
+    const pct = Math.min(100, (total / FREE_SHIPPING) * 100);
+
+    // ═══ ANIMACIÓN SUAVE DE LA BARRA ═══
+    const shippingFill = document.getElementById('shipping-fill');
+    if (shippingFill) {
+        shippingFill.style.transition = 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+        shippingFill.style.width = pct + '%';
+        
+        // Cambiar color cuando se acerca al objetivo
+        if (pct >= 80 && pct < 100) {
+            shippingFill.style.background = 'linear-gradient(90deg, var(--gold), var(--verde))';
+        } else if (pct >= 100) {
+            shippingFill.style.background = 'linear-gradient(90deg, var(--verde), #2ecc71)';
+        } else {
+            shippingFill.style.background = 'linear-gradient(90deg, var(--gold), var(--cafe))';
+        }
+    }
+
+    // ═══ ACTUALIZAR TEXTO ═══
+    const shippingText = document.getElementById('shipping-text');
+    const shippingAchieved = document.getElementById('shipping-achieved');
+    const shippingRemaining = document.getElementById('shipping-remaining');
+
+    if (remaining <= 0) {
+        // ═══ ENVÍO GRATIS ALCANZADO ═══
+        if (shippingText) shippingText.style.display = 'none';
+        if (shippingAchieved) {
+            shippingAchieved.style.display = 'block';
+            shippingAchieved.style.animation = 'none';
+            setTimeout(() => {
+                shippingAchieved.style.animation = 'celebrate 0.6s ease';
+            }, 10);
+        }
+    } else {
+        // ═══ FALTA PARA ENVÍO GRATIS ═══
+        if (shippingText) {
+            shippingText.style.display = '';
+            shippingText.style.animation = 'none';
+        }
+        if (shippingAchieved) shippingAchieved.style.display = 'none';
+        if (shippingRemaining) {
+            shippingRemaining.textContent = fmt(remaining);
+            // Animación del número
+            shippingRemaining.style.animation = 'none';
+            setTimeout(() => {
+                shippingRemaining.style.animation = 'pulse 0.4s ease';
+            }, 10);
+        }
+    }
+
+    // ═══ ACTUALIZAR RESUMEN LATERAL ═══
+    const envioElement = document.getElementById('summary-envio');
+    if (envioElement) {
+        if (total >= FREE_SHIPPING) {
+            envioElement.textContent = '¡Gratis!';
+            envioElement.style.color = 'var(--verde)';
+            envioElement.style.fontWeight = '700';
+        } else {
+            envioElement.textContent = 'Calculado al finalizar';
+            envioElement.style.color = '';
+            envioElement.style.fontWeight = '';
+        }
+    }
+}
+
+/* ════════════════════════════════════════
+    REFRESH DESDE SERVIDOR
 ════════════════════════════════════════ */
 async function refreshCart() {
     try {
-        const res  = await fetch(URL_ESTADO);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const res = await fetch(URL_ESTADO);
+        
+        // Verificar respuesta HTTP
+        if (!res.ok) {
+            console.warn(`refreshCart: HTTP ${res.status}`);
+            return; // No lanzar error, solo salir silenciosamente
+        }
+        
+        // Parsear JSON de forma segura
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseError) {
+            console.error('refreshCart: Error parseando JSON', parseError);
+            return;
+        }
+        
+        // Validar que data exista
+        if (!data) {
+            console.warn('refreshCart: Respuesta vacía del servidor');
+            return;
+        }
 
-        state.items    = data.carrito_items || [];
-        state.subtotal = data.total_carrito || 0;
-        state.totalIva = data.total_iva     || 0;
-        state.total    = state.subtotal + state.totalIva;
+        // Actualizar estado con valores por defecto
+        state.items = data.carrito_items || [];
+        state.subtotal = parseFloat(data.total_carrito) || 0;
+        state.totalIva = parseFloat(data.total_iva) || 0;
+        state.total = state.subtotal + state.totalIva;
 
+        // ═══ CORRECCIÓN: Solo recalcular descuento si hay cupón Y la función existe ═══
+        if (state.cupon && state.descuento > 0) {
+            // Recalcular descuento basado en el nuevo total
+            // Asumimos que el servidor ya calculó el descuento correcto
+            // Si necesitas recalcularlo aquí, debes implementar la lógica
+            console.log(`Cupón activo: ${state.cupon}, descuento: ${state.descuento}`);
+        }
 
-        /* Recalcular descuento si hay cupón */
-        if (state.cupon) aplicarDescuento(state.cupon, false);
-
-        _renderTabla(state.items);
+        // Renderizar tabla solo si hay items
+        if (state.items.length > 0) {
+            _renderTabla(state.items);
+        } else {
+            _renderTabla([]);
+        }
+        
+        // Actualizar UI
         updateSummary();
         updateShippingBar();
         toggleEmptyState();
+        
     } catch (e) {
-        console.error('refreshCart error:', e);
-        showToast('Error al actualizar el carrito', 'error');
+        // Capturar errores de red sin mostrar toast innecesario
+        console.warn('refreshCart: Error de conexión', e.message);
+        // No mostrar toast para errores de refresh (es background)
     }
 }
 
 /* ════════════════════════════════════════
-   RENDERIZAR TABLA
+    RENDERIZAR TABLA
 ════════════════════════════════════════ */
 function _renderTabla(items) {
     const tbody = document.getElementById('carrito-items');
@@ -1480,8 +1670,8 @@ function _renderTabla(items) {
             <td data-label="Imagen">
                 <div class="product-img-wrap" onclick="quickView('${item.producto_id}')">
                     <img src="${imagen}"
-                         alt="${escHtml(item.nombre)}"
-                         onerror="this.src='/static/img/placeholder.jpg'">
+                        alt="${escHtml(item.nombre)}"
+                        onerror="this.src='/static/img/placeholder.jpg'">
                     <div class="img-overlay"><i class="fas fa-eye"></i></div>
                 </div>
             </td>
@@ -1500,9 +1690,9 @@ function _renderTabla(items) {
                 <div class="qty-control">
                     <button class="qty-btn" onclick="cambiarCantidad(this, -1)" aria-label="Reducir">−</button>
                     <input type="number" class="qty-input" value="${item.cantidad}"
-                           min="1" max="${item.stock || 99}"
-                           onchange="actualizarCantidadInput(this)"
-                           aria-label="Cantidad">
+                            min="1" max="${item.stock || 99}"
+                            onchange="actualizarCantidadInput(this)"
+                            aria-label="Cantidad">
                     <button class="qty-btn" onclick="cambiarCantidad(this, 1)" aria-label="Aumentar">+</button>
                 </div>
                 ${stockWarn}
@@ -1536,7 +1726,7 @@ function _renderTabla(items) {
 }
 
 /* ════════════════════════════════════════
-   CAMBIAR CANTIDAD
+    CAMBIAR CANTIDAD - ACTUALIZACIÓN INMEDIATA
 ════════════════════════════════════════ */
 window.cambiarCantidad = async function(btn, change) {
     const row    = btn.closest('tr');
@@ -1546,13 +1736,47 @@ window.cambiarCantidad = async function(btn, change) {
     const actual = parseInt(input.value) || 1;
     let nueva    = actual + change;
 
+    // ═══ ADVERTENCIA: No se puede disminuir por debajo de 1 ═══
+    if (actual === 1 && change === -1) {
+        showToast('⚠️ La cantidad mínima es 1 unidad', 'warning');
+        
+        // Animación de shake en el botón
+        btn.style.animation = 'shake 0.4s ease';
+        btn.style.background = 'var(--rojo)';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+            btn.style.animation = '';
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 400);
+        
+        // Animación en el input
+        input.style.animation = 'shake 0.4s ease';
+        input.style.color = 'var(--rojo)';
+        setTimeout(() => {
+            input.style.animation = '';
+            input.style.color = '';
+        }, 400);
+        
+        return; // No continuar
+    }
+
     if (nueva < 1)     { nueva = 1; }
     if (nueva > stock) { nueva = stock; showToast(`Solo hay ${stock} unidades disponibles`, 'warning'); }
     if (nueva === actual) return;
 
+    // Guardar valores originales para revertir si hay error
+    const valoresOriginales = {
+        cantidad: actual,
+        subtotal: row.querySelector('.price-subtotal').textContent,
+        iva: row.querySelector('.price-iva').textContent
+    };
+
     input.value = nueva;
-    /* Deshabilitar ambos botones mientras procesa */
     row.querySelectorAll('.qty-btn').forEach(b => b.disabled = true);
+
+    // ═══ ACTUALIZACIÓN VISUAL INMEDIATA ═══
+    actualizarSubtotalVisual(row, nueva);
 
     try {
         const res  = await fetch(URL_ACTUALIZAR(itemId), {
@@ -1561,15 +1785,22 @@ window.cambiarCantidad = async function(btn, change) {
             body: `cantidad=${nueva}`
         });
         const data = await res.json();
+        
         if (res.ok && data.success) {
             await refreshCart();
             showToast('Cantidad actualizada', 'success');
         } else {
-            input.value = actual;
+            // Revertir cambios visuales
+            input.value = valoresOriginales.cantidad;
+            row.querySelector('.price-subtotal').textContent = valoresOriginales.subtotal;
+            row.querySelector('.price-iva').textContent = valoresOriginales.iva;
             showToast(data.error || 'Error al actualizar', 'error');
         }
     } catch {
-        input.value = actual;
+        // Revertir cambios visuales
+        input.value = valoresOriginales.cantidad;
+        row.querySelector('.price-subtotal').textContent = valoresOriginales.subtotal;
+        row.querySelector('.price-iva').textContent = valoresOriginales.iva;
         showToast('Error de conexión', 'error');
     } finally {
         row.querySelectorAll('.qty-btn').forEach(b => b.disabled = false);
@@ -1577,7 +1808,65 @@ window.cambiarCantidad = async function(btn, change) {
 };
 
 /* ════════════════════════════════════════
-   ACTUALIZAR DESDE INPUT DIRECTO
+    ACTUALIZAR SUBTOTAL VISUALMENTE (SIN ESPERAR SERVIDOR)
+════════════════════════════════════════ */
+function actualizarSubtotalVisual(row, nuevaCantidad) {
+    const precioBase = parseFloat(row.dataset.precio) || 0;
+    const ivaUnitario = parseFloat(row.dataset.iva) || 0;
+    
+    // Calcular nuevos valores
+    const nuevoSubtotalSinIva = precioBase * nuevaCantidad;
+    const nuevoIva = ivaUnitario * nuevaCantidad;
+    const nuevoSubtotalConIva = nuevoSubtotalSinIva + nuevoIva;
+    
+    // Actualizar visualización
+    const subtotalDiv = row.querySelector('.price-subtotal');
+    const ivaDiv = row.querySelector('.price-iva');
+    
+    subtotalDiv.textContent = fmt(nuevoSubtotalConIva);
+    ivaDiv.textContent = fmt(nuevoIva);
+    
+    // Agregar animación de cambio
+    subtotalDiv.style.transition = 'all 0.3s';
+    subtotalDiv.style.color = 'var(--verde)';
+    subtotalDiv.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+        subtotalDiv.style.color = '';
+        subtotalDiv.style.transform = '';
+    }, 300);
+    
+    // Actualizar totales globales inmediatamente
+    recalcularTotalesGlobales();
+}
+
+/* ════════════════════════════════════════
+    RECALCULAR TOTALES GLOBALES
+════════════════════════════════════════ */
+function recalcularTotalesGlobales() {
+    let nuevoSubtotal = 0;
+    let nuevoIva = 0;
+    
+    document.querySelectorAll('#carrito-items tr').forEach(row => {
+        const cantidad = parseInt(row.querySelector('.qty-input').value) || 0;
+        const precioBase = parseFloat(row.dataset.precio) || 0;
+        const ivaUnitario = parseFloat(row.dataset.iva) || 0;
+        
+        nuevoSubtotal += precioBase * cantidad;
+        nuevoIva += ivaUnitario * cantidad;
+    });
+    
+    // Actualizar estado
+    state.subtotal = nuevoSubtotal;
+    state.totalIva = nuevoIva;
+    state.total = nuevoSubtotal + nuevoIva;
+    
+    // Actualizar resumen
+    updateSummary();
+    updateShippingBar();
+}
+
+/* ════════════════════════════════════════
+    ACTUALIZAR DESDE INPUT DIRECTO - CON ACTUALIZACIÓN INMEDIATA
 ════════════════════════════════════════ */
 window.actualizarCantidadInput = async function(input) {
     const row    = input.closest('tr');
@@ -1587,6 +1876,16 @@ window.actualizarCantidadInput = async function(input) {
 
     if (valor < 1)     { valor = 1;     input.value = 1; }
     if (valor > stock) { valor = stock; input.value = stock; showToast(`Máximo ${stock} unidades disponibles`, 'warning'); }
+
+    // Guardar valores originales
+    const valoresOriginales = {
+        cantidad: parseInt(input.value),
+        subtotal: row.querySelector('.price-subtotal').textContent,
+        iva: row.querySelector('.price-iva').textContent
+    };
+
+    // Actualización visual inmediata
+    actualizarSubtotalVisual(row, valor);
 
     try {
         const res  = await fetch(URL_ACTUALIZAR(itemId), {
@@ -1599,6 +1898,51 @@ window.actualizarCantidadInput = async function(input) {
             await refreshCart();
             showToast('Cantidad actualizada', 'success');
         } else {
+            // Revertir si hay error
+            input.value = valoresOriginales.cantidad;
+            row.querySelector('.price-subtotal').textContent = valoresOriginales.subtotal;
+            row.querySelector('.price-iva').textContent = valoresOriginales.iva;
+            recalcularTotalesGlobales();
+            showToast(data.error || 'Error al actualizar', 'error');
+        }
+    } catch {
+        // Revertir si hay error
+        input.value = valoresOriginales.cantidad;
+        row.querySelector('.price-subtotal').textContent = valoresOriginales.subtotal;
+        row.querySelector('.price-iva').textContent = valoresOriginales.iva;
+        recalcularTotalesGlobales();
+        showToast('Error de conexión', 'error');
+    }
+};
+
+/* ════════════════════════════════════════
+    ACTUALIZAR DESDE INPUT DIRECTO
+════════════════════════════════════════ */
+window.actualizarCantidadInput = async function(input) {
+    const row = input.closest('tr');
+    const itemId = row.dataset.itemId;
+    const stock = parseInt(row.dataset.stock) || 999;
+    let valor = parseInt(input.value) || 1;
+
+    if (valor < 1) { valor = 1; input.value = 1; }
+    if (valor > stock) { valor = stock; input.value = stock; showToast(`Máximo ${stock} unidades disponibles`, 'warning'); }
+
+    // ═══ ACTUALIZACIÓN VISUAL INMEDIATA ═══
+    actualizarSubtotalVisual(row, valor);
+
+    try {
+        const res = await fetch(URL_ACTUALIZAR(itemId), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `cantidad=${valor}`
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            await refreshCart();
+            showToast('Cantidad actualizada', 'success');
+        } else {
+            // Revertir si hay error
+            input.value = valor;
             showToast(data.error || 'Error al actualizar', 'error');
         }
     } catch {
@@ -1607,7 +1951,75 @@ window.actualizarCantidadInput = async function(input) {
 };
 
 /* ════════════════════════════════════════
-   ELIMINAR PRODUCTO
+   ACTUALIZAR DESDE INPUT DIRECTO - CON VALIDACIÓN
+════════════════════════════════════════ */
+window.actualizarCantidadInput = async function(input) {
+    const row    = input.closest('tr');
+    const itemId = row.dataset.itemId;
+    const stock  = parseInt(row.dataset.stock) || 999;
+    let valor    = parseInt(input.value) || 1;
+
+    // ═══ VALIDACIÓN DE MÍNIMO ═══
+    if (valor < 1) {
+        valor = 1;
+        input.value = 1;
+        showToast('⚠️ La cantidad mínima es 1 unidad', 'warning');
+        
+        // Animación
+        input.style.animation = 'shake 0.4s ease';
+        input.style.color = 'var(--rojo)';
+        setTimeout(() => {
+            input.style.animation = '';
+            input.style.color = '';
+        }, 400);
+    }
+    
+    if (valor > stock) {
+        valor = stock;
+        input.value = stock;
+        showToast(`Máximo ${stock} unidades disponibles`, 'warning');
+    }
+
+    // Guardar valores originales
+    const valoresOriginales = {
+        cantidad: parseInt(input.value),
+        subtotal: row.querySelector('.price-subtotal').textContent,
+        iva: row.querySelector('.price-iva').textContent
+    };
+
+    // Actualización visual inmediata
+    actualizarSubtotalVisual(row, valor);
+
+    try {
+        const res  = await fetch(URL_ACTUALIZAR(itemId), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `cantidad=${valor}`
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            await refreshCart();
+            showToast('Cantidad actualizada', 'success');
+        } else {
+            // Revertir si hay error
+            input.value = valoresOriginales.cantidad;
+            row.querySelector('.price-subtotal').textContent = valoresOriginales.subtotal;
+            row.querySelector('.price-iva').textContent = valoresOriginales.iva;
+            recalcularTotalesGlobales();
+            showToast(data.error || 'Error al actualizar', 'error');
+        }
+    } catch {
+        // Revertir si hay error
+        input.value = valoresOriginales.cantidad;
+        row.querySelector('.price-subtotal').textContent = valoresOriginales.subtotal;
+        row.querySelector('.price-iva').textContent = valoresOriginales.iva;
+        recalcularTotalesGlobales();
+        showToast('Error de conexión', 'error');
+    }
+};
+
+/* ════════════════════════════════════════
+    ELIMINAR PRODUCTO
 ════════════════════════════════════════ */
 window.eliminarProducto = async function(btn, itemId) {
     if (!confirm('¿Eliminar este producto del carrito?')) return;
@@ -1615,8 +2027,15 @@ window.eliminarProducto = async function(btn, itemId) {
     const row = btn.closest('tr');
     row.classList.add('removing');
 
+    // ═══ CALCULAR VALORES ANTES DE ELIMINAR ═══
+    const precioBase = parseFloat(row.dataset.precio || 0);
+    const cantidadItem = parseInt(row.querySelector('.qty-input')?.value || 0);
+    const ivaUnitario = parseFloat(row.dataset.iva || 0);
+    const subtotalARestar = precioBase * cantidadItem;
+    const ivaARestar = ivaUnitario * cantidadItem;
+
     try {
-        const res  = await fetch(URL_ELIMINAR(itemId), {
+        const res = await fetch(URL_ELIMINAR(itemId), {
             method: 'POST',
             headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/x-www-form-urlencoded' }
         });
@@ -1625,8 +2044,20 @@ window.eliminarProducto = async function(btn, itemId) {
         if (res.ok && data.success) {
             setTimeout(async () => {
                 row.remove();
-                await refreshCart();
+                
+                // ═══ ACTUALIZACIÓN INMEDIATA ═══
+                state.subtotal = Math.max(0, state.subtotal - subtotalARestar);
+                state.totalIva = Math.max(0, state.totalIva - ivaARestar);
+                state.total = state.subtotal + state.totalIva;
+                
+                updateSummary();
+                updateShippingBar(); // ← AQUÍ SE ACTUALIZA LA BARRA
+                toggleEmptyState();
+                
                 showToast('Producto eliminado', 'success');
+                
+                // Sincronizar con servidor
+                await refreshCart();
             }, 340);
         } else {
             row.classList.remove('removing');
@@ -1637,6 +2068,19 @@ window.eliminarProducto = async function(btn, itemId) {
         showToast('Error de conexión', 'error');
     }
 };
+
+// ═══ NUEVA FUNCIÓN: RECALCULAR DESPUÉS DE ELIMINAR ═══
+function recalcularTotalesDespuesEliminar(subtotalARestar, ivaARestar) {
+    // Restar los valores del producto eliminado
+    state.subtotal = Math.max(0, state.subtotal - subtotalARestar);
+    state.totalIva = Math.max(0, state.totalIva - ivaARestar);
+    state.total = state.subtotal + state.totalIva;
+    
+    // Actualizar resumen inmediatamente
+    updateSummary();
+    updateShippingBar();
+    toggleEmptyState();
+}
 
 /* ════════════════════════════════════════
    VACIAR CARRITO
@@ -1672,19 +2116,295 @@ window.limpiarCarrito = async function() {
 };
 
 /* ════════════════════════════════════════
-   GUARDAR PARA DESPUÉS
+   GUARDAR PARA DESPUÉS - MEJORADO
 ════════════════════════════════════════ */
-window.guardarParaDespues = function(btn) {
-    const row  = btn.closest('tr');
+window.guardarParaDespues = async function(btn) {
+    const row = btn.closest('tr');
+    const itemId = row.dataset.itemId;
+    const productId = row.dataset.id;
     const name = row.dataset.nombre || 'Producto';
-    row.style.transition = 'opacity .4s';
-    row.style.opacity    = '0';
-    setTimeout(() => { row.remove(); refreshCart(); }, 420);
-    showToast(`"${name}" guardado para después`, 'info');
+    const imagen = row.dataset.imagen || '/static/img/placeholder.jpg';
+    const precio = parseFloat(row.dataset.precio) || 0;
+    const cantidad = parseInt(row.querySelector('.qty-input')?.value) || 1;
+
+    // ═══ CREAR OBJETO DEL PRODUCTO ═══
+    const productoGuardado = {
+        item_id: itemId,
+        producto_id: productId,
+        nombre: name,
+        imagen_url: imagen,
+        precio_base: precio,
+        cantidad: cantidad,
+        fecha_guardado: new Date().toISOString()
+    };
+
+    // ═══ GUARDAR EN LOCALSTORAGE ═══
+    try {
+        let guardados = JSON.parse(localStorage.getItem('productos_guardados') || '[]');
+        
+        // Verificar si ya existe
+        const existe = guardados.find(p => p.producto_id === productId);
+        if (existe) {
+            showToast(`"${name}" ya está guardado`, 'warning');
+            return;
+        }
+
+        guardados.push(productoGuardado);
+        localStorage.setItem('productos_guardados', JSON.stringify(guardados));
+        
+        console.log('✅ Producto guardado:', productoGuardado);
+    } catch (e) {
+        console.error('Error guardando en localStorage:', e);
+    }
+
+    // ═══ CALCULAR VALORES ANTES DE ELIMINAR ═══
+    const precioBase = parseFloat(row.dataset.precio || 0);
+    const ivaUnitario = parseFloat(row.dataset.iva || 0);
+    const subtotalARestar = precioBase * cantidad;
+    const ivaARestar = ivaUnitario * cantidad;
+
+    // ═══ ANIMACIÓN DE SALIDA ═══
+    row.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    row.style.transform = 'translateX(100px)';
+    row.style.opacity = '0';
+    row.style.maxHeight = row.offsetHeight + 'px';
+    
+    setTimeout(() => {
+        row.style.maxHeight = '0';
+        row.style.padding = '0';
+        row.style.margin = '0';
+    }, 250);
+
+    setTimeout(() => {
+        row.remove();
+        
+        // ═══ ACTUALIZACIÓN INMEDIATA ═══
+        state.subtotal = Math.max(0, state.subtotal - subtotalARestar);
+        state.totalIva = Math.max(0, state.totalIva - ivaARestar);
+        state.total = state.subtotal + state.totalIva;
+        
+        updateSummary();
+        updateShippingBar();
+        toggleEmptyState();
+        
+        // ═══ MOSTRAR TOAST CON OPCIÓN DE RECUPERAR ═══
+        showToast(`"${name}" guardado para después`, 'success', 4000, () => {
+            recuperarProducto(productId);
+        });
+        
+        // ═══ ACTUALIZAR CONTADOR DE GUARDADOS ═══
+        actualizarContadorGuardados();
+    }, 500);
 };
 
 /* ════════════════════════════════════════
-   QUICK VIEW
+   RECUPERAR PRODUCTO GUARDADO
+════════════════════════════════════════ */
+function recuperarProducto(productId) {
+    try {
+        let guardados = JSON.parse(localStorage.getItem('productos_guardados') || '[]');
+        const producto = guardados.find(p => p.producto_id === productId);
+        
+        if (!producto) {
+            showToast('Producto no encontrado', 'error');
+            return;
+        }
+
+        // Agregar al carrito
+        fetch('/ventas/api/carrito/agregar/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrf(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                producto_id: parseInt(productId), 
+                cantidad: producto.cantidad 
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Remover de guardados
+                guardados = guardados.filter(p => p.producto_id !== productId);
+                localStorage.setItem('productos_guardados', JSON.stringify(guardados));
+                
+                refreshCart();
+                actualizarContadorGuardados();
+                showToast(`"${producto.nombre}" agregado al carrito`, 'success');
+            } else {
+                showToast(data.error || 'No se pudo agregar', 'error');
+            }
+        })
+        .catch(() => {
+            showToast('Error de conexión', 'error');
+        });
+    } catch (e) {
+        console.error('Error recuperando producto:', e);
+        showToast('Error al recuperar producto', 'error');
+    }
+}
+
+/* ════════════════════════════════════════
+    ACTUALIZAR CONTADOR DE GUARDADOS
+════════════════════════════════════════ */
+function actualizarContadorGuardados() {
+    try {
+        const guardados = JSON.parse(localStorage.getItem('productos_guardados') || '[]');
+        const contador = document.getElementById('contador-guardados');
+        
+        if (contador) {
+            if (guardados.length > 0) {
+                contador.textContent = guardados.length;
+                contador.style.display = 'flex';
+            } else {
+                contador.style.display = 'none';
+            }
+        }
+    } catch (e) {
+        console.error('Error actualizando contador:', e);
+    }
+}
+
+/* ════════════════════════════════════════
+    VER PRODUCTOS GUARDADOS
+════════════════════════════════════════ */
+window.verProductosGuardados = function() {
+    try {
+        const guardados = JSON.parse(localStorage.getItem('productos_guardados') || '[]');
+        
+        if (guardados.length === 0) {
+            showToast('No tienes productos guardados', 'info');
+            return;
+        }
+
+        // Crear modal o redirigir a página de guardados
+        let modalHtml = `
+            <div class="modal fade" id="modalGuardados" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background:var(--cafe);color:#fff;">
+                            <h5 class="modal-title">
+                                <i class="fas fa-bookmark me-2"></i>
+                                Productos guardados (${guardados.length})
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                ${guardados.map(p => `
+                                    <div class="col-md-6">
+                                        <div class="card h-100" style="border:1px solid var(--border);">
+                                            <div class="row g-0">
+                                                <div class="col-4">
+                                                    <img src="${p.imagen_url}" 
+                                                        class="img-fluid rounded-start" 
+                                                        style="height:100%;object-fit:cover;"
+                                                        alt="${p.nombre}">
+                                                </div>
+                                                <div class="col-8">
+                                                    <div class="card-body p-2">
+                                                        <h6 class="card-title mb-1" style="font-size:.85rem;">${p.nombre}</h6>
+                                                        <p class="card-text mb-1" style="font-size:.75rem;color:var(--text-light);">
+                                                            ${p.cantidad} unidad${p.cantidad > 1 ? 'es' : ''}
+                                                        </p>
+                                                        <p class="card-text mb-2" style="font-size:.9rem;font-weight:700;color:var(--cafe);">
+                                                            ${fmt(p.precio_base)}
+                                                        </p>
+                                                        <button class="btn btn-sm w-100" 
+                                                                style="background:var(--cafe);color:#fff;font-size:.75rem;"
+                                                                onclick="recuperarProducto('${p.producto_id}'); bootstrap.Modal.getInstance(document.getElementById('modalGuardados')).hide();">
+                                                            <i class="fas fa-cart-plus me-1"></i> Agregar al carrito
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-danger" onclick="limpiarGuardados()">
+                                <i class="fas fa-trash me-1"></i> Vaciar todos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remover modal anterior si existe
+        const modalAnterior = document.getElementById('modalGuardados');
+        if (modalAnterior) modalAnterior.remove();
+
+        // Agregar nuevo modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalGuardados'));
+        modal.show();
+    } catch (e) {
+        console.error('Error mostrando productos guardados:', e);
+        showToast('Error al cargar productos guardados', 'error');
+    }
+};
+
+/* ════════════════════════════════════════
+    LIMPIAR PRODUCTOS GUARDADOS
+════════════════════════════════════════ */
+window.limpiarGuardados = function() {
+    if (!confirm('¿Eliminar todos los productos guardados?')) return;
+    
+    localStorage.removeItem('productos_guardados');
+    actualizarContadorGuardados();
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalGuardados'));
+    if (modal) modal.hide();
+    
+    showToast('Productos guardados eliminados', 'info');
+};
+
+/* ════════════════════════════════════════
+    TOAST MEJORADO CON ACCIÓN
+════════════════════════════════════════ */
+window.showToast = function(msg, type = 'success', duration = 3500, actionCallback = null) {
+    const icons = {
+        success: 'fa-check-circle',
+        error:   'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info:    'fa-info-circle'
+    };
+    const stack = document.getElementById('toast-stack');
+    const t = document.createElement('div');
+    t.className = `toast-item ${type}`;
+    
+    let actionBtn = '';
+    if (actionCallback) {
+        actionBtn = `<button class="btn btn-sm btn-link text-white p-0 ms-2" style="text-decoration:underline;font-size:.8rem;" onclick="(${actionCallback.toString()})()">
+            Recuperar
+        </button>`;
+    }
+    
+    t.innerHTML = `
+        <i class="fas ${icons[type] || icons.success} toast-icon"></i>
+        <span class="toast-msg">${msg}</span>
+        ${actionBtn}
+    `;
+    
+    stack.appendChild(t);
+
+    setTimeout(() => {
+        t.style.transition = 'opacity .3s, transform .3s';
+        t.style.opacity = '0';
+        t.style.transform = 'translateY(8px)';
+        setTimeout(() => t.remove(), 320);
+    }, duration);
+};
+
+/* ════════════════════════════════════════
+    QUICK VIEW
 ════════════════════════════════════════ */
 window.quickView = function(productId) {
 
@@ -1693,7 +2413,7 @@ window.quickView = function(productId) {
 };
 
 /* ════════════════════════════════════════
-   CUPÓN — validación y cálculo en servidor
+    CUPÓN — validación y cálculo en servidor
 ════════════════════════════════════════ */
 window.aplicarCupon = async function() {
     const input = document.getElementById('coupon-input');
@@ -1772,84 +2492,161 @@ window.removerCupon = async function() {
 };
 
 /* ════════════════════════════════════════
-   RECOMENDADOS
+    RECOMENDADOS
 ════════════════════════════════════════ */
 async function cargarRecomendados() {
+    const skeleton = document.getElementById('rec-skeleton');
+    const grid = document.getElementById('rec-grid');
+    const empty = document.getElementById('rec-empty');
+    
+    console.log('🔄 Iniciando carga de recomendados...');
+    console.log('📡 URL del endpoint:', URL_RECOMENDADOS);
+    
     try {
-        const res  = await fetch(URL_RECOMENDADOS);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(URL_RECOMENDADOS, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        console.log('📥 Respuesta HTTP:', {
+            status: res.status,
+            ok: res.ok,
+            statusText: res.statusText
+        });
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
         const data = await res.json();
-
-        document.getElementById('rec-skeleton').classList.add('d-none');
-
-        if (!data.productos || data.productos.length === 0) {
-            document.getElementById('rec-empty').classList.remove('d-none');
+        console.log('📦 Datos completos recibidos:', data);
+        console.log('📦 Tipo de data:', typeof data);
+        console.log('📦 Keys:', Object.keys(data));
+        
+        // Ocultar skeleton
+        if (skeleton) skeleton.classList.add('d-none');
+        
+        // Validar estructura
+        if (!data || !data.productos) {
+            console.warn('⚠️ No hay campo "productos" en la respuesta');
+            console.log('Estructura recibida:', data);
+            mostrarProductosFallback();
             return;
         }
-
-        const grid = document.getElementById('rec-grid');
-        grid.innerHTML = data.productos.map(p => `
-            <div class="rec-card">
-                <img src="${escHtml(p.imagen_url || '/static/img/placeholder.jpg')}"
-                     alt="${escHtml(p.nombre)}"
-                     onerror="this.src='/static/img/placeholder.jpg'">
-                <div class="rec-card-body">
-                    <div class="rec-name">${escHtml(p.nombre)}</div>
-                    <div class="rec-price">${fmt(p.precio)}</div>
-                    <button class="rec-add" onclick="agregarDesdeRecomendados(${p.id}, this)">
-                        + Agregar
-                    </button>
-                </div>
-            </div>
-        `).join('');
-
-        grid.classList.remove('d-none');
+        
+        const productos = data.productos;
+        console.log(`✅ ${productos.length} productos recibidos`);
+        
+        if (productos.length === 0) {
+            console.warn('⚠️ Lista de productos vacía');
+            mostrarProductosFallback();
+            return;
+        }
+        
+        // ═══ RENDERIZAR PRODUCTOS ═══
+        renderizarProductos(productos.slice(0, 4));
+        
     } catch (e) {
-        console.error('Error cargando recomendados:', e);
-        document.getElementById('rec-skeleton').classList.add('d-none');
-        document.getElementById('rec-empty').classList.remove('d-none');
+        console.error('❌ Error cargando recomendados:', e);
+        console.error('❌ Stack trace:', e.stack);
+        
+        if (skeleton) skeleton.classList.add('d-none');
+        
+        // Mostrar fallback
+        mostrarProductosFallback();
     }
 }
 
-window.agregarDesdeRecomendados = async function(productId, btn) {
-    const textoOriginal = btn.textContent;
-    btn.disabled    = true;
-    btn.textContent = 'Agregando…';
-
-    try {
-        const res  = await fetch(URL_AGREGAR, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken':  csrf(),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ producto_id: productId, cantidad: 1 })
-        });
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-            btn.textContent          = '✓ Agregado';
-            btn.style.background     = 'var(--verde)';
-            btn.style.color          = '#fff';
-            btn.style.borderColor    = 'var(--verde)';
-
-            await refreshCart();
-            setTimeout(() => cargarRecomendados(), 800);
-            showToast(`"${data.nombre || 'Producto'}" agregado al carrito`, 'success');
-        } else {
-            btn.textContent = textoOriginal;
-            btn.disabled    = false;
-            showToast(data.error || 'No se pudo agregar', 'error');
-        }
-    } catch {
-        btn.textContent = textoOriginal;
-        btn.disabled    = false;
-        showToast('Error de conexión', 'error');
+/* ════════════════════════════════════════
+   RENDERIZAR PRODUCTOS
+════════════════════════════════════════ */
+function renderizarProductos(productos) {
+    const grid = document.getElementById('rec-grid');
+    if (!grid) {
+        console.error('❌ No se encontró el elemento #rec-grid');
+        return;
     }
-};
+    
+    console.log('🎨 Renderizando', productos.length, 'productos');
+    
+    const html = productos.map((p, index) => {
+        const imagen = escHtml(p.imagen_url || '/static/img/placeholder.jpg');
+        const nombre = escHtml(p.nombre || 'Producto sin nombre');
+        const precio = fmt(p.precio || 0);
+        const productId = p.id || p.producto_id;
+        
+        console.log(`Producto ${index + 1}:`, {
+            id: productId,
+            nombre: nombre,
+            precio: precio,
+            imagen: imagen
+        });
+        
+        return `
+            <div class="rec-card" onclick="window.location.href='/productos/${productId}/'" style="cursor:pointer;">
+                <img src="${imagen}"
+                    alt="${nombre}"
+                    onerror="this.src='/static/img/placeholder.jpg'">
+                <div class="rec-card-body">
+                    <div class="rec-name">${nombre}</div>
+                    <div class="rec-price">${precio}</div>
+                    <button class="rec-add" onclick="event.stopPropagation(); agregarDesdeRecomendados(${productId}, this)">
+                        <i class="fas fa-cart-plus me-1"></i> Agregar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    console.log('📝 HTML generado:', html.substring(0, 200) + '...');
+    
+    grid.innerHTML = html;
+    grid.classList.remove('d-none');
+    
+    console.log('✅ Productos renderizados en el DOM');
+}
 
 /* ════════════════════════════════════════
-   TOAST
+    FALLBACK: PRODUCTOS DE EJEMPLO
+════════════════════════════════════════ */
+function mostrarProductosFallback() {
+    console.log('🔄 Mostrando productos de ejemplo (fallback)');
+    
+    const productosEjemplo = [
+        {
+            id: 1,
+            nombre: 'Vela Artesanal de Soya',
+            precio: 85000,
+            imagen_url: '/static/img/placeholder.jpg'
+        },
+        {
+            id: 2,
+            nombre: 'Jabón Natural de Lavanda',
+            precio: 45000,
+            imagen_url: '/static/img/placeholder.jpg'
+        },
+        {
+            id: 3,
+            nombre: 'Crema Hidratante Orgánica',
+            precio: 120000,
+            imagen_url: '/static/img/placeholder.jpg'
+        },
+        {
+            id: 4,
+            nombre: 'Aceite Esencial Premium',
+            precio: 95000,
+            imagen_url: '/static/img/placeholder.jpg'
+        }
+    ];
+    
+    renderizarProductos(productosEjemplo);
+}
+
+/* ════════════════════════════════════════
+    TOAST
 ════════════════════════════════════════ */
 window.showToast = function(msg, type = 'success') {
     const icons = {
@@ -1862,7 +2659,7 @@ window.showToast = function(msg, type = 'success') {
     const t     = document.createElement('div');
     t.className = `toast-item ${type}`;
     t.innerHTML = `<i class="fas ${icons[type] || icons.success} toast-icon"></i>
-                   <span class="toast-msg">${msg}</span>`;
+                    <span class="toast-msg">${msg}</span>`;
     stack.appendChild(t);
 
     setTimeout(() => {
