@@ -187,7 +187,6 @@ def iniciar_transaccion(request):
 
     cliente = _get_cliente(request)
     if not cliente:
-        # 401 explícito en JSON — nunca una redirección HTML como hacía @login_required
         return JsonResponse({'error': 'Debes iniciar sesión para continuar.'}, status=401)
 
     try:
@@ -205,7 +204,6 @@ def iniciar_transaccion(request):
         totales         = _calcular_totales(items, cupon)
         amount_in_cents = _cop_a_centavos(totales['total'])
 
-        # Mínimo recomendado por Wompi: $1.500 COP
         if amount_in_cents < 150000:
             return JsonResponse(
                 {'error': f'Monto mínimo: $1.500 COP (actual: ${amount_in_cents // 100})'},
@@ -218,10 +216,22 @@ def iniciar_transaccion(request):
         )
 
         referencia = wompi.generar_referencia()
-        firma      = wompi.generar_firma_integridad(referencia, amount_in_cents, 'COP')
+        # Colisión de referencia es extremadamente improbable, pero es gratis blindarlo
+        while PagoWompi.objects.filter(referencia=referencia).exists():
+            referencia = wompi.generar_referencia()
 
-        logger.info(f'Iniciando transacción Wompi: ref={referencia} amount_in_cents={amount_in_cents}')
+        firma = wompi.generar_firma_integridad(
+            amount_in_cents=amount_in_cents,
+            currency=settings.WOMPI_CURRENCY,
+            reference=referencia,
+            public_key=settings.WOMPI_PUBLIC_KEY,  
+            secreto=settings.WOMPI_INTEGRITY_SECRET
+        )
 
+        # ── Esta es la pieza que faltaba ──────────────────────────────────
+        # Sin este registro, confirmar_pago() y wompi_webhook() nunca
+        # encuentran la referencia y el Pedido/Venta jamás se crea, aunque
+        # el pago haya sido aprobado por Wompi.
         PagoWompi.objects.create(
             referencia=referencia,
             cliente_id=cliente.id_cliente,
@@ -230,8 +240,12 @@ def iniciar_transaccion(request):
             moneda='COP',
             estado='PENDIENTE',
             descripcion=desc,
-            checkout_data_json=json.dumps({'contacto': contacto, 'envio': envio}),
+            checkout_data_json=json.dumps(
+                {'contacto': contacto, 'envio': envio}, ensure_ascii=False
+            ),
         )
+
+        logger.info(f'Iniciando transacción Wompi: ref={referencia} amount_in_cents={amount_in_cents}')
 
         return JsonResponse({
             'public_key':           settings.WOMPI_PUBLIC_KEY,
@@ -589,8 +603,10 @@ def pago_exitoso(request):
             estado_mostrado = pago.estado
 
     return render(request, 'pagos/pago_exitoso.html', {
-        'pago': pago,
+        'pago':           pago,
         'transaction_id': transaction_id,
-        'estado': estado_mostrado,
+        'reference':      pago.referencia if pago else '',
+        'status':         pago.estado_wompi_raw if pago else estado_mostrado,
+        'estado':         estado_mostrado,
         'carrito_cantidad': 0,
     })

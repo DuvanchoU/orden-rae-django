@@ -22,7 +22,7 @@ from django.conf import settings
 from .models import (
     Clientes, Pedido, Ventas, Cotizaciones, DetalleVenta,
     DetalleCotizacion, Carritos, ItemsCarrito, DetallePedido, MetodosPago,
-    Promocion, PromoCombo, TransaccionWompi, ImagenPromocion
+    Promocion, PromoCombo, ImagenPromocion
 )
 from inventario.models import Producto, ImagenesProducto, Inventario
 
@@ -32,13 +32,10 @@ from .forms import (
     PromocionForm, PromoComboForm
 )
 
-# Servicios
-from .wompi_service import WompiService
 from cloudinary.utils import cloudinary_url
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
-wompi_service = WompiService()
 
 IVA_RATE = Decimal('0.19')
 
@@ -235,84 +232,57 @@ def carrito_compra(request):
     # ═══════════════════════════════════════════════════════════════════════
     # CÁLCULO DATOS WOMPI (para el widget en el carrito)
     # ═══════════════════════════════════════════════════════════════════════
+    from pagos import services as wompi
+    from pagos.models import PagoWompi
+
     wompi_data = None
     cliente_datos_completos = False
 
     es_cliente = request.session.get('cliente_auth', False)
     cliente_id = request.session.get('cliente_id')
 
-    print(f"\n{'='*60}")
-    print(f"🔍 DEBUG CARRITO:")
-    print(f"   cliente_auth: {es_cliente}")
-    print(f"   cliente_id: {cliente_id}")
-    print(f"   Items: {len(items)}")
-    print(f"{'='*60}\n")
-
     if es_cliente and cliente_id and items:
         try:
-            import hashlib
-            import time
-            from datetime import datetime, timedelta, timezone as tz
-            
-            cliente = Clientes.objects.get(
-                id_cliente=cliente_id,
-                deleted_at__isnull=True
-            )
-            
-            customer_name  = f"{cliente.nombre} {cliente.apellido}".strip()
-            customer_email = (cliente.email or '').strip()
-            customer_phone = (cliente.telefono or '').strip()
-            customer_doc   = (cliente.documento or '').strip()
-            
-            print(f"📋 Cliente encontrado:")
-            print(f"   Nombre: '{customer_name}'")
-            print(f"   Email: '{customer_email}'")
-            print(f"   Teléfono: '{customer_phone}'")
-            print(f"   Documento: '{customer_doc}'")
-            
+            cliente = Clientes.objects.get(id_cliente=cliente_id, deleted_at__isnull=True)
             cliente_datos_completos = True
-            
-            print(f"✅ cliente_datos_completos: {cliente_datos_completos}")
-            
-            total_final = round(total_carrito + total_iva, 2)
+
+            total_final     = round(total_carrito + total_iva, 2)
             amount_in_cents = int(total_final * 100)
-            
-            reference = f"ORDER-{cliente.id_cliente}-{int(time.time())}"
-            
-            integrity_secret = settings.WOMPI_INTEGRITY_SECRET
-            cadena = f"{reference}{amount_in_cents}{settings.WOMPI_CURRENCY}{integrity_secret}"
-            signature = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
-            
-            expiration = (datetime.now(tz.utc) + timedelta(hours=24)).isoformat()
-            
-            direccion = getattr(cliente, 'direccion', '') or ''
-            
+
+            referencia = wompi.generar_referencia()
+            while PagoWompi.objects.filter(referencia=referencia).exists():
+                referencia = wompi.generar_referencia()
+
+            firma = wompi.generar_firma_integridad(
+                amount_in_cents=amount_in_cents,
+                currency=settings.WOMPI_CURRENCY,
+                reference=referencia,
+                public_key=settings.WOMPI_PUBLIC_KEY, 
+                secreto=settings.WOMPI_INTEGRITY_SECRET
+            )
+
+            # Se crea AQUÍ, no en iniciar_transaccion — sin esto, pago_exitoso()
+            # y el webhook nunca encuentran la referencia y el pedido se pierde.
+            PagoWompi.objects.create(
+                referencia=referencia,
+                cliente_id=cliente.id_cliente,
+                monto=int(total_final),
+                monto_centavos=amount_in_cents,
+                moneda=settings.WOMPI_CURRENCY,
+                estado='PENDIENTE',
+                descripcion=f'Compra carrito — cliente {cliente.id_cliente}',
+            )
+
             wompi_data = {
-                'public_key':         settings.WOMPI_PUBLIC_KEY,
-                'amount_in_cents':    amount_in_cents,
-                'reference':          reference,
-                'signature':          signature,
-                'redirect_url':       request.build_absolute_uri('/pagos/exito/'),
-                'expiration_time':    expiration,
-                'tax_vat_cents':      int(total_iva * 100),
-                'customer_email':     customer_email,
-                'customer_name':      customer_name,
-                'customer_phone':     customer_phone,
-                'customer_doc':       customer_doc,
-                'shipping_address':   direccion,
+                'public_key':      settings.WOMPI_PUBLIC_KEY,
+                'amount_in_cents': amount_in_cents,
+                'reference':       referencia,
+                'signature':       firma,
+                'redirect_url':    request.build_absolute_uri('/pagos/exito/'),
             }
-            
-            print(f"✅ Wompi data preparado correctamente")
-            print(f"{'='*60}\n")
-            
         except Clientes.DoesNotExist:
-            print(f"⚠️ Cliente {cliente_id} NO encontrado en BD")
-            print(f"{'='*60}\n")
-        except Exception as e:
-            print(f"❌ Error preparando Wompi: {e}")
-            import traceback
-            traceback.print_exc()
-            print(f"{'='*60}\n")
+            pass
+
 
     # ═══════════════════════════════════════════════════════════════════════
     # CONTEXT FINAL (UN SOLO RETURN AL FINAL)
@@ -1742,156 +1712,6 @@ def perfil_stats(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-
-# ============================================================================
-# WOMPI - PAGOS
-# ============================================================================
-
-@require_http_methods(["GET", "POST"])
-def iniciar_pago_wompi(request, venta_id):
-    """Iniciar proceso de pago con Wompi"""
-    cliente_email = request.session.get('cliente_email')
-    if not cliente_email:
-        messages.error(request, 'Debes iniciar sesión para realizar el pago')
-        return redirect('pagina:login')
-    
-    try:
-        venta = get_object_or_404(
-            Ventas, 
-            id_venta=venta_id,
-            cliente__email=cliente_email,
-            estado_venta='PENDIENTE'
-        )
-    except Exception as e:
-        messages.error(request, f'Error al obtener la venta: {str(e)}')
-        return redirect('ventas:carrito_compra')
-    
-    if request.method == 'POST':
-        referencia = wompi_service.generar_referencia(venta.id_venta)
-        resultado = wompi_service.crear_transaccion(venta, referencia)
-        
-        if resultado and resultado.get('data'):
-            transaccion = TransaccionWompi.objects.create(
-                venta=venta,
-                wompi_transaction_id=resultado['data'].get('id'),
-                referencia=referencia,
-                monto=venta.total,
-                estado='PENDING',
-                respuesta_wompi=resultado['data'],
-                es_sandbox=wompi_service.is_sandbox,
-            )
-            
-            checkout_url = resultado['data'].get('redirect_url')
-            if checkout_url:
-                return redirect(checkout_url)
-            else:
-                messages.error(request, 'No se pudo obtener la URL de pago')
-        else:
-            messages.error(request, 'Error al procesar el pago. Intenta de nuevo.')
-        
-        return redirect('ventas:carrito_compra')
-    
-    return render(request, 'ventas/pago_wompi.html', {
-        'venta': venta,
-        'wompi_public_key': settings.WOMPI_PUBLIC_KEY,
-        'es_sandbox': wompi_service.is_sandbox,
-    })
-
-
-@csrf_exempt
-@require_POST
-def wompi_webhook(request):
-    """Webhook para recibir notificaciones de Wompi"""
-    try:
-        signature = request.headers.get('X-Signature', '')
-        payload = request.body.decode('utf-8')
-        
-        if not wompi_service.verificar_webhook(payload, signature):
-            logger.warning("Firma de webhook inválida")
-            return HttpResponse('Invalid signature', status=403)
-        
-        data = json.loads(payload)
-        
-        transaction_id = data.get('data', {}).get('id')
-        estado = data.get('data', {}).get('status')
-        referencia = data.get('data', {}).get('reference')
-        
-        logger.info(f"Webhook recibido: {transaction_id} - {estado}")
-        
-        if transaction_id and estado:
-            transaccion = TransaccionWompi.objects.filter(
-                wompi_transaction_id=transaction_id
-            ).first()
-            
-            if transaccion:
-                transaccion.estado = estado
-                transaccion.respuesta_wompi = data
-                transaccion.fecha_actualizacion = timezone.now()
-                transaccion.save()
-                
-                if estado == 'APPROVED':
-                    venta = transaccion.venta
-                    venta.estado_venta = 'COMPLETADA'
-                    venta.save()
-                    
-                    logger.info(f"Venta {venta.id_venta} marcada como completada")
-        
-        return HttpResponse('OK', status=200)
-        
-    except Exception as e:
-        logger.error(f"Error en webhook: {e}")
-        return HttpResponse('Error', status=500)
-
-
-def confirmacion_pago_wompi(request, venta_id):
-    """Página de confirmación después del pago"""
-    try:
-        venta = get_object_or_404(Ventas, id_venta=venta_id)
-        transaccion = TransaccionWompi.objects.filter(venta=venta).first()
-        
-        if transaccion and transaccion.wompi_transaction_id:
-            resultado = wompi_service.consultar_transaccion(transaccion.wompi_transaction_id)
-            
-            if resultado and resultado.get('data'):
-                estado = resultado['data']['status']
-                transaccion.estado = estado
-                transaccion.respuesta_wompi = resultado['data']
-                transaccion.save()
-                
-                if estado == 'APPROVED':
-                    venta.estado_venta = 'COMPLETADA'
-                    venta.save()
-        
-        return render(request, 'ventas/confirmacion_pago_wompi.html', {
-            'venta': venta,
-            'transaccion': transaccion,
-        })
-    except Exception as e:
-        messages.error(request, f'Error al cargar la confirmación: {str(e)}')
-        return redirect('pagina:home')
-
-
-def historial_transacciones(request):
-    """Historial de transacciones del cliente"""
-    cliente_email = request.session.get('cliente_email')
-    
-    if not cliente_email:
-        return redirect('pagina:login')
-    
-    cliente = Clientes.objects.filter(email=cliente_email).first()
-    
-    if not cliente:
-        return redirect('pagina:login')
-    
-    transacciones = TransaccionWompi.objects.filter(
-        venta__cliente=cliente
-    ).order_by('-fecha_creacion')
-    
-    return render(request, 'ventas/historial_transacciones.html', {
-        'transacciones': transacciones,
-    })
-
 
 # ===========================================================================
 # PROMOCIONES

@@ -933,7 +933,7 @@ tr.removing { animation: rowOut .35s ease forwards; }
 
                                 <td data-label="Imagen">
                                     <div class="product-img-wrap" onclick="quickView('{{ item.producto_id }}')">
-                                        <img src="{{ MEDIA_URL }}{{ item.imagen_url|default:'/static/img/placeholder.jpg' }}"
+                                        <img src="{{ item.imagen_url|default:'/static/img/placeholder.jpg' }}"
                                             alt="{{ item.nombre }}"
                                             onerror="this.src='/static/img/placeholder.jpg'">
                                         <div class="img-overlay"><i class="fas fa-eye"></i></div>
@@ -1114,20 +1114,22 @@ tr.removing { animation: rowOut .35s ease forwards; }
                         <span>Entrega estimada: <strong>3–5 días hábiles</strong></span>
                     </div>
 
-                    {% if wompi and cliente_datos_completos %}
+                    {% if cliente_datos_completos %}
                         <!-- ══════════════════════════════════════════════════════
-                            BOTÓN DIRECTO A WOMPI (sin widget)
+                            BOTÓN DE PAGO CON WOMPI
                         ═══════════════════════════════════════════════════════ -->
                         <div style="margin: 1.5rem 0 1rem;">
-                            <button 
-                                id="btn-pagar-wompi"
-                                onclick="pagarConWompi()"
-                                style="width: 100%; background: linear-gradient(135deg, #0066FF 0%, #004FCC 100%); color: white; border: none; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.6rem; box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3); transition: all 0.25s;"
-                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 28px rgba(0, 102, 255, 0.4)'"
-                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0, 102, 255, 0.3)'">
-                                <i class="fas fa-credit-card"></i>
-                                <span>Pagar con Wompi</span>
-                            </button>
+                            <form>
+                            <script
+                                src="https://checkout.wompi.co/widget.js"
+                                data-render="button"
+                                data-public-key="pub_test_Q3PHayn0FJ2MSVcXfztxOVavnoRxSeez"
+                                data-currency="COP"
+                                data-amount-in-cents="{{ wompi.amount_in_cents }}"
+                                data-reference="{{ wompi.reference }}"
+                                data-signature:integrity="{{ wompi.signature }}"
+                            ></script>
+                            </form>
                         </div>
                         
                         <small class="text-muted d-block text-center mb-2" style="font-size:.75rem;">
@@ -1135,96 +1137,43 @@ tr.removing { animation: rowOut .35s ease forwards; }
                             Pago seguro procesado por <strong>Wompi</strong>
                         </small>
                         
-                        <!-- Datos del cliente (informativo) -->
-                        <div style="background: #f8f9fa; border-radius: 12px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .8rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: .3rem;">
-                                <span style="color: #666;">👤 {{ wompi.customer_name }}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: .3rem;">
-                                <span style="color: #666;">✉️ {{ wompi.customer_email }}</span>
-                            </div>
-                            {% if wompi.customer_phone %}
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: #666;"> {{ wompi.customer_phone }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
 
                         <script>
-                            // Datos de Wompi para el pago
-                            const wompiData = {
-                                publicKey: '{{ wompi.public_key }}',
-                                currency: 'COP',
-                                amountInCents: {{ wompi.amount_in_cents }},
-                                reference: '{{ wompi.reference }}',
-                                signature: '{{ wompi.signature }}',
-                                redirectUrl: '{{ wompi.redirect_url }}',
-                                expirationTime: '{{ wompi.expiration_time }}',
-                                taxVatCents: {{ wompi.tax_vat_cents }},
-                                customerEmail: '{{ wompi.customer_email }}',
-                                customerName: '{{ wompi.customer_name }}',
-                                customerPhone: '{{ wompi.customer_phone }}',
-                                customerDoc: '{{ wompi.customer_doc }}',
-                                shippingAddress: '{{ wompi.shipping_address }}',
-                            };
+                        async function pagarConWompi() {
+                            const btn = document.querySelector('.wompi-btn');
+                            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                            if (btn) btn.disabled = true;
 
-                            function pagarConWompi() {
-                                console.log('🔍 Iniciando pago con Wompi...');
-                                console.log('Datos recibidos:', wompiData);
-                                
-                                // Función auxiliar para codificar solo el valor (no la clave)
-                                function encodeParam(value) {
-                                    return encodeURIComponent(value);
+                            try {
+                                const res = await fetch("{% url 'pagos:iniciar_transaccion' %}", {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                                    body: JSON.stringify({}),
+                                });
+                                const data = await res.json();
+
+                                if (!res.ok) {
+                                    alert(data.error || 'No se pudo iniciar el pago con Wompi');
+                                    if (btn) btn.disabled = false;
+                                    return;
                                 }
-                                
-                                // Construir URL manualmente
-                                let wompiUrl = 'https://checkout.wompi.co/p/?';
-                                
-                                // Campos obligatorios
-                                wompiUrl += `public-key=${encodeParam(wompiData.publicKey)}&`;
-                                wompiUrl += `currency=${encodeParam(wompiData.currency)}&`;
-                                wompiUrl += `amount-in-cents=${wompiData.amountInCents}&`;
-                                wompiUrl += `reference=${encodeParam(wompiData.reference)}&`;
-                                wompiUrl += `signature:integrity=${encodeParam(wompiData.signature)}&`;
-                                wompiUrl += `redirect-url=${encodeParam(wompiData.redirectUrl)}&`;
-                                wompiUrl += `customer-data:email=${encodeParam(wompiData.customerEmail)}&`;
-                                wompiUrl += `customer-data:full-name=${encodeParam(wompiData.customerName)}`;
-                                
-                                // Campos opcionales
-                                if (wompiData.customerPhone) {
-                                    wompiUrl += `&customer-data:phone-number=${encodeParam(wompiData.customerPhone)}`;
-                                    wompiUrl += `&customer-data:phone-number-prefix=${encodeParam('+57')}`;
-                                }
-                                
-                                if (wompiData.customerDoc) {
-                                    wompiUrl += `&customer-data:legal-id=${encodeParam(wompiData.customerDoc)}`;
-                                    wompiUrl += `&customer-data:legal-id-type=${encodeParam('CC')}`;
-                                }
-                                
-                                if (wompiData.shippingAddress) {
-                                    wompiUrl += `&shipping-address:address-line-1=${encodeParam(wompiData.shippingAddress)}`;
-                                    wompiUrl += `&shipping-address:country=${encodeParam('CO')}`;
-                                }
-                                
-                                wompiUrl += `&shipping-address:name=${encodeParam(wompiData.customerName)}`;
-                                
-                                // Debug: mostrar URL completa (truncada)
-                                console.log('🔗 URL construida:', wompiUrl.substring(0, 200) + '...');
-                                console.log('   Longitud:', wompiUrl.length);
-                                
-                                // Verificar parámetros críticos
-                                console.log('\n📋 Verificación de parámetros:');
-                                console.log('   ✓ public-key:', wompiData.publicKey ? 'OK' : '❌ FALTA');
-                                console.log('   ✓ amount-in-cents:', wompiData.amountInCents);
-                                console.log('   ✓ reference:', wompiData.reference);
-                                console.log('   ✓ signature:integrity:', wompiData.signature ? wompiData.signature.substring(0, 20) + '...' : '❌ FALTA');
-                                console.log('   ✓ redirect-url:', wompiData.redirectUrl);
-                                console.log('   ✓ customer-data:email:', wompiData.customerEmail);
-                                
-                                // Redirigir
-                                console.log('\n🚀 Redirigiendo a Wompi...');
-                                window.location.href = wompiUrl;
+
+                                // Redirección equivalente al <form method="GET"> de Web Checkout de la doc de Wompi
+                                const params = new URLSearchParams({
+                                    'public-key':          data.public_key,
+                                    'currency':            data.currency,
+                                    'amount-in-cents':     data.amount_in_cents,
+                                    'reference':           data.referencia,
+                                    'signature:integrity': data.signature,
+                                    'redirect-url':        data.redirect_url,
+                                });
+                                window.location.href = `https://checkout.wompi.co/p/?${params.toString()}`;
+
+                            } catch (e) {
+                                alert('Error de conexión con el servidor');
+                                if (btn) btn.disabled = false;
                             }
+                        }
                         </script>
                         
                     {% elif not cliente_datos_completos %}

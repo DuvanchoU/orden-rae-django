@@ -1,10 +1,8 @@
-"""
-Django settings for orden_rae project.
-"""
 import os
 from pathlib import Path
 from decouple import config
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured 
 
 # ==========================================
 # CARGA DE VARIABLES DE ENTORNO (.env)
@@ -13,11 +11,34 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+# ==========================================
+# Helper para variables OBLIGATORIAS
+# Si falta una variable crítica, la app NO arranca.
+# ==========================================
+def env_required(name: str) -> str:
+    """Obtiene una variable de entorno. Lanza error si falta o está vacía."""
+    value = os.getenv(name)
+    if not value:
+        raise ImproperlyConfigured(
+            f"❌ La variable de entorno '{name}' es obligatoria y no está definida. "
+            f"Revisa tu archivo .env o las variables de entorno del servidor."
+        )
+    return value
+
+
+def env_optional(name: str, default: str = '') -> str:
+    """Obtiene una variable opcional con valor por defecto seguro."""
+    return os.getenv(name, default)
+
+
 # ==========================================
 # SEGURIDAD
 # ==========================================
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-cambia-esto-en-produccion')
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+SECRET_KEY = env_required('SECRET_KEY')
+
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # ==========================================
@@ -31,14 +52,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    
+
     # OAuth 2.0 / Social Login
     'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    
+
     # Nuestras Apps
     'dashboard',
     'usuarios',
@@ -58,15 +79,15 @@ INSTALLED_APPS = [
 # ==========================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Producción: servir estáticos
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'usuarios.middleware.NoCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'allauth.account.middleware.AccountMiddleware',  # ← Requerido por OAuth
-    'ventas.middleware.ClientesAuthMiddleware',  # Clientes primero
-    'usuarios.middleware.CustomAuthMiddleware',   # Staff después
+    'allauth.account.middleware.AccountMiddleware',
+    'ventas.middleware.ClientesAuthMiddleware',
+    'usuarios.middleware.CustomAuthMiddleware',
     'usuarios.middleware.SessionIdleTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -84,7 +105,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.request',  # ← Requerido por allauth
+                'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'pagos.context_processors.wompi_settings',
@@ -109,7 +130,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME', 'bd_orden_rae_django'),
         'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'orden_rae?06#dgc'),
+        'PASSWORD': env_required('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5433'),
         'OPTIONS': {
@@ -163,17 +184,14 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 # ==========================================
-# ALLAUTH - OAUTH 2.0 (Configuración Actualizada)
+# ALLAUTH - OAUTH 2.0
 # ==========================================
-# Configuración de login
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_UNIQUE_EMAIL = True
 
-# Configuración de signup (nueva sintaxis)
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
-# Configuración social
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
@@ -193,11 +211,8 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-SOCIALACCOUNT_ADAPTER = 'pagina.adapters.CustomSocialAccountAdapter'
+# Conservamos solo el adapter de 'usuarios' que era el que ganaba.
 SOCIALACCOUNT_ADAPTER = "usuarios.social_adapter.MySocialAccountAdapter"
-SOCIALACCOUNT_EMAIL_REQUIRED = True
-
-ACCOUNT_UNIQUE_EMAIL = True
 
 # ==========================================
 # SESIONES
@@ -222,7 +237,10 @@ SECURE_HSTS_PRELOAD = True
 CSRF_COOKIE_SECURE = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost,http://127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost,http://127.0.0.1'
+).split(',')
 
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -259,6 +277,9 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 # ==========================================
 # CACHÉ
 # ==========================================
+# NOTA: LocMemCache NO funciona bien con múltiples workers de Gunicorn.
+# Si activas rate-limiting real en producción, migra a Redis.
+# Por ahora lo dejamos así para desarrollo.
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -337,33 +358,54 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
+CLOUDINARY_CLOUD_NAME = env_required('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY = env_required('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = env_required('CLOUDINARY_API_SECRET')
+
 cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', 'ddncfyxbo'),
-    api_key=os.getenv('CLOUDINARY_API_KEY', '925648523678929'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET', 'Ztrnee2Zau3RBz9b9v_EakLLGI8'),
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
     secure=True
 )
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', 'ddncfyxbo'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY', '925648523678929'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', 'Ztrnee2Zau3RBz9b9v_EakLLGI8'),
+    'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+    'API_KEY': CLOUDINARY_API_KEY,
+    'API_SECRET': CLOUDINARY_API_SECRET,
     'FOLDER': 'orden-rae',
 }
+
+# ==========================================
+# STORAGES (Static + Media)
+# ==========================================
+import sys
+
+# Detectar si estamos corriendo tests
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules
+
+if TESTING:
+    # En tests: usar storage simple que NO requiere collectstatic
+    _staticfiles_backend = "django.contrib.staticfiles.storage.StaticFilesStorage"
+else:
+    # En producción/desarrollo: usar WhiteNoise con manifiesto
+    _staticfiles_backend = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": _staticfiles_backend,
     },
 }
 
-# Wompi Configuration
-WOMPI_PUBLIC_KEY = os.getenv('WOMPI_PUBLIC_KEY', 'pub_prod_1oRfrAIE2zIMDIXeDgxmDwoVlsxTe5FW')
-WOMPI_PRIVATE_KEY = os.getenv('WOMPI_PRIVATE_KEY', 'prv_prod_LDjDSBoxgtkbzSQqhCQzjl7djeYksXtg')
-WOMPI_INTEGRITY_SECRET = os.getenv('WOMPI_INTEGRITY_SECRET', 'prod_integrity_eYgEqKmorhu1TdXMu9Y6yuksuM8Ao8Fs')
-WOMPI_BASE_URL = os.getenv('WOMPI_BASE_URL', 'https://api.wompi.co/v1')
-WOMPI_CHECKOUT_URL = os.getenv('WOMPI_CHECKOUT_URL', 'https://checkout.wompi.co')
-WOMPI_CURRENCY = 'COP'
+# ==========================================
+# WOMPI - Configuración de Pagos
+# ==========================================
+WOMPI_PUBLIC_KEY = os.environ.get('WOMPI_PUBLIC_KEY')
+WOMPI_PRIVATE_KEY = os.environ.get('WOMPI_PRIVATE_KEY')
+WOMPI_INTEGRITY_SECRET = os.environ.get('WOMPI_INTEGRITY_SECRET')
+WOMPI_EVENTS_SECRET = os.environ.get('WOMPI_EVENTS_SECRET')
+WOMPI_CURRENCY = os.environ.get('WOMPI_CURRENCY', 'COP')
+WOMPI_BASE_URL = os.environ.get('WOMPI_BASE_URL', '')

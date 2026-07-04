@@ -14,6 +14,9 @@ from ventas.models import Clientes
 from usuarios.models import Usuarios, RolesOld
 from inventario.models import Producto, Categorias, ImagenesProducto, Inventario
 import hashlib
+import bcrypt
+import hmac
+from django.contrib.auth.hashers import make_password, check_password as django_check
 import json
 import re
 import random
@@ -1099,15 +1102,45 @@ def api_cotiza_enviar(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
+def _verificar_password(password_plano: str, hash_guardado: str) -> bool:
+    """
+    ✅ FIX: Verifica contraseña aceptando 3 formatos:
+    - pbkdf2_sha256$...  → hasher moderno de Django
+    - $2y$... / $2a$... / $2b$... → bcrypt heredado de Laravel
+    - hash SHA-256 plano → legacy (64 caracteres hex)
+    Usa hmac.compare_digest para evitar timing attacks.
+    """
+    if not hash_guardado:
+        return False
+
+    # 1. Hash moderno de Django
+    if hash_guardado.startswith('pbkdf2_'):
+        return django_check(password_plano, hash_guardado)
+
+    # 2. Bcrypt heredado (Laravel usa $2y$, Python bcrypt prefiere $2b$)
+    if hash_guardado.startswith(('$2y$', '$2a$', '$2b$')):
+        try:
+            hash_normalizado = '$2b$' + hash_guardado[4:]
+            return bcrypt.checkpw(
+                password_plano.encode('utf-8'),
+                hash_normalizado.encode('utf-8')
+            )
+        except (ValueError, TypeError):
+            return False
+
+    # 3. SHA-256 legacy (comparación de tiempo constante)
+    sha_hash = hashlib.sha256(password_plano.encode('utf-8')).hexdigest()
+    return hmac.compare_digest(sha_hash, hash_guardado)
+
+
 def login_view(request):
-    """Login unificado para clientes y staff"""
-    
-    # Si ya está autenticado redirigir según tipo
+
+    # Si ya está autenticado, redirigir según tipo
     if request.session.get('cliente_auth'):
         return redirect('/')
     if request.session.get('usuario_id'):
-        return redirect('dashboard:dashboard_home') 
-    
+        return redirect('dashboard:dashboard_home')
+
     if request.method == 'POST':
         correo = request.POST.get('correo', '').strip().lower()
         contrasena = request.POST.get('contrasena', '')
@@ -1117,6 +1150,25 @@ def login_view(request):
             messages.error(request, 'Ingresa correo y contraseña')
             return render(request, 'pagina/login.html')
 
+        # Rate limiting
+        try:
+            from usuarios.utils import (
+                is_login_blocked, increment_login_attempts,
+                reset_login_attempts, block_login
+            )
+            rate_limit_activo = True
+        except ImportError:
+            rate_limit_activo = False
+            logger.warning("Rate limiting no disponible (usuarios.utils no existe)")
+
+        # Verificar bloqueo por fuerza bruta
+        if rate_limit_activo and is_login_blocked(request):
+            messages.error(
+                request,
+                'Demasiados intentos fallidos. Tu acceso fue bloqueado temporalmente. '
+                'Intenta de nuevo en unos minutos.'
+            )
+            return render(request, 'pagina/login.html')
 
         # ========================================
         # 1. Buscar primero en Usuarios (staff)
@@ -1128,27 +1180,22 @@ def login_view(request):
                 deleted_at__isnull=True
             )
 
-            # Detectar formato SHA256 o pbkdf2
-            from django.contrib.auth.hashers import make_password, check_password as django_check
-            contrasena_valida = False
-
-            if usuario.contrasena_usuario.startswith('pbkdf2_'):
-                contrasena_valida = django_check(contrasena, usuario.contrasena_usuario)
-            else:
-                sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
-                contrasena_valida = (sha_hash == usuario.contrasena_usuario)
-                if contrasena_valida:
-                    # Migrar automáticamente a pbkdf2
-                    Usuarios.objects.filter(pk=usuario.pk).update(
-                        contrasena_usuario=make_password(contrasena)
-                    )
+            # Verificación multi-formato (pbkdf2 + bcrypt + SHA-256)
+            contrasena_valida = _verificar_password(contrasena, usuario.contrasena_usuario)
 
             if contrasena_valida:
                 if usuario.estado != 'ACTIVO':
                     messages.error(request, 'Usuario inactivo. Contacte al administrador.')
                     return render(request, 'pagina/login.html')
-                
-                # Autenticación exitosa, iniciar sesión
+
+                # Migración al vuelo si el hash era viejo
+                if not usuario.contrasena_usuario.startswith('pbkdf2_'):
+                    Usuarios.objects.filter(pk=usuario.pk).update(
+                        contrasena_usuario=make_password(contrasena)
+                    )
+                    logger.info(f"Hash migrado a pbkdf2 para usuario {usuario.id_usuario}")
+
+                # Login exitoso
                 login(request, usuario, backend='usuarios.backends.UsuariosAuthBackend')
 
                 import time
@@ -1157,22 +1204,33 @@ def login_view(request):
                 request.session['usuario_rol'] = usuario.id_rol.nombre_rol if usuario.id_rol else 'SIN_ROL'
                 request.session['last_activity_timestamp'] = time.time()
 
+                request.session.cycle_key()  # previene session fixation
                 if remember:
                     request.session.set_expiry(1209600)
+
+                # Resetear contador de intentos
+                if rate_limit_activo:
+                    reset_login_attempts(request)
 
                 messages.success(request, f'Bienvenido {usuario.nombres}')
                 return redirect('dashboard:dashboard_home')
             else:
+                # Incrementar contador de intentos
+                if rate_limit_activo:
+                    intentos = increment_login_attempts(request)
+                    if intentos >= 5:
+                        block_login(request)
+
                 messages.error(request, 'Correo o contraseña incorrectos')
                 return render(request, 'pagina/login.html')
 
         except Usuarios.DoesNotExist:
             pass  # No es staff, buscar en clientes
+
         # ========================================
         # 2. Buscar en Clientes (TIENDA WEB)
         # ========================================
         from ventas.models import Clientes
-        from django.contrib.auth.hashers import check_password as django_check
 
         try:
             cliente = Clientes.objects.get(
@@ -1180,24 +1238,20 @@ def login_view(request):
                 deleted_at__isnull=True
             )
 
-            # Verificar contraseña
-            contrasena_valida = False
-
-            if (
-                cliente.contrasena_cliente and
-                cliente.contrasena_cliente.startswith('pbkdf2_')
-            ):
-                contrasena_valida = django_check(
-                    contrasena,
-                    cliente.contrasena_cliente
-                )
-            else:
-                sha_hash = hashlib.sha256(contrasena.encode()).hexdigest()
-                contrasena_valida = (sha_hash == cliente.contrasena_cliente)
+            # Verificación multi-formato
+            contrasena_valida = _verificar_password(contrasena, cliente.contrasena_cliente)
 
             if contrasena_valida and cliente.estado == 'ACTIVO':
-                
+
+                # Migración al vuelo si el hash era viejo
+                if not (cliente.contrasena_cliente or '').startswith('pbkdf2_'):
+                    Clientes.objects.filter(pk=cliente.pk).update(
+                        contrasena_cliente=make_password(contrasena)
+                    )
+                    logger.info(f"Hash migrado a pbkdf2 para cliente {cliente.id_cliente}")
+
                 import time
+                request.session.cycle_key()  # ✅ FIX: session fixation
                 request.session['cliente_auth'] = True
                 request.session['cliente_id'] = cliente.id_cliente
                 request.session['cliente_nombre'] = f"{cliente.nombre} {cliente.apellido}"
@@ -1212,18 +1266,34 @@ def login_view(request):
                 cliente.ultimo_login = timezone.now()
                 cliente.save(update_fields=['ultimo_login'])
 
+                # Resetear contador de intentos
+                if rate_limit_activo:
+                    reset_login_attempts(request)
+
                 messages.success(request, f'¡Bienvenido, {cliente.nombre}!')
                 return redirect(request.GET.get('next', '/'))
 
             else:
+                # Incrementar contador
+                if rate_limit_activo:
+                    intentos = increment_login_attempts(request)
+                    if intentos >= 5:
+                        block_login(request)
+
                 messages.error(request, 'Correo o contraseña incorrectos')
                 return render(request, 'pagina/login.html')
 
         except Clientes.DoesNotExist:
             logger.debug(f'Cliente no existe: {correo}')
+
+            # Incrementar contador incluso si el usuario no existe
+            if rate_limit_activo:
+                intentos = increment_login_attempts(request)
+                if intentos >= 5:
+                    block_login(request)
+
             messages.error(request, 'Correo o contraseña incorrectos')
             return render(request, 'pagina/login.html')
-
 
     # ========================================
     # GET: Mostrar formulario de login
@@ -1296,10 +1366,9 @@ def registro_view(request):
                 else:
                     genero_abreviado = 'O'
             
-            # Hash con SHA256
-            import hashlib
-            contrasena_hash = hashlib.sha256(password.encode()).hexdigest()
-            
+            # Hash seguro con pbkdf2 (Django) en lugar de SHA-256 plano
+            contrasena_hash = make_password(password)
+
             # Crear cliente CON email_verificado=True (sin necesidad de confirmar)
             nuevo_cliente = Clientes.objects.create(
                 nombre=nombre,
@@ -1313,7 +1382,7 @@ def registro_view(request):
                 genero=genero_abreviado,
                 created_at=timezone.now(),
                 email_verificado=True,
-                )
+            )
 
             # Auto-login con backend de clientes
             from django.contrib.auth import login
@@ -1966,174 +2035,6 @@ def api_checkout_procesar(request):
             status=500
         )
 
-# ══════════════════════════════════════════════════════
-# CHECKOUT WOMPI — Widget con datos automáticos del cliente
-# ══════════════════════════════════════════════════════
-
-@login_required
-def checkout_wompi_view(request):
-    """
-    Vista que prepara el Widget de Wompi con datos automáticos del cliente.
-    Usa autenticación por sesión (cliente_auth) y datos del modelo Clientes.
-    """
-    import time
-    from datetime import datetime, timedelta, timezone as tz
-    from decimal import Decimal
-    
-    # ── 1. Verificar autenticación del cliente (por sesión) ──
-    es_cliente = request.session.get('cliente_auth', False)
-    cliente_id = request.session.get('cliente_id')
-    
-    if not es_cliente or not cliente_id:
-        messages.warning(request, 'Debes iniciar sesión para pagar con Wompi')
-        return redirect('pagina:login')
-    
-    # ── 2. Obtener cliente desde la BD ──
-    try:
-        cliente = Clientes.objects.get(
-            id_cliente=cliente_id,
-            estado='ACTIVO',
-            deleted_at__isnull=True
-        )
-    except Clientes.DoesNotExist:
-        messages.error(request, 'Tu cuenta no existe o está inactiva')
-        return redirect('pagina:login')
-    
-    # ── 3. Obtener carrito (BD primero, sesión como fallback) ──
-    carrito_session = request.session.get('carrito', {})
-    carrito_items = []
-    total_carrito = Decimal('0')
-    total_iva = Decimal('0')
-    
-    # Intentar carrito de BD primero
-    carrito_bd = Carritos.objects.filter(
-        cliente=cliente, 
-        deleted_at__isnull=True
-    ).first()
-    
-    if carrito_bd:
-        for item in ItemsCarrito.objects.filter(carrito=carrito_bd).select_related('producto'):
-            if item.producto and item.cantidad > 0:
-                precio_unit = Decimal(str(item.precio_unitario))
-                subtotal = precio_unit * item.cantidad
-                iva_item = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'))
-                
-                carrito_items.append({
-                    'producto': item.producto,
-                    'cantidad': item.cantidad,
-                    'precio_unitario': precio_unit,
-                    'subtotal': subtotal,
-                    'iva': iva_item,
-                })
-                
-                total_carrito += subtotal
-                total_iva += iva_item
-    else:
-        # Fallback: carrito de sesión
-        if not carrito_session:
-            messages.warning(request, 'Tu carrito está vacío')
-            return redirect('pagina:productos')
-        
-        producto_ids = list(carrito_session.keys())
-        productos_qs = Producto.objects.filter(
-            id_producto__in=producto_ids,
-            estado='DISPONIBLE',
-            deleted_at__isnull=True
-        )
-        productos_map = {str(p.id_producto): p for p in productos_qs}
-        
-        for producto_id_str, item_data in carrito_session.items():
-            if isinstance(item_data, dict):
-                cantidad = int(item_data.get('cantidad', 1))
-                prod = productos_map.get(producto_id_str)
-                if prod:
-                    precio_unit = Decimal(str(prod.precio_actual))
-                    subtotal = precio_unit * cantidad
-                    iva_item = (subtotal * Decimal('0.19')).quantize(Decimal('0.01'))
-                    
-                    carrito_items.append({
-                        'producto': prod,
-                        'cantidad': cantidad,
-                        'precio_unitario': precio_unit,
-                        'subtotal': subtotal,
-                        'iva': iva_item,
-                    })
-                    
-                    total_carrito += subtotal
-                    total_iva += iva_item
-    
-    if not carrito_items:
-        messages.warning(request, 'Tu carrito está vacío')
-        return redirect('pagina:productos')
-    
-    # ── 4. Aplicar cupón si existe ──
-    cupon_activo = request.session.get('cupon_activo')
-    descuento = Decimal('0')
-    total_con_iva = (total_carrito + total_iva).quantize(Decimal('0.01'))
-    
-    if cupon_activo:
-        tipo = cupon_activo.get('tipo', '')
-        valor = Decimal(str(cupon_activo.get('valor', 0)))
-        
-        if tipo == 'porcentaje':
-            descuento = (total_con_iva * valor / Decimal('100')).quantize(Decimal('0.01'))
-        elif tipo == 'fijo':
-            descuento = min(valor, total_con_iva).quantize(Decimal('0.01'))
-    
-    total_final = max(Decimal('0'), total_con_iva - descuento).quantize(Decimal('0.01'))
-    
-    # ── 5. Montos en centavos (Wompi lo exige) ──
-    amount_in_cents = int(total_final * 100)
-    tax_vat_in_cents = int(total_iva * 100)
-    
-    # ── 6. Referencia única ──
-    reference = f"ORDER-{cliente.id_cliente}-{int(time.time())}"
-    
-    # ── 7. Firma de integridad (SHA-256) ──
-    integrity_secret = settings.WOMPI_INTEGRITY_SECRET
-    cadena = f"{reference}{amount_in_cents}{settings.WOMPI_CURRENCY}{integrity_secret}"
-    signature = hashlib.sha256(cadena.encode('utf-8')).hexdigest()
-    
-    # ── 8. Fecha de expiración (24 horas) ──
-    expiration = (datetime.now(tz.utc) + timedelta(hours=24)).isoformat()
-    
-    # ── 9. Datos del cliente desde la BD ──
-    customer_name = f"{cliente.nombre} {cliente.apellido}".strip()
-    customer_email = cliente.email
-    customer_phone = cliente.telefono or ''
-    customer_doc = cliente.documento or ''
-    
-    # Dirección de envío (del cliente o vacía)
-    direccion = getattr(cliente, 'direccion', '') or ''
-    ciudad = getattr(cliente, 'ciudad', '') or 'Bogotá'
-    region = getattr(cliente, 'departamento', '') or 'Cundinamarca'
-    
-    # ── 10. URL de redirección después del pago ──
-    redirect_url = request.build_absolute_uri('/pago-exitoso/')
-    
-    # ── 11. Renderizar template ──
-    context = {
-        'wompi_public_key':   settings.WOMPI_PUBLIC_KEY,
-        'amount_in_cents':    amount_in_cents,
-        'reference':          reference,
-        'signature':          signature,
-        'expiration_time':    expiration,
-        'redirect_url':       redirect_url,
-        'tax_vat_in_cents':   tax_vat_in_cents,
-        'customer_email':     customer_email,
-        'customer_name':      customer_name,
-        'customer_phone':     customer_phone,
-        'customer_doc':       customer_doc,
-        'shipping_address_1': direccion,
-        'shipping_city':      ciudad,
-        'shipping_region':    region,
-        'total_carrito':      float(total_final),
-        'items_carrito':      carrito_items,
-        'carrito_cantidad':   sum(i['cantidad'] for i in carrito_items),
-    }
-    
-    return render(request, 'pagina/checkout_wompi.html', context)
-
 @require_http_methods(["GET"])
 def api_listar_notificaciones(request):
     """Listar notificaciones - URL: /pagina/api/notificaciones/"""
@@ -2498,8 +2399,8 @@ def reset_password_confirm_view(request, token):
             return render(request, 'pagina/reset_password_confirm.html', {'token': token})
         
         try:
-            # Actualizar contraseña con SHA256
-            cliente.contrasena_cliente = hashlib.sha256(password.encode()).hexdigest()
+            # Actualizar la contraseña del cliente
+            cliente.contrasena_cliente = make_password(password)
             
             # Invalidar token
             cliente.token_reset_password = None

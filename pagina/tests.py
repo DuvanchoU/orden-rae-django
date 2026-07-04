@@ -1,5 +1,6 @@
 import json
 import hashlib
+import bcrypt 
 from decimal import Decimal
 from unittest.mock import patch, MagicMock, call, PropertyMock
 from django.test import TestCase, RequestFactory

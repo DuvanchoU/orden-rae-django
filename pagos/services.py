@@ -18,16 +18,14 @@ def generar_referencia(prefijo: str = "ORDRAE") -> str:
     return f"{prefijo}-{uuid.uuid4().hex[:16].upper()}"
 
 
-def generar_firma_integridad(referencia: str, amount_in_cents: int, moneda: str = "COP") -> str:
+def generar_firma_integridad(amount_in_cents, currency, reference, public_key, secreto):
     """
-    SHA256(referencia + amount_in_cents + moneda + secreto_integridad).
-    El ORDEN de concatenación es exacto según la documentación de Wompi:
-    https://docs.wompi.co/docs/colombia/widget-checkout-web/
-    NUNCA generar esto en el frontend: expondría el secreto de integridad.
+    Fórmula oficial Wompi:
+    SHA256(amount_in_cents + currency + reference + public_key + integrity_secret)
+    Docs: https://docs.wompi.co/docs/colombia/pagos-con-link-de-pago-o-checkout/
     """
-    secreto = settings.WOMPI_INTEGRITY_SECRET
-    cadena = f"{referencia}{amount_in_cents}{moneda}{secreto}"
-    return hashlib.sha256(cadena.encode("utf-8")).hexdigest()
+    cadena = f"{amount_in_cents}{currency}{reference}{public_key}{secreto}"
+    return hashlib.sha256(cadena.encode('utf-8')).hexdigest()
 
 
 def verificar_checksum_evento(event: dict) -> bool:

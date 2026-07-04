@@ -68,5 +68,4 @@ urlpatterns = [
     
     # Pagos
     path('checkout/', views.checkout, name='checkout'),
-    path('checkout/wompi/', views.checkout_wompi_view, name='checkout_wompi')
 ]

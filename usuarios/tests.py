@@ -7,7 +7,7 @@ from usuarios.models import RolesOld, Usuarios
 from usuarios.forms import UsuarioForm, UsuarioUpdateForm, RolForm
 import pytest
 
-from .utils import crear_rol, crear_usuario, autenticar_sesion
+from .test_utils import crear_rol, crear_usuario, autenticar_sesion
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -469,8 +469,11 @@ class RolViewTests(TestCase):
             "descripcion": "ok",
         })
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, "form", "nombre_rol",
-                            "El nombre del rol debe tener al menos 3 caracteres")
+        self.assertFormError(
+            response.context["form"],
+            "nombre_rol",
+            "El nombre del rol debe tener al menos 3 caracteres"
+)
 
     # ── Editar ────────────────────────────────────────────────────────────────
     def test_editar_get_status_200(self):

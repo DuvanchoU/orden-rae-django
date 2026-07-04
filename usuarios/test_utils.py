@@ -1,74 +1,9 @@
-# usuarios/utils.py
-from django.core.cache import cache
-from datetime import datetime, timedelta
-
-def get_client_ip(request):
-    """Obtener IP real del cliente (funciona detrás de proxies como Render/Cloudflare)"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0].strip()
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
-
-
-def get_login_attempts(request):
-    """Obtener número de intentos de login fallidos desde la IP actual"""
-    ip = get_client_ip(request)
-    key = f'login_attempts_{ip}'
-    return cache.get(key, 0)
-
-
-def increment_login_attempts(request):
-    """
-    Incrementar contador de intentos fallidos.
-    El contador expira en 15 minutos automáticamente.
-    """
-    ip = get_client_ip(request)
-    key = f'login_attempts_{ip}'
-    attempts = cache.get(key, 0) + 1
-    cache.set(key, attempts, timeout=900)  # 15 minutos
-    return attempts
-
-
-def reset_login_attempts(request):
-    """Resetear contador tras login exitoso"""
-    ip = get_client_ip(request)
-    key = f'login_attempts_{ip}'
-    cache.delete(key)
-
-
-def is_login_blocked(request):
-    """Verificar si la IP está bloqueada temporalmente"""
-    ip = get_client_ip(request)
-    key = f'login_blocked_{ip}'
-    return bool(cache.get(key, False))
-
-
-def block_login(request, duration=900):
-    """
-    Bloquear login por 15 minutos (por defecto) después de 5 intentos fallidos.
-    duration: segundos de bloqueo
-    """
-    ip = get_client_ip(request)
-    key = f'login_blocked_{ip}'
-    cache.set(key, True, timeout=duration)
-
-def get_client_ip(request):
-    """Obtener IP real del cliente (funciona detrás de proxies)"""
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip
-
+# usuarios/test_utils.py
 """
 Helpers compartidos para todos los módulos de prueba.
 Importar desde cualquier test_*.py así:
-    from tests.utils import crear_rol, crear_usuario, crear_cliente, ...
+    from usuarios.test_utils import crear_rol, crear_usuario, ...
 """
-
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
 from django.db.models import Model
@@ -143,7 +78,6 @@ def crear_cliente(nombre="Cliente", apellido="Test",
                     estado="ACTIVO"):
     """Crea un Clientes de prueba."""
     from ventas.models import Clientes
-    from django.db.models import Model
     Clientes.objects.filter(email=email).delete()
     Clientes.objects.filter(documento=documento).delete()
 
@@ -165,7 +99,6 @@ def crear_cliente(nombre="Cliente", apellido="Test",
 def crear_pedido(cliente, usuario=None, estado="PENDIENTE"):
     """Crea un Pedido de prueba."""
     from ventas.models import Pedido
-    from django.db.models import Model
     p = Pedido(
         cliente=cliente,
         usuario=usuario,
@@ -184,7 +117,7 @@ def crear_pedido(cliente, usuario=None, estado="PENDIENTE"):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def crear_categoria(nombre="CATEGORIA TEST"):
-    """Crea una Categorias de prueba."""
+    """Crea un Categorias de prueba."""
     from inventario.models import Categorias
     Categorias.objects.filter(nombre_categoria=nombre).delete()
     cat = Categorias(
@@ -202,7 +135,6 @@ def crear_producto(categoria, codigo="PROD-001",
                     precio=100000, estado="DISPONIBLE"):
     """Crea un Producto de prueba."""
     from inventario.models import Producto
-    from django.db.models import Model
     Producto.objects.filter(codigo_producto=codigo).delete()
 
     p = Producto(
@@ -233,7 +165,7 @@ def crear_proveedor(nombre="Proveedor Test", estado="ACTIVO"):
 
 
 def crear_bodega(nombre="Bodega Principal", estado="ACTIVA"):
-    """Crea una Bodegas de prueba."""
+    """Crea un Bodegas de prueba."""
     from inventario.models import Bodegas
     Bodegas.objects.filter(nombre_bodega=nombre).delete()
     b = Bodegas(
@@ -251,9 +183,8 @@ def crear_bodega(nombre="Bodega Principal", estado="ACTIVA"):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def crear_compra(proveedor, usuario=None, estado="PENDIENTE"):
-    """Crea una Compras de prueba."""
+    """Crea un Compras de prueba."""
     from compras.models import Compras
-    from django.db.models import Model
     c = Compras(
         proveedor=proveedor,
         usuario=usuario,
@@ -272,9 +203,8 @@ def crear_compra(proveedor, usuario=None, estado="PENDIENTE"):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def crear_produccion(producto, cantidad=10, estado="PENDIENTE"):
-    """Crea una Produccion de prueba."""
+    """Crea un Produccion de prueba."""
     from produccion.models import Produccion
-    from django.db.models import Model
     p = Produccion(
         producto=producto,
         cantidad_producida=cantidad,

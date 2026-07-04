@@ -789,10 +789,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── FLUJO 1: TARJETA / WOMPI ────────────────────────────────────
         if (state.paymentMethod === 'card') {
-            // Guardar datos en sesión antes de redirigir a Wompi
-            guardarDatosEnSesion();
-            // Redirigir a la vista de Wompi
-            window.location.href = '{% url "pagina:checkout_wompi" %}';
+            try {
+                const res = await fetch("{% url 'pagos:iniciar_transaccion' %}", {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                    body:    JSON.stringify(buildPayload('card')),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showToast(data.error || 'No se pudo iniciar el pago con Wompi', 'error');
+                    return;
+                }
+
+                var checkoutWidget = new WidgetCheckout({
+                    currency:      data.currency,
+                    amountInCents: data.amount_in_cents,
+                    reference:     data.referencia,
+                    publicKey:     data.public_key,
+                    signature:     { integrity: data.signature },
+                    redirectUrl:   data.redirect_url,
+                    customerData: {
+                        email:    document.getElementById('co-email')?.value || '',
+                        fullName: document.getElementById('co-nombre')?.value || '',
+                    },
+                });
+
+                checkoutWidget.open(async function (result) {
+                    const transaction = result.transaction;
+                    if (!transaction) return;
+
+                    const confirmRes  = await fetch("{% url 'pagos:confirmar_pago' %}", {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+                        body:    JSON.stringify({ transaction_id: transaction.id, referencia: data.referencia }),
+                    });
+                    const confirmData = await confirmRes.json();
+
+                    if (confirmRes.ok && confirmData.success) {
+                        mostrarExito(confirmData, document.getElementById('co-email')?.value || '');
+                    } else {
+                        showToast(confirmData.error || 'El pago no pudo confirmarse', 'error');
+                    }
+                });
+
+            } catch (err) {
+                showToast('Error de conexión con Wompi', 'error');
+            }
             return;
         }
 
@@ -832,24 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.querySelector('.btn-loading').style.display = 'none';
         }
     };
-
-    /* ══════════════════════════════════════════════════════
-        GUARDAR DATOS EN SESIÓN (para que la vista Wompi los use)
-    ═══════════════════════════════════════════════════════ */
-    function guardarDatosEnSesion() {
-        const datos = {
-            nombre:      (document.getElementById('co-nombre')?.value || '').trim(),
-            documento:   (document.getElementById('co-documento')?.value || '').trim(),
-            email:       (document.getElementById('co-email')?.value || '').trim(),
-            telefono:    (document.getElementById('co-telefono')?.value || '').trim(),
-            ciudad:      document.getElementById('co-ciudad')?.value || '',
-            direccion:   (document.getElementById('co-direccion')?.value || '').trim(),
-            apartamento: (document.getElementById('co-apartamento')?.value || '').trim(),
-            codigo_postal: (document.getElementById('co-codigopostal')?.value || '').trim(),
-            notas:       (document.getElementById('co-notas')?.value || '').trim(),
-        };
-        sessionStorage.setItem('checkout_datos', JSON.stringify(datos));
-    }
 
     /* ══════════════════════════════════════════════════════
         CONSTRUIR PAYLOAD (para contra entrega / Nequi)

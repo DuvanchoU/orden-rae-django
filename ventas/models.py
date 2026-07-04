@@ -773,8 +773,8 @@ class Pedido(models.Model):
 
 class DetallePedido(models.Model):
     id_detalle = models.AutoField(primary_key=True)
-    pedido = models.ForeignKey(Pedido, models.DO_NOTHING)
-    producto = models.ForeignKey('inventario.Producto', models.DO_NOTHING)
+    pedido = models.ForeignKey('Pedido', models.DO_NOTHING)  
+    producto = models.ForeignKey('inventario.Producto', models.DO_NOTHING)  
     cantidad = models.IntegerField()
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
@@ -787,8 +787,7 @@ class DetallePedido(models.Model):
         db_table = 'detalle_pedido'
 
     def __str__(self):
-        # Nota: Este modelo usa IDs en lugar de FKs, así que no podemos acceder al nombre del producto directamente
-        return f"Detalle #{self.id_detalle} - Producto ID: {self.producto_id}"
+        return f"{self.producto} x{self.cantidad}"
     
     def clean(self):
         if self.cantidad <= 0:
@@ -815,9 +814,6 @@ class DetallePedido(models.Model):
         self.deleted_at = timezone.now()
         self.save()
         return self
-
-    def __str__(self):
-        return f"{self.producto} x{self.cantidad}"
     
 # ============================================================================
 # VENTAS
@@ -994,6 +990,7 @@ class DetalleVenta(models.Model):
     class Meta:
         managed = True
         db_table = 'detalle_venta'
+        ordering = ['-created_at'] 
 
     def __str__(self):
         return f"{self.producto} x{self.cantidad}"
@@ -1029,39 +1026,6 @@ class DetalleVenta(models.Model):
     def __str__(self):
         return f"{self.producto} x{self.cantidad}"
 
-class TransaccionWompi(models.Model):
-    ESTADOS = [
-        ('PENDING', 'Pendiente'),
-        ('APPROVED', 'Aprobada'),
-        ('DECLINED', 'Rechazada'),
-        ('VOIDED', 'Anulada'),
-    ]
-
-    METODOS_PAGO = [
-        ('CARD', 'Tarjeta de Crédito/Débito'),
-        ('PSE', 'PSE'),
-        ('NEQUI', 'Nequi'),
-        ('TRANSFER', 'Transferencia'),
-    ]
-
-    id_transaccion = models.AutoField(primary_key=True)
-    venta = models.ForeignKey('Ventas', on_delete=models.CASCADE, related_name='transacciones_wompi')
-    wompi_transaction_id = models.CharField(max_length=100, unique=True, blank=True, null=True)
-    referencia = models.CharField(max_length=100, unique=True)
-    monto = models.DecimalField(max_digits=12, decimal_places=2)
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='PENDING')
-    metodo_pago = models.CharField(max_length=20, choices=METODOS_PAGO, blank=True, null=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
-    respuesta_wompi = models.JSONField(blank=True, null=True)
-    es_sandbox = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = 'transacciones_wompi'
-        ordering = ['-fecha_creacion']
-
-    def __str__(self):
-        return f"Transacción {self.referencia} - {self.estado}"
     
 
 # ==========================================
